@@ -1,0 +1,64 @@
+{
+  "schema": 1,
+  "generator": "forge@0.1.1",
+  "project": "rigcraft",
+  "profile": "rust-web",
+  "pack": "baseline-service",
+  "version": "1.6.0",
+  "asset_digest": "34fb4d5791ad1cc7a775fd12acd73f1736f3e09a5abc6e9743fbfda438b28538",
+  "generated_at": "2026-10-31T07:44:28.750742394+00:00",
+  "files": [
+    {
+      "path": ".github/workflows/forge-gate.yml",
+      "digest": "72c764d0ec0b9388fd50006e18f5f51aa52f336557ad54802f8716583510a162"
+    },
+    {
+      "path": ".pre-commit-config.yaml",
+      "digest": "3bc5338a58ba201010dbff4b0c886ae758809f5142d8c333bc9798c3df674e87"
+    },
+    {
+      "path": ".standard/ci/verify.yml",
+      "digest": "72c764d0ec0b9388fd50006e18f5f51aa52f336557ad54802f8716583510a162"
+    },
+    {
+      "path": ".standard/compose/docker-compose.yaml",
+      "digest": "24a9a7b974791201a2b06ff163804e70bf49ca9c46b0f3195b0ffd6e3baf54b2"
+    },
+    {
+      "path": ".standard/profile.yaml",
+      "digest": "3669b4c2f12ee5f9d86440d8f2e4571dd5833d95976df11f44b0b3bbf02e61e7"
+    },
+    {
+      "path": ".standard/quality/quality.yaml",
+      "digest": "702dfc2cc1c2f93baaf4a11464738beff7c4301bc920ad6f8960ec6c299658e5"
+    },
+    {
+      "path": ".standard/scripts/install-forge.sh",
+      "digest": "32efc179a59778e78b911e2b283628bec8e731970f1980c237cbaa6636722643"
+    },
+    {
+      "path": ".standard/scripts/upload-hosted-ci-evidence.py",
+      "digest": "7738e550fae1d859d8e1ba87a26972fae828c8cf68849385bd1fefef70e89b82"
+    },
+    {
+      "path": ".standard/scripts/verify.sh",
+      "digest": "c1339441eabfdd29f4b1c6081225cc3bdb5c8b2e70c44d6225f65bf7ff61bf6a"
+    },
+    {
+      "path": "scripts/check-accessibility.py",
+      "digest": "20a0a357fdad9cebd622b71059dcd155f8ff83436c3c7266d85ff184e4a6bdcf"
+    },
+    {
+      "path": "scripts/check-openspec-change-names.mjs",
+      "digest": "c5003d0cf60ca24b524cb1d08325dc364dca71d5a17d6ee7a0ab5e003b70ea93"
+    },
+    {
+      "path": "scripts/check-privacy.py",
+      "digest": "1dcddb2f091c84b86428f694f3eefefc969902cb5ccb69380371cfcc3d98ff20"
+    },
+    {
+      "path": "verify-local.sh",
+      "digest": "b8dfa634621b45c9b0b5a5e6748e90aae494e2bc54a2ba2f93ff443c1ca51b50"
+    }
+  ]
+}

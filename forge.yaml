@@ -1,0 +1,25 @@
+schema: 1
+project:
+  id: rigcraft
+  name: rigcraft
+  profile: rust-web
+  maturity: L1
+  target_maturity: L1
+runtime:
+  language: rust
+kit:
+  id: "none"
+  version: null
+  ecosystem: "cargo"
+  minimum_packages: 0
+  zero_reason: "no crate in rust-platform-libs has two external consumers (1 consumer: trailCrew); the 8 crates stay commented-out Cargo.toml entries"
+release:
+  versioning: semver
+  checks:
+    - kind: doctor
+    - kind: test
+deployment:
+  artifact: Dockerfile
+  targets:
+    - name: local
+      kind: local

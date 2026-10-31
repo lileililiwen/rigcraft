@@ -1,0 +1,103 @@
+{
+  "schema_version": 1,
+  "id": "rigcraft",
+  "kind": "product",
+  "profile": "rust-product",
+  "lifecycle": "active",
+  "verification": {
+    "command": "cargo test",
+    "evidence_status": "planned"
+  },
+  "deployment": {
+    "deployable": false,
+    "jenkins_job": null,
+    "compose_file": null
+  },
+  "ui": {
+    "scope": {
+      "roots": [
+        "apps/web/src"
+      ],
+      "exclude": [
+        "apps/web/src/styles/vendor/tokens.css"
+      ]
+    },
+    "shared_layer": {
+      "adopted": true,
+      "consume_paths": [
+        "apps/web/src/styles/vendor/tokens.css"
+      ],
+      "pin_sha256": "7ca6b7956b3f6b475254b4a5d0cf599724e4e1af5f0f88aba4fbccb9f38fc19b"
+    },
+    "branding_document": "docs/branding.md",
+    "contrast_evidence": "docs/evidence/token-contrast.json"
+  },
+  "discoverability": {
+    "description": "Open-source, inventory-driven PC build planning with traceable compatibility checks.",
+    "keywords": [
+      "PC build",
+      "hardware inventory",
+      "compatibility"
+    ],
+    "topics": [
+      "pc-building",
+      "hardware",
+      "open-source",
+      "rust"
+    ],
+    "audience": [
+      "PC builders",
+      "repair shops"
+    ],
+    "use_cases": [
+      "Create budget-aware PC builds from owned inventory"
+    ],
+    "search_phrases": [
+      "open source inventory PC build planner"
+    ],
+    "homepage": "https://github.com/lileililiwen/rigcraft",
+    "license_spdx": "MIT",
+    "visibility": "public"
+  },
+  "quality": {
+    "product_roots": [
+      "src"
+    ],
+    "languages": [
+      "rust"
+    ],
+    "placeholder_threshold": 0
+  },
+  "interfaces": [
+    {
+      "id": "product-code-quality",
+      "consumes": true,
+      "provider": "workspace-governance",
+      "mechanism": "sibling",
+      "entry": "python3 ../forge/modules/workspace-governance/scripts/product_code_quality.py .",
+      "digest": "sha256:f626030c7f87b6cb4e6abbe659c290fde079120d4d8d5863b1338ba9e4e3af0b",
+      "required": true,
+      "evidence_ref": ".ai-gate/gate.yaml"
+    },
+    {
+      "id": "workspace-check",
+      "consumes": true,
+      "provider": "workspace-governance",
+      "mechanism": "sibling",
+      "entry": "python3 ../forge/modules/workspace-governance/scripts/workspace_check.py --root .. --project rigcraft --json",
+      "digest": "sha256:303a006015e6da9ba0bdc41ee784ae47975b261fa82f950943127edfa2b13ccc",
+      "required": true,
+      "evidence_ref": ".ai-gate/gate.yaml"
+    },
+    {
+      "id": "ui-conformance",
+      "consumes": true,
+      "provider": "workspace-governance",
+      "mechanism": "sibling",
+      "entry": "python3 ../forge/modules/workspace-governance/scripts/ui_conformance.py .",
+      "digest": "sha256:5bad4a67da58bb63242c513e0885a70340cb19652dd684690e7edfd0c2ee6524",
+      "required": true,
+      "evidence_ref": ".ai-gate/gate.yaml"
+    }
+  ]
+}

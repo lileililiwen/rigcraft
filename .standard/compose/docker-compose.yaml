@@ -1,0 +1,6 @@
+# Forge standard snapshot Compose selection (baseline-service@1.6.0).
+services:
+  rigcraft:
+    build:
+      context: ../..
+      dockerfile: Dockerfile
