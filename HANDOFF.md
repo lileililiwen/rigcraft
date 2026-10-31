@@ -2,11 +2,26 @@
 
 ## Current state
 
-`requirement.md` is the product baseline. Forge `rust-web@0.1.0` scaffold and `baseline-service@1.6.0` pack are present. Governance and MIT license are initialized. Product features and UI are not implemented. There are no active OpenSpec changes by request.
+current_spec: none
+
+`requirement.md` is the product baseline. Inventory import and provenance is implemented, archived and tested: `/inventory` previews UTF-8 CSV, reports field-coded row errors, requires explicit duplicate decisions, commits immutable SQLite snapshots with per-field provenance, and creates new revisions for corrections. Compatibility checking, recommendation, BYOK planning and build diagnosis remain unimplemented packages. Deployment remains disabled.
 
 ## Next action
 
-When requested, select the first product change around licensed data and the inventory import/correction journey. Add `current_spec: <name>` only after a change is active. Deployment remains disabled.
+Select `evidence-backed-compatibility` only when implementation is requested. Set `current_spec: evidence-backed-compatibility` before work, complete and archive that one package, then stop. The dependency map remains in `ROADMAP.md`.
+
+## Inventory implementation evidence (2026-10-31, commit `ec0f123`)
+
+- `cargo fmt --all -- --check` — pass. `cargo clippy --all-targets --all-features -- -D warnings` — pass.
+- `cargo test` — pass: 26 unit tests and 10 HTTP contract tests (CSV errors, duplicate merge/replace/keep-separate, idempotent commit, conflict, expiry, atomic failure, correction immutability, snapshot replay after expiry).
+- `npm run check` — pass (measured token contrast + TypeScript). `npm test` — pass: 11 Vitest tests. `npm run build` — pass.
+- `sh verify-local.sh` — pass (Cargo fmt/clippy/test, `npm ci`, check, typecheck, test).
+- `node scripts/check-openspec-change-names.mjs` — pass. `openspec validate --all --strict` — 5 passed, 0 failed. Archived with `openspec archive inventory-import-and-provenance --yes`; `openspec/specs/inventory-import/spec.md` exists and its Purpose is written.
+- Full Gate `/home/paul/code/forge/target/debug/forge gate . --profile full` — aggregate passed, 9 checks (build, security, governance-quality, placeholder, product boundary, repository, source size, tests, UI conformance). The Gate labels the working-tree base revision `f6ebf7d1daa0`; its persisted evidence is `.forge/gate/rigcraft/evidence.json` and the implementation is commit `ec0f123`. The pre-existing workspace `DISCOVERED_UNREGISTERED` findings are outside this project's governance scope; the in-scope finding this cycle (archived-spec Purpose marker) was fixed before the passing run.
+- Browser evidence (Chrome DevTools MCP, production build, 1440×900 and 390×844): `docs/evidence/inventory-import-browser.md`, captures in `docs/assets/inventory-*.png`. No horizontal overflow at 390 px; skip link and controls show a 3 px focus outline; focus moves to review, snapshot and error headings.
+- Accessibility: Lighthouse accessibility 100 with 0 failing audits on desktop and mobile (`docs/evidence/inventory-lighthouse*/report.json`); measured contrast in `docs/evidence/token-contrast.json` (lowest 5.46:1 for error text, 7.29:1 for the focus ring).
+- Persistence is SQLite outside the repository (`RIGCRAFT_DATA_DIR`, else XDG/HOME application data), schema `PRAGMA user_version = 1`. Contract and error codes: `docs/inventory-import.md`. Captures are synthetic; CSV content and cost fields were absent from service logs.
+- Not done: a checked-in Playwright suite. The browser journey and responsive/a11y checks were run through Chrome DevTools MCP, with Vitest covering component and state behaviour; this limitation is recorded in the evidence document.
 
 ## Bootstrap evidence (2026-10-31)
 
