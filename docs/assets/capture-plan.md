@@ -1,6 +1,6 @@
 # Documentation capture plan
 
-Source: the local Web UI at `/inventory` and `/builds/check`. Capture tool: Chrome DevTools MCP against the production build served by `cargo run`; `shot-scraper` remains an alternative for deterministic stills. Viewports: 1440×900 desktop and 390×844 mobile.
+Source: the local Web UI at `/inventory`, `/builds/check` and `/recommend`. Capture tool: Chrome DevTools MCP against the production build served by `cargo run`; `shot-scraper` remains an alternative for deterministic stills. Viewports: 1440×900 desktop and 390×844 mobile.
 
 Wait for the page's stable ready state, then capture a state only after the live status region names it (`Preview ready…`, `Committed snapshot…`, `Snapshot committed…`). Store screenshots in `docs/assets/`, and record the source revision, route, viewport, action or wait condition, command and privacy review with each capture.
 
@@ -38,8 +38,26 @@ Wait for the page's stable ready state, then capture a state only after the live
 | `compatibility-conflict-mobile.png` | `/builds/check` | 390×844 | Incompatible verdict and conflicts |
 | `compatibility-compatible-mobile.png` | `/builds/check` | 390×844 | Compatible verdict |
 
-Details, commands, keyboard results, measured contrast and privacy review: `docs/evidence/inventory-import-browser.md` and `docs/evidence/compatibility-browser.md`. Measured token contrast: `docs/evidence/token-contrast.json`. Lighthouse reports: `docs/evidence/inventory-lighthouse*/` and `docs/evidence/compatibility-lighthouse*/`.
+### Recommendation captures (2026-10-31)
+
+| Capture | Route | Viewport | Condition |
+| --- | --- | --- | --- |
+| `recommendation-empty-desktop.png` | `/recommend` | 1440×900 | No inventory snapshot exists |
+| `recommendation-form-desktop.png` | `/recommend` | 1440×900 | Snapshot loaded, budget and constraints empty |
+| `recommendation-results-desktop.png` | `/recommend` | 1440×900 | Three compatible options with reasons and stock |
+| `recommendation-evidence-desktop.png` | `/recommend` | 1440×900 | Expanded rule evidence with provenance |
+| `recommendation-compare-desktop.png` | `/recommend` | 1440×900 | Comparison table across three options |
+| `recommendation-export-desktop.png` | `/recommend` | 1440×900 | JSON export downloaded and announced |
+| `recommendation-no-solution-desktop.png` | `/recommend` | 1440×900 | Budget binding constraint with shortfall |
+| `recommendation-compatibility-desktop.png` | `/recommend` | 1440×900 | Compatibility binding: every combination rejected |
+| `recommendation-unknown-desktop.png` | `/recommend` | 1440×900 | Two unknown options with follow-ups |
+| `recommendation-focus-desktop.png` | `/recommend` | 1440×900 | Skip link focused via Tab |
+| `recommendation-results-mobile.png` | `/recommend` | 390×844 | Ranked option cards stacked |
+| `recommendation-compare-mobile.png` | `/recommend` | 390×844 | Comparison rows stacked as labelled cards |
+| `recommendation-no-solution-mobile.png` | `/recommend` | 390×844 | Binding constraint, blockers and adjustments |
+
+Details, commands, keyboard results, measured contrast and privacy review: `docs/evidence/inventory-import-browser.md`, `docs/evidence/compatibility-browser.md` and `docs/evidence/recommendation-browser.md`. Measured token contrast: `docs/evidence/token-contrast.json`. Lighthouse reports: `docs/evidence/inventory-lighthouse*/`, `docs/evidence/compatibility-lighthouse*/` and `docs/evidence/recommendation-lighthouse*/`.
 
 ## Refresh rule
 
-Refresh these captures after any change to `/inventory`, `/builds/check`, the shared tokens, the import or check API, the compatibility rules, or the rendered states. A capture that names an older revision is historical evidence, not current evidence.
+Refresh these captures after any change to `/inventory`, `/builds/check`, `/recommend`, the shared tokens, the import, check or recommendation API, the compatibility rules, the scoring version, or the rendered states. A capture that names an older revision is historical evidence, not current evidence.

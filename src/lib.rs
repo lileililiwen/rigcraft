@@ -7,6 +7,7 @@ pub mod compatibility;
 pub mod csv_import;
 pub mod domain;
 pub mod error;
+pub mod recommend;
 pub mod store;
 
 use std::env;

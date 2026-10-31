@@ -4,8 +4,8 @@ use std::collections::BTreeMap;
 use std::path::PathBuf;
 use std::sync::Arc;
 
-use axum::extract::{DefaultBodyLimit, Multipart, Path as AxumPath, State};
-use axum::http::{header, StatusCode};
+use axum::extract::{DefaultBodyLimit, Multipart, Path as AxumPath, Query, State};
+use axum::http::{header, HeaderValue, StatusCode};
 use axum::response::{Html, IntoResponse, Response};
 use axum::routing::{any, get, post};
 use axum::{Json, Router};
@@ -22,6 +22,9 @@ use crate::compatibility::{check_build, CheckReport, CheckRequest};
 use crate::csv_import::{preview_csv, SAMPLE_CSV};
 use crate::domain::{preview_is_expired, Preview, Snapshot, SnapshotSummary};
 use crate::error::ApiError;
+use crate::recommend::{
+    export_json, export_markdown, recommend, RecommendRequest, RecommendationReport,
+};
 use crate::store::{CommitOutcome, Store, StoreError};
 
 #[derive(Clone)]
@@ -322,6 +325,146 @@ async fn get_check_report(
     Ok(Json(report))
 }
 
+#[derive(Debug, serde::Deserialize)]
+struct ExportQuery {
+    format: Option<String>,
+}
+
+fn load_snapshot(state: &AppState, snapshot_id: &str) -> Result<Snapshot, ApiError> {
+    state
+        .store
+        .get_snapshot(snapshot_id)
+        .map_err(|error| match error {
+            StoreError::NotFound => {
+                ApiError::not_found("snapshot_not_found", "No inventory snapshot has this ID.")
+            }
+            other => storage_failure(other),
+        })
+}
+
+fn with_staleness(
+    mut report: RecommendationReport,
+    state: &AppState,
+) -> Result<RecommendationReport, ApiError> {
+    match state
+        .store
+        .latest_chain_revision(&report.snapshot_id)
+        .map_err(storage_failure)?
+    {
+        Some(revision) => {
+            report.current_snapshot_revision = Some(revision);
+            if revision != report.snapshot_revision {
+                report.stale = true;
+                report.stale_reason = Some(format!(
+                    "The snapshot chain is now at revision {revision}; this report was recommended against revision {}.",
+                    report.snapshot_revision
+                ));
+            }
+        }
+        None => {
+            report.stale = true;
+            report.current_snapshot_revision = None;
+            report.stale_reason =
+                Some("The snapshot this report referenced no longer exists.".to_string());
+        }
+    }
+    Ok(report)
+}
+
+async fn recommend_build(
+    State(state): State<AppState>,
+    Json(request): Json<RecommendRequest>,
+) -> Result<Json<RecommendationReport>, ApiError> {
+    if request.snapshot_id.trim().is_empty() {
+        return Err(ApiError::bad_request(
+            "snapshot_required",
+            "Choose an inventory snapshot first.",
+        )
+        .with_field("snapshotId"));
+    }
+    let snapshot = load_snapshot(&state, &request.snapshot_id)?;
+    let report = recommend(&snapshot, &request)?;
+    state
+        .store
+        .insert_recommendation(&report)
+        .map_err(storage_failure)?;
+    Ok(Json(report))
+}
+
+async fn get_recommendation_report(
+    State(state): State<AppState>,
+    AxumPath(recommendation_id): AxumPath<String>,
+) -> Result<Json<RecommendationReport>, ApiError> {
+    let report =
+        state
+            .store
+            .get_recommendation(&recommendation_id)
+            .map_err(|error| match error {
+                StoreError::NotFound => ApiError::not_found(
+                    "recommendation_not_found",
+                    "No recommendation has this ID.",
+                ),
+                other => storage_failure(other),
+            })?;
+    with_staleness(report, &state).map(Json)
+}
+
+async fn export_recommendation(
+    State(state): State<AppState>,
+    AxumPath(recommendation_id): AxumPath<String>,
+    Query(query): Query<ExportQuery>,
+) -> Result<Response, ApiError> {
+    let report =
+        state
+            .store
+            .get_recommendation(&recommendation_id)
+            .map_err(|error| match error {
+                StoreError::NotFound => ApiError::not_found(
+                    "recommendation_not_found",
+                    "No recommendation has this ID.",
+                ),
+                other => storage_failure(other),
+            })?;
+    let report = with_staleness(report, &state)?;
+    let key: String = report.id.chars().take(8).collect();
+    let format = query
+        .format
+        .as_deref()
+        .map(|value| value.trim().to_lowercase())
+        .unwrap_or_else(|| "json".to_string());
+    let (content_type, extension, body) = if matches!(format.as_str(), "markdown" | "md") {
+        (
+            "text/markdown; charset=utf-8",
+            "md",
+            export_markdown(&report),
+        )
+    } else if format == "json" {
+        let snapshot = load_snapshot(&state, &report.snapshot_id)?;
+        let value = export_json(&report, &snapshot);
+        let body = serde_json::to_string_pretty(&value)
+            .map_err(|_| ApiError::internal("The export could not be serialized."))?;
+        ("application/json", "json", body)
+    } else {
+        return Err(ApiError::bad_request(
+            "export_format_unsupported",
+            "Use format=json or format=markdown.",
+        )
+        .with_field("format"));
+    };
+    let mut response = body.into_response();
+    response
+        .headers_mut()
+        .insert(header::CONTENT_TYPE, HeaderValue::from_static(content_type));
+    if let Ok(disposition) = HeaderValue::from_str(&format!(
+        "attachment; filename=\"rigcraft-recommendation-{key}.{extension}\""
+    )) {
+        response
+            .headers_mut()
+            .insert(header::CONTENT_DISPOSITION, disposition);
+    }
+    Ok(response)
+}
+
 async fn api_not_found() -> Response {
     ApiError::not_found("route_not_found", "This API route does not exist.").into_response()
 }
@@ -349,6 +492,15 @@ pub fn build_router(state: AppState) -> Router {
         )
         .route("/api/builds/check", post(check_compatibility))
         .route("/api/builds/checks/{check_id}", get(get_check_report))
+        .route("/api/recommendations", post(recommend_build))
+        .route(
+            "/api/recommendations/{recommendation_id}",
+            get(get_recommendation_report),
+        )
+        .route(
+            "/api/recommendations/{recommendation_id}/export",
+            get(export_recommendation),
+        )
         .route("/api/{*rest}", any(api_not_found))
         .layer(DefaultBodyLimit::max(11 * 1024 * 1024))
         .layer(TraceLayer::new_for_http())

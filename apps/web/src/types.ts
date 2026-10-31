@@ -277,3 +277,144 @@ export interface ApiErrorBody {
     lots?: number;
   };
 }
+
+export type RecommendStatus = "ok" | "no_solution" | "search_limited";
+
+export interface RecommendRequest {
+  snapshotId: string;
+  budgetMinor: number;
+  currency: string;
+  useCase: string;
+  inventoryOnly: boolean;
+  lockedSkus: string[];
+  excludedSkus: string[];
+}
+
+export interface RecommendationRequestEcho {
+  budgetMinor: number;
+  currency: string;
+  useCase: string;
+  inventoryOnly: boolean;
+  lockedSkus: string[];
+  excludedSkus: string[];
+}
+
+export interface CandidatePart {
+  recordId: string;
+  sku: string;
+  category: string;
+  model: string;
+  quantity: number;
+  owned: boolean;
+  unitPriceMinor: number;
+  lineTotalMinor: number;
+  available: number;
+}
+
+export interface StockLine {
+  sku: string;
+  category: string;
+  used: number;
+  available: number;
+  remaining: number;
+  owned: boolean;
+}
+
+export interface ScoreDimension {
+  key: string;
+  label: string;
+  available: boolean;
+  value: number | null;
+  weight: number;
+  basis: string;
+}
+
+export interface ScoreBreakdown {
+  total: number;
+  confidence: string;
+  dimensions: ScoreDimension[];
+}
+
+export interface AlternativePart {
+  category: string;
+  sku: string;
+  model: string;
+  lineTotalMinor: number;
+  reason: string;
+  detail: string;
+}
+
+export interface Candidate {
+  rank: number;
+  objective: string;
+  label: string;
+  parts: CandidatePart[];
+  totalMinor: number;
+  budgetDeltaMinor: number;
+  stock: StockLine[];
+  unitsFromStock: number;
+  ownedUnits: number;
+  overallStatus: Verdict;
+  completeness: CompletenessStatus;
+  checkReportId: string;
+  checkSummary: CheckSummary;
+  unknownFollowUps: string[];
+  scores: ScoreBreakdown;
+  reasons: string[];
+  alternatives: AlternativePart[];
+  check: CheckReport;
+}
+
+export interface Exclusion {
+  sku: string;
+  category: string;
+  model: string;
+  reason: string;
+  detail: string;
+}
+
+export interface Blocker {
+  code: string;
+  category: string | null;
+  sku: string | null;
+  detail: string;
+}
+
+export interface NoSolution {
+  binding: string;
+  headline: string;
+  explanation: string;
+  blockers: Blocker[];
+  adjustable: string[];
+  minimumBuildMinor: number | null;
+  budgetShortfallMinor: number | null;
+}
+
+export interface SearchStats {
+  limit: number;
+  nodesExamined: number;
+  leavesEvaluated: number;
+  validBuilds: number;
+  limited: boolean;
+  method: string;
+}
+
+export interface RecommendationReport {
+  id: string;
+  createdAt: string;
+  snapshotId: string;
+  snapshotRevision: number;
+  ruleSetVersion: string;
+  scoringVersion: string;
+  status: RecommendStatus;
+  request: RecommendationRequestEcho;
+  currency: string;
+  budgetMinor: number;
+  candidates: Candidate[];
+  noSolution: NoSolution | null;
+  search: SearchStats;
+  exclusions: Exclusion[];
+  stale: boolean;
+  currentSnapshotRevision?: number | null;
+  staleReason?: string | null;
+}

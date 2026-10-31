@@ -92,6 +92,13 @@ const NUMERIC_SPEC_RULES: &[NumericSpecRule] = &[
         unit: "GB",
         code: "max_memory",
     },
+    NumericSpecRule {
+        // A user-provided, sourced performance proxy. It is never inferred and
+        // an absent value removes the performance dimension instead of scoring 0.
+        key: "perf_score",
+        unit: "pt",
+        code: "perf_score",
+    },
 ];
 
 const TEXT_SPEC_KEYS: &[&str] = &[

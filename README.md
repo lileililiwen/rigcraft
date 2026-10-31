@@ -1,10 +1,10 @@
 # RigCraft
 
-Open-source PC build planning from owned inventory, with traceable compatibility checks. See [requirements](requirement.md), [roadmap](ROADMAP.md), the [inventory import contract](docs/inventory-import.md) and the [compatibility contract](docs/compatibility-evidence.md).
+Open-source PC build planning from owned inventory, with traceable compatibility checks. See [requirements](requirement.md), [roadmap](ROADMAP.md), the [inventory import contract](docs/inventory-import.md), the [compatibility contract](docs/compatibility-evidence.md) and the [recommendation contract](docs/build-recommendation.md).
 
 ## Status
 
-Inventory import and correction is implemented: `/inventory` previews a UTF-8 CSV, reports every row and field error, requires explicit duplicate decisions, commits an immutable SQLite snapshot with provenance, and creates a new revision for later corrections. `/builds/check` checks a selected build against one snapshot and reports compatible, incompatible or unknown for every rule, with the compared values, provenance and a specific follow-up for each unknown. Build recommendation, BYOK planning and build diagnosis remain planned packages; deployment is disabled.
+Inventory import and correction is implemented: `/inventory` previews a UTF-8 CSV, reports every row and field error, requires explicit duplicate decisions, commits an immutable SQLite snapshot with provenance, and creates a new revision for later corrections. `/builds/check` checks a selected build against one snapshot and reports compatible, incompatible or unknown for every rule, with the compared values, provenance and a specific follow-up for each unknown. `/recommend` searches only the selected snapshot for up to three complete, budget- and stock-valid builds, labels each with its reason, score and excluded alternatives, explains the binding budget, stock or compatibility constraint when there is none, and exports versioned JSON or a Markdown plan. BYOK planning and build diagnosis remain planned packages; deployment is disabled.
 
 ## Runtime
 
@@ -28,7 +28,8 @@ npm test
 npm run build
 ```
 
-Open `http://127.0.0.1:8080/inventory` or `http://127.0.0.1:8080/builds/check` after building the Web app.
+Open `http://127.0.0.1:8080/inventory`, `http://127.0.0.1:8080/builds/check` or
+`http://127.0.0.1:8080/recommend` after building the Web app.
 
 ## Data and privacy
 
@@ -45,8 +46,12 @@ Inventory is stored in SQLite outside the repository: `RIGCRAFT_DATA_DIR`, other
 - `GET /builds/check` — select parts from a snapshot and read sourced verdicts.
 - `POST /api/builds/check` — run and persist a compatibility report.
 - `GET /api/builds/checks/{id}` — read a stored report and its staleness.
+- `GET /recommend` — enter a budget, lock or exclude parts, and compare recommended builds.
+- `POST /api/recommendations` — search, rank and persist a budget- and stock-constrained recommendation.
+- `GET /api/recommendations/{id}` — read a stored recommendation and its staleness.
+- `GET /api/recommendations/{id}/export?format=json|markdown` — download the versioned artifact.
 
-Contract shapes, error codes and provenance rules: [docs/inventory-import.md](docs/inventory-import.md) and [docs/compatibility-evidence.md](docs/compatibility-evidence.md).
+Contract shapes, error codes and provenance rules: [docs/inventory-import.md](docs/inventory-import.md), [docs/compatibility-evidence.md](docs/compatibility-evidence.md) and [docs/build-recommendation.md](docs/build-recommendation.md).
 
 ## Shared layer
 
@@ -60,6 +65,7 @@ Referencing a kit package never grants the capability it implements.
 
 - `docs/evidence/inventory-import-browser.md` — inventory browser, keyboard, responsive and privacy evidence.
 - `docs/evidence/compatibility-browser.md` — compatibility verdicts, conflicts, unknowns, stale state, keyboard, responsive, accessibility and privacy evidence.
+- `docs/evidence/recommendation-browser.md` — recommendation, comparison, export, no-solution, keyboard, responsive, accessibility and privacy evidence.
 - `docs/evidence/token-contrast.json` — measured WCAG 2.2 AA contrast.
-- `docs/evidence/inventory-lighthouse*/` and `docs/evidence/compatibility-lighthouse*/` — Lighthouse reports.
+- `docs/evidence/inventory-lighthouse*/`, `docs/evidence/compatibility-lighthouse*/` and `docs/evidence/recommendation-lighthouse*/` — Lighthouse reports.
 - `docs/assets/` — captured UI states.

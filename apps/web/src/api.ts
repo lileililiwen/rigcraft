@@ -6,6 +6,8 @@ import type {
   CommitResponse,
   CorrectionRequest,
   Preview,
+  RecommendationReport,
+  RecommendRequest,
   Snapshot,
   SnapshotSummary,
 } from "./types";
@@ -120,3 +122,60 @@ export async function getCheckReport(checkId: string): Promise<CheckReport> {
 }
 
 export const sampleCsvUrl = "/api/imports/sample";
+
+export async function recommendBuild(
+  request: RecommendRequest,
+): Promise<RecommendationReport> {
+  const response = await fetch("/api/recommendations", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(request),
+  });
+  return readResponse<RecommendationReport>(response);
+}
+
+export async function getRecommendation(id: string): Promise<RecommendationReport> {
+  const response = await fetch(`/api/recommendations/${encodeURIComponent(id)}`);
+  return readResponse<RecommendationReport>(response);
+}
+
+/** Fetch an export and hand it to the browser as a download. Returns the file name. */
+export async function downloadRecommendationExport(
+  id: string,
+  format: "json" | "markdown",
+): Promise<string> {
+  const response = await fetch(
+    `/api/recommendations/${encodeURIComponent(id)}/export?format=${format}`,
+  );
+  const text = await response.text();
+  if (!response.ok) {
+    let body: { error?: ApiErrorBody } | null = null;
+    try {
+      body = JSON.parse(text) as { error?: ApiErrorBody };
+    } catch {
+      body = null;
+    }
+    throw new ApiFailure(
+      response.status,
+      body?.error ?? {
+        code: "export_failed",
+        message: `The export returned status ${response.status}.`,
+      },
+    );
+  }
+  const disposition = response.headers.get("Content-Disposition") ?? "";
+  const match = /filename="([^"]+)"/.exec(disposition);
+  const fallback = `rigcraft-recommendation.${format === "markdown" ? "md" : "json"}`;
+  const filename = match?.[1] ?? fallback;
+  const type =
+    format === "markdown" ? "text/markdown;charset=utf-8" : "application/json";
+  const url = URL.createObjectURL(new Blob([text], { type }));
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = filename;
+  document.body.append(anchor);
+  anchor.click();
+  anchor.remove();
+  URL.revokeObjectURL(url);
+  return filename;
+}

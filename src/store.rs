@@ -9,8 +9,9 @@ use serde_json;
 
 use crate::compatibility::CheckReport;
 use crate::domain::{Preview, Record, Snapshot, SnapshotSource, SnapshotSummary, SnapshotTotals};
+use crate::recommend::RecommendationReport;
 
-const SCHEMA_VERSION: i64 = 2;
+const SCHEMA_VERSION: i64 = 3;
 
 #[derive(Debug)]
 pub enum StoreError {
@@ -295,25 +296,53 @@ impl Store {
     }
 
     pub fn insert_check_report(&self, report: &CheckReport) -> StoreResult<()> {
-        let json = serde_json::to_string(report)?;
-        self.lock().execute(
-            "INSERT INTO check_reports
-             (id, snapshot_id, snapshot_revision, rule_set_version, selection_json,
-              overall_status, completeness, checked_at, report_json)
+        insert_check_row(&self.lock(), report)
+    }
+
+    /// Persist a recommendation and the check report of every candidate in one
+    /// transaction, so a failed write never leaves a partial recommendation.
+    pub fn insert_recommendation(&self, report: &RecommendationReport) -> StoreResult<()> {
+        let mut connection = self.lock();
+        let transaction = connection.transaction()?;
+        for candidate in &report.candidates {
+            insert_check_row(&transaction, &candidate.check)?;
+        }
+        let request_json = serde_json::to_string(&report.request)?;
+        let report_json = serde_json::to_string(report)?;
+        transaction.execute(
+            "INSERT INTO recommendations
+             (id, created_at, snapshot_id, snapshot_revision, scoring_version,
+              rule_set_version, status, request_json, report_json)
              VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)",
             params![
                 report.id,
+                report.created_at,
                 report.snapshot_id,
                 report.snapshot_revision,
+                report.scoring_version,
                 report.rule_set_version,
-                serde_json::to_string(&report.selection)?,
-                serde_json::to_string(&report.overall_status)?,
-                serde_json::to_string(&report.completeness.status)?,
-                report.checked_at,
-                json,
+                serde_json::to_string(&report.status)?,
+                request_json,
+                report_json,
             ],
         )?;
+        transaction.commit()?;
         Ok(())
+    }
+
+    pub fn get_recommendation(&self, id: &str) -> StoreResult<RecommendationReport> {
+        let connection = self.lock();
+        let json = connection
+            .query_row(
+                "SELECT report_json FROM recommendations WHERE id = ?1",
+                params![id],
+                |row| row.get::<_, String>(0),
+            )
+            .optional()?;
+        match json {
+            Some(json) => Ok(serde_json::from_str(&json)?),
+            None => Err(StoreError::NotFound),
+        }
     }
 
     /// Highest revision in the correction chain rooted at `snapshot_id`.
@@ -429,6 +458,27 @@ fn insert_snapshot(connection: &Connection, snapshot: &Snapshot) -> StoreResult<
     Ok(())
 }
 
+fn insert_check_row(connection: &Connection, report: &CheckReport) -> StoreResult<()> {
+    connection.execute(
+        "INSERT INTO check_reports
+         (id, snapshot_id, snapshot_revision, rule_set_version, selection_json,
+          overall_status, completeness, checked_at, report_json)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)",
+        params![
+            report.id,
+            report.snapshot_id,
+            report.snapshot_revision,
+            report.rule_set_version,
+            serde_json::to_string(&report.selection)?,
+            serde_json::to_string(&report.overall_status)?,
+            serde_json::to_string(&report.completeness.status)?,
+            report.checked_at,
+            serde_json::to_string(report)?,
+        ],
+    )?;
+    Ok(())
+}
+
 fn migrate(connection: &Connection) -> StoreResult<()> {
     let version: i64 = connection.pragma_query_value(None, "user_version", |row| row.get(0))?;
     if version > SCHEMA_VERSION {
@@ -493,6 +543,27 @@ fn migrate(connection: &Connection) -> StoreResult<()> {
              );
              CREATE INDEX IF NOT EXISTS check_reports_snapshot
                 ON check_reports(snapshot_id, snapshot_revision, checked_at);",
+        )?;
+    }
+    if version < 3 {
+        // Recommendations reference the immutable snapshot revision and the
+        // rule/scoring versions they were computed with. Re-opening an older
+        // database adds the table without touching existing snapshots, records,
+        // previews or check reports.
+        connection.execute_batch(
+            "CREATE TABLE IF NOT EXISTS recommendations (
+                id TEXT PRIMARY KEY,
+                created_at TEXT NOT NULL,
+                snapshot_id TEXT NOT NULL REFERENCES snapshots(id),
+                snapshot_revision INTEGER NOT NULL,
+                scoring_version TEXT NOT NULL,
+                rule_set_version TEXT NOT NULL,
+                status TEXT NOT NULL,
+                request_json TEXT NOT NULL,
+                report_json TEXT NOT NULL
+             );
+             CREATE INDEX IF NOT EXISTS recommendations_snapshot
+                ON recommendations(snapshot_id, snapshot_revision, created_at);",
         )?;
     }
     if version < SCHEMA_VERSION {
@@ -615,6 +686,92 @@ mod tests {
         );
         assert!(matches!(
             store.get_check_report("missing"),
+            Err(StoreError::NotFound)
+        ));
+    }
+
+    #[test]
+    fn schema_three_preserves_v2_data_and_adds_recommendations() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("inventory.sqlite3");
+        {
+            let connection = Connection::open(&path).unwrap();
+            connection
+                .execute_batch(
+                    "CREATE TABLE snapshots (
+                        id TEXT PRIMARY KEY,
+                        created_at TEXT NOT NULL,
+                        revision INTEGER NOT NULL,
+                        parent_snapshot_id TEXT REFERENCES snapshots(id),
+                        currency TEXT NOT NULL,
+                        source_filename TEXT NOT NULL,
+                        source_sha256 TEXT NOT NULL,
+                        note TEXT,
+                        unit_count INTEGER NOT NULL,
+                        value_minor INTEGER NOT NULL
+                     );
+                     CREATE TABLE records (
+                        id TEXT PRIMARY KEY,
+                        snapshot_id TEXT NOT NULL REFERENCES snapshots(id) ON DELETE CASCADE,
+                        position INTEGER NOT NULL,
+                        lot INTEGER NOT NULL,
+                        sku TEXT NOT NULL,
+                        category TEXT NOT NULL,
+                        model_raw TEXT NOT NULL,
+                        model_normalized TEXT NOT NULL,
+                        quantity INTEGER NOT NULL,
+                        price_minor INTEGER NOT NULL,
+                        currency TEXT NOT NULL,
+                        specs_json TEXT NOT NULL,
+                        provenance_json TEXT NOT NULL,
+                        match_json TEXT NOT NULL
+                     );
+                     CREATE TABLE previews (
+                        id TEXT PRIMARY KEY,
+                        created_at TEXT NOT NULL,
+                        sha256 TEXT NOT NULL,
+                        preview_json TEXT NOT NULL,
+                        commit_hash TEXT,
+                        snapshot_id TEXT REFERENCES snapshots(id)
+                     );
+                     CREATE TABLE check_reports (
+                        id TEXT PRIMARY KEY,
+                        snapshot_id TEXT NOT NULL REFERENCES snapshots(id),
+                        snapshot_revision INTEGER NOT NULL,
+                        rule_set_version TEXT NOT NULL,
+                        selection_json TEXT NOT NULL,
+                        overall_status TEXT NOT NULL,
+                        completeness TEXT NOT NULL,
+                        checked_at TEXT NOT NULL,
+                        report_json TEXT NOT NULL
+                     );
+                     INSERT INTO snapshots
+                        (id, created_at, revision, currency, source_filename, source_sha256,
+                         unit_count, value_minor)
+                        VALUES ('legacy', '2026-10-30T00:00:00Z', 1, 'USD', 'legacy.csv',
+                                'sha', 1, 100);
+                     INSERT INTO records
+                        (id, snapshot_id, position, lot, sku, category, model_raw,
+                         model_normalized, quantity, price_minor, currency, specs_json,
+                         provenance_json, match_json)
+                        VALUES ('legacy-r1', 'legacy', 0, 1, 'LEGACY', 'cpu', 'Legacy CPU',
+                                'Legacy CPU', 1, 100, 'USD', '[]', '{}',
+                                '{\"basis\":\"lexical\",\"confidence\":\"unverified\"}');",
+                )
+                .unwrap();
+            connection.pragma_update(None, "user_version", 2).unwrap();
+        }
+        let store = Store::open(&path).unwrap();
+        let version: i64 = store
+            .lock()
+            .pragma_query_value(None, "user_version", |row| row.get(0))
+            .unwrap();
+        assert_eq!(version, SCHEMA_VERSION);
+        let snapshot = store.get_snapshot("legacy").unwrap();
+        assert_eq!(snapshot.records.len(), 1);
+        assert_eq!(snapshot.records[0].sku, "LEGACY");
+        assert!(matches!(
+            store.get_recommendation("missing"),
             Err(StoreError::NotFound)
         ));
     }
