@@ -25,6 +25,8 @@ import {
   searchSummary,
   selectedRequest,
 } from "../recommend";
+import { AssistantPanel } from "./AssistantPanel";
+import type { AppliedProposal } from "./AssistantPanel";
 import { CandidateCard } from "./CandidateCard";
 import { SiteHeader } from "./SiteHeader";
 
@@ -82,9 +84,21 @@ export function RecommendPage() {
   const statusRef = useRef<HTMLDivElement>(null);
   const errorRef = useRef<HTMLDivElement>(null);
   const resultsRef = useRef<HTMLHeadingElement>(null);
+  const budgetRef = useRef<HTMLInputElement>(null);
+  const generateRef = useRef<HTMLButtonElement>(null);
 
-  const lockedList = Object.keys(locked).filter((key) => locked[key]);
-  const excludedList = Object.keys(excluded).filter((key) => excluded[key]);
+  // The checkboxes are keyed by record id, but the API takes SKUs. Mapping here
+  // keeps the lock/exclude lists valid for the recommendation contract.
+  const skuFor = (recordId: string) =>
+    snapshot?.records.find((record) => record.id === recordId)?.sku;
+  const lockedList = Object.keys(locked)
+    .filter((key) => locked[key])
+    .map(skuFor)
+    .filter((sku): sku is string => Boolean(sku));
+  const excludedList = Object.keys(excluded)
+    .filter((key) => excluded[key])
+    .map(skuFor)
+    .filter((sku): sku is string => Boolean(sku));
   const currentSignature = requestSignature(
     snapshotId,
     budget,
@@ -261,6 +275,35 @@ export function RecommendPage() {
     }
   }
 
+  /**
+   * Apply a confirmed proposal to the deterministic form. The AI layer only
+   * fills these fields; the operator still generates the search explicitly.
+   */
+  function applyAssistant(next: AppliedProposal) {
+    setBudget(next.budgetText);
+    setUseCase(next.useCase);
+    const lockedSkus = new Set(next.lockedSkus);
+    const excludedSkus = new Set(next.excludedSkus);
+    const nextLocked: Record<string, boolean> = {};
+    const nextExcluded: Record<string, boolean> = {};
+    for (const record of snapshot?.records ?? []) {
+      nextLocked[record.id] = lockedSkus.has(record.sku);
+      nextExcluded[record.id] = excludedSkus.has(record.sku);
+    }
+    setLocked(nextLocked);
+    setExcluded(nextExcluded);
+    setProblem(null);
+    setLive(
+      `Request applied: budget ${next.budgetText} ${snapshot?.currency ?? ""}, ${next.useCase}, ${next.lockedSkus.length} locked and ${next.excludedSkus.length} excluded. Press Generate recommendations to run the deterministic search.`,
+    );
+    generateRef.current?.focus();
+  }
+
+  function skipAssistant() {
+    setLive("Continuing without AI. The deterministic form needs no key.");
+    budgetRef.current?.focus();
+  }
+
   async function runExport(format: "json" | "markdown") {
     if (!report) {
       return;
@@ -298,8 +341,10 @@ export function RecommendPage() {
           recommended; an unknown result is labelled as unverified.
         </p>
         <p className="privacy-note">
-          This runs locally with no AI provider or hardware catalog. Searches are
-          deterministic and bounded, and generating a plan never reserves stock.
+          The search runs locally with no hardware catalog. The assistant panel is
+          optional, needs your own provider key, and only proposes the request you
+          confirm. Searches are deterministic and bounded, and generating a plan
+          never reserves stock.
         </p>
 
         <div
@@ -428,137 +473,147 @@ export function RecommendPage() {
         </section>
 
         {snapshot ? (
-          <form
-            onSubmit={(event) => {
-              event.preventDefault();
-              void generate();
-            }}
-          >
-            <section className="panel" aria-labelledby="request-form-title">
-              <h2 className="panel__title" id="request-form-title">
-                2. Budget and constraints
-              </h2>
-              <div className="field-grid">
-                <div className="field">
-                  <label htmlFor="recommend-budget">
-                    Total budget ({snapshot.currency})
-                  </label>
-                  <input
-                    id="recommend-budget"
-                    inputMode="decimal"
-                    value={budget}
-                    placeholder="1200.00"
-                    aria-invalid={problem?.code === "budget_invalid" || undefined}
-                    aria-describedby="recommend-budget-hint"
-                    disabled={busy}
-                    onChange={(event) => setBudget(event.target.value)}
-                  />
-                  <p className="field__hint" id="recommend-budget-hint">
-                    One currency per batch: {snapshot.currency}. At most two decimals.
-                  </p>
+          <>
+            <AssistantPanel
+              snapshot={snapshot}
+              disabled={busy}
+              onApply={applyAssistant}
+              onSkip={skipAssistant}
+              announce={setLive}
+            />
+            <form
+              onSubmit={(event) => {
+                event.preventDefault();
+                void generate();
+              }}
+            >
+              <section className="panel" aria-labelledby="request-form-title">
+                <h2 className="panel__title" id="request-form-title">
+                  3. Budget and constraints
+                </h2>
+                <div className="field-grid">
+                  <div className="field">
+                    <label htmlFor="recommend-budget">
+                      Total budget ({snapshot.currency})
+                    </label>
+                    <input
+                      id="recommend-budget"
+                      ref={budgetRef}
+                      inputMode="decimal"
+                      value={budget}
+                      placeholder="1200.00"
+                      aria-invalid={problem?.code === "budget_invalid" || undefined}
+                      aria-describedby="recommend-budget-hint"
+                      disabled={busy}
+                      onChange={(event) => setBudget(event.target.value)}
+                    />
+                    <p className="field__hint" id="recommend-budget-hint">
+                      One currency per batch: {snapshot.currency}. At most two decimals.
+                    </p>
+                  </div>
+                  <div className="field">
+                    <label htmlFor="recommend-use-case">Primary use</label>
+                    <select
+                      id="recommend-use-case"
+                      value={useCase}
+                      disabled={busy}
+                      onChange={(event) => setUseCase(event.target.value)}
+                    >
+                      {USE_CASES.map((entry) => (
+                        <option key={entry.value} value={entry.value}>
+                          {entry.label}
+                        </option>
+                      ))}
+                    </select>
+                    <p className="field__hint">
+                      Weights: gaming favours performance, office favours cost, creation
+                      balances performance and upgrade room.
+                    </p>
+                  </div>
                 </div>
-                <div className="field">
-                  <label htmlFor="recommend-use-case">Primary use</label>
-                  <select
-                    id="recommend-use-case"
-                    value={useCase}
-                    disabled={busy}
-                    onChange={(event) => setUseCase(event.target.value)}
-                  >
-                    {USE_CASES.map((entry) => (
-                      <option key={entry.value} value={entry.value}>
-                        {entry.label}
-                      </option>
+                <p className="small muted">
+                  Inventory-only mode is on. A part is never added from outside this
+                  snapshot, and a locked part is treated as already owned: zero
+                  incremental price, no stock consumption.
+                </p>
+
+                <fieldset className="part-group">
+                  <legend>Already owned parts (locked)</legend>
+                  <p className="small muted">
+                    Optional. A locked part must exist in this snapshot; it appears in
+                    every build at zero cost.
+                  </p>
+                  <details className="details-block">
+                    <summary>
+                      Choose owned parts ({lockedList.length} selected)
+                    </summary>
+                    <ul className="part-list">
+                    {snapshot.records.map((record) => (
+                      <li className="part-option part-option--none" key={`lock-${record.id}`}>
+                        <input
+                          type="checkbox"
+                          id={`lock-${record.id}`}
+                          checked={locked[record.id] === true}
+                          disabled={busy}
+                          onChange={(event) => toggleLocked(record, event.target.checked)}
+                        />
+                        <label htmlFor={`lock-${record.id}`}>
+                          Lock <strong>{record.modelRaw}</strong>{" "}
+                          <span className="small muted">
+                            <span className="mono">{record.sku}</span> ·{" "}
+                            {record.category} · {record.quantity} in stock ·{" "}
+                            {formatMoney(record.priceMinor, record.currency)}
+                          </span>
+                        </label>
+                      </li>
                     ))}
-                  </select>
-                  <p className="field__hint">
-                    Weights: gaming favours performance, office favours cost, creation
-                    balances performance and upgrade room.
+                    </ul>
+                  </details>
+                </fieldset>
+
+                <fieldset className="part-group">
+                  <legend>Parts to exclude</legend>
+                  <p className="small muted">
+                    Optional. Excluded parts are never chosen and are listed in the
+                    report with the reason.
                   </p>
+                  <details className="details-block">
+                    <summary>
+                      Choose excluded parts ({excludedList.length} selected)
+                    </summary>
+                    <ul className="part-list">
+                    {snapshot.records.map((record) => (
+                      <li className="part-option part-option--none" key={`exclude-${record.id}`}>
+                        <input
+                          type="checkbox"
+                          id={`exclude-${record.id}`}
+                          checked={excluded[record.id] === true}
+                          disabled={busy}
+                          onChange={(event) => toggleExcluded(record, event.target.checked)}
+                        />
+                        <label htmlFor={`exclude-${record.id}`}>
+                          Exclude <strong>{record.modelRaw}</strong>{" "}
+                          <span className="small muted">
+                            <span className="mono">{record.sku}</span> · {record.category}
+                          </span>
+                        </label>
+                      </li>
+                    ))}
+                    </ul>
+                  </details>
+                </fieldset>
+
+                <div className="button-row">
+                  <button type="submit" ref={generateRef} disabled={busy || snapshotBusy}>
+                    {busy ? "Searching…" : "Generate recommendations"}
+                  </button>
+                  <span className="small muted">
+                    {lockedList.length} locked · {excludedList.length} excluded
+                  </span>
                 </div>
-              </div>
-              <p className="small muted">
-                Inventory-only mode is on. A part is never added from outside this
-                snapshot, and a locked part is treated as already owned: zero
-                incremental price, no stock consumption.
-              </p>
-
-              <fieldset className="part-group">
-                <legend>Already owned parts (locked)</legend>
-                <p className="small muted">
-                  Optional. A locked part must exist in this snapshot; it appears in
-                  every build at zero cost.
-                </p>
-                <details className="details-block">
-                  <summary>
-                    Choose owned parts ({lockedList.length} selected)
-                  </summary>
-                  <ul className="part-list">
-                  {snapshot.records.map((record) => (
-                    <li className="part-option part-option--none" key={`lock-${record.id}`}>
-                      <input
-                        type="checkbox"
-                        id={`lock-${record.id}`}
-                        checked={locked[record.id] === true}
-                        disabled={busy}
-                        onChange={(event) => toggleLocked(record, event.target.checked)}
-                      />
-                      <label htmlFor={`lock-${record.id}`}>
-                        Lock <strong>{record.modelRaw}</strong>{" "}
-                        <span className="small muted">
-                          <span className="mono">{record.sku}</span> ·{" "}
-                          {record.category} · {record.quantity} in stock ·{" "}
-                          {formatMoney(record.priceMinor, record.currency)}
-                        </span>
-                      </label>
-                    </li>
-                  ))}
-                  </ul>
-                </details>
-              </fieldset>
-
-              <fieldset className="part-group">
-                <legend>Parts to exclude</legend>
-                <p className="small muted">
-                  Optional. Excluded parts are never chosen and are listed in the
-                  report with the reason.
-                </p>
-                <details className="details-block">
-                  <summary>
-                    Choose excluded parts ({excludedList.length} selected)
-                  </summary>
-                  <ul className="part-list">
-                  {snapshot.records.map((record) => (
-                    <li className="part-option part-option--none" key={`exclude-${record.id}`}>
-                      <input
-                        type="checkbox"
-                        id={`exclude-${record.id}`}
-                        checked={excluded[record.id] === true}
-                        disabled={busy}
-                        onChange={(event) => toggleExcluded(record, event.target.checked)}
-                      />
-                      <label htmlFor={`exclude-${record.id}`}>
-                        Exclude <strong>{record.modelRaw}</strong>{" "}
-                        <span className="small muted">
-                          <span className="mono">{record.sku}</span> · {record.category}
-                        </span>
-                      </label>
-                    </li>
-                  ))}
-                  </ul>
-                </details>
-              </fieldset>
-
-              <div className="button-row">
-                <button type="submit" disabled={busy || snapshotBusy}>
-                  {busy ? "Searching…" : "Generate recommendations"}
-                </button>
-                <span className="small muted">
-                  {lockedList.length} locked · {excludedList.length} excluded
-                </span>
-              </div>
-            </section>
-          </form>
+              </section>
+            </form>
+          </>
         ) : null}
 
         {report ? (
@@ -801,7 +856,7 @@ export function RecommendPage() {
         ) : snapshot ? (
           <section className="panel" aria-labelledby="no-report-title">
             <h2 className="panel__title" id="no-report-title">
-              3. Read and compare options
+              4. Read and compare options
             </h2>
             <p>
               Enter a budget and generate. Each option states why it was chosen, its

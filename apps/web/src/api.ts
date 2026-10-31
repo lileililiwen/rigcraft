@@ -1,4 +1,7 @@
 import type {
+  AiParseRequest,
+  AiProposalResponse,
+  AiReviseRequest,
   ApiErrorBody,
   CheckReport,
   CheckRequest,
@@ -178,4 +181,27 @@ export async function downloadRecommendationExport(
   anchor.remove();
   URL.revokeObjectURL(url);
   return filename;
+}
+
+export async function parseWithAssistant(
+  request: AiParseRequest,
+): Promise<AiProposalResponse> {
+  // The key travels in this body only. It is never stored, logged or reused.
+  const response = await fetch("/api/ai/parse", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(request),
+  });
+  return readResponse<AiProposalResponse>(response);
+}
+
+export async function reviseWithAssistant(
+  request: AiReviseRequest,
+): Promise<AiProposalResponse> {
+  const response = await fetch("/api/ai/revise", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(request),
+  });
+  return readResponse<AiProposalResponse>(response);
 }

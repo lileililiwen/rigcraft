@@ -825,6 +825,72 @@ tbody tr:last-child td {
   color: var(--color-foreground);
 }
 
+
+.assistant {
+  border-left: 6px solid var(--color-primary);
+}
+
+.assistant-disclosure {
+  margin-top: var(--space-4);
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-muted);
+}
+
+.assistant-disclosure h3 {
+  margin: 0 0 var(--space-2);
+  font-size: var(--font-body);
+}
+
+.assistant-disclosure p {
+  margin: 0 0 var(--space-2);
+}
+
+.proposal {
+  margin-top: var(--space-4);
+  padding-top: var(--space-3);
+  border-top: 2px solid var(--color-primary);
+}
+
+.proposal-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+  gap: var(--space-3);
+  margin-top: var(--space-3);
+}
+
+.proposal-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-background);
+}
+
+.proposal-field__label {
+  margin: 0;
+  font-weight: 600;
+}
+
+.proposal-field__value {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.proposal-parts {
+  margin-top: var(--space-3);
+  padding-top: var(--space-2);
+  border-top: 1px solid var(--color-border);
+}
+
+.proposal-parts legend {
+  font-size: var(--font-body);
+  font-weight: 700;
+}
+
 @media (max-width: 760px) {
   .candidate {
     padding: var(--space-3);

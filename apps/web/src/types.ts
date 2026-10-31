@@ -418,3 +418,81 @@ export interface RecommendationReport {
   currentSnapshotRevision?: number | null;
   staleReason?: string | null;
 }
+
+export type AiFieldSource = "sentence" | "snapshot" | "default" | "unresolved";
+
+export interface ProposedField<T> {
+  value: T | null;
+  source: AiFieldSource;
+  excerpt?: string;
+  note?: string;
+}
+
+export interface AiProposal {
+  budgetMinor: ProposedField<number>;
+  currency: ProposedField<string>;
+  useCase: ProposedField<string>;
+  inventoryOnly: ProposedField<boolean>;
+  lockedSkus: ProposedField<string[]>;
+  excludedSkus: ProposedField<string[]>;
+}
+
+export interface AiAmbiguity {
+  field: string;
+  code: string;
+  message: string;
+}
+
+export interface AiPromptScope {
+  sentence: boolean;
+  currency: boolean;
+  useCases: string[];
+  inventoryFields: string[];
+  inventoryRecords: number;
+}
+
+export interface AiProviderIdentity {
+  kind: string;
+  baseUrl: string;
+  model: string;
+}
+
+export interface AiFieldChange {
+  field: string;
+  from: unknown;
+  to: unknown;
+}
+
+export interface AiProposalResponse {
+  mode: string;
+  promptVersion: string;
+  provider: AiProviderIdentity;
+  proposal: AiProposal;
+  ambiguities: AiAmbiguity[];
+  ignoredFields: string[];
+  sent: AiPromptScope;
+  confirmRequired: boolean;
+  request?: RecommendRequest | null;
+  diff?: AiFieldChange[] | null;
+}
+
+export interface AiParseRequest {
+  text: string;
+  snapshotId: string;
+  apiKey: string;
+  baseUrl: string;
+  model: string;
+  includeInventorySummary: boolean;
+}
+
+export interface AiCurrentRequest {
+  budgetMinor: number | null;
+  currency: string | null;
+  useCase: string | null;
+  lockedSkus: string[];
+  excludedSkus: string[];
+}
+
+export interface AiReviseRequest extends AiParseRequest {
+  current: AiCurrentRequest;
+}

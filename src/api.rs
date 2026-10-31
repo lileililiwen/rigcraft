@@ -14,6 +14,11 @@ use tower_http::services::ServeDir;
 use tower_http::trace::TraceLayer;
 use uuid::Uuid;
 
+use crate::ai::{
+    build_prompt, field_changes, interpret, provider, require_key, revised_request,
+    validate_provider_url, validate_text, AiProposalResponse, BuiltPrompt, ParseRequest,
+    ProviderAdapter, ProviderIdentity, ReviseRequest,
+};
 use crate::commit::{
     build_correction, build_records, decision_hash, snapshot_from_preview, CommitRequest,
     CommitResponse, CorrectionRequest,
@@ -31,11 +36,23 @@ use crate::store::{CommitOutcome, Store, StoreError};
 pub struct AppState {
     pub store: Arc<Store>,
     pub web_dir: PathBuf,
+    /// The single provider seam. `AppState::new` installs the real
+    /// OpenAI-compatible adapter; tests and offline evidence replace it.
+    pub provider: Arc<dyn ProviderAdapter>,
 }
 
 impl AppState {
     pub fn new(store: Arc<Store>, web_dir: PathBuf) -> Self {
-        Self { store, web_dir }
+        Self {
+            store,
+            web_dir,
+            provider: Arc::new(provider::OpenAiCompatibleProvider),
+        }
+    }
+
+    pub fn with_provider(mut self, provider: Arc<dyn ProviderAdapter>) -> Self {
+        self.provider = provider;
+        self
     }
 }
 
@@ -465,6 +482,158 @@ async fn export_recommendation(
     Ok(response)
 }
 
+struct Prepared {
+    snapshot: Option<Snapshot>,
+    snapshot_id: String,
+    text: String,
+    prompt: BuiltPrompt,
+    completion: provider::CompletionRequest,
+    identity: ProviderIdentity,
+}
+
+/// Validate the transport fields, load the snapshot and build the bounded
+/// prompt. Nothing leaves the machine here.
+fn prepare(state: &AppState, request: &ParseRequest) -> Result<Prepared, ApiError> {
+    let text = validate_text(&request.text)?;
+    let api_key = require_key(&request.api_key)?;
+    let base_url = validate_provider_url(&request.base_url)?;
+    let model = request.model.trim();
+    if model.is_empty() {
+        return Err(ApiError::bad_request(
+            "ai_model_required",
+            "Enter the provider model name, or use the deterministic form below.",
+        )
+        .with_field("model"));
+    }
+    let snapshot = if request.snapshot_id.trim().is_empty() {
+        None
+    } else {
+        Some(load_snapshot(state, request.snapshot_id.trim())?)
+    };
+    let prompt = build_prompt(
+        &text,
+        snapshot.as_ref(),
+        request.include_inventory_summary,
+        model,
+    )?;
+    let endpoint = format!("{base_url}/chat/completions");
+    let identity = ProviderIdentity {
+        kind: state.provider.kind().to_string(),
+        base_url,
+        model: model.to_string(),
+    };
+    Ok(Prepared {
+        snapshot_id: request.snapshot_id.trim().to_string(),
+        snapshot,
+        text,
+        completion: provider::CompletionRequest {
+            endpoint,
+            model: model.to_string(),
+            api_key,
+            body: prompt.body.clone(),
+        },
+        prompt,
+        identity,
+    })
+}
+
+async fn call_provider(
+    state: &AppState,
+    completion: provider::CompletionRequest,
+) -> Result<String, ApiError> {
+    let adapter = state.provider.clone();
+    let joined = tokio::task::spawn_blocking(move || adapter.complete(&completion))
+        .await
+        .map_err(|_| ApiError::internal("The provider call could not be scheduled."))?;
+    joined.map_err(provider::ProviderFailure::into_api_error)
+}
+
+fn interpretation_response(
+    prepared: &Prepared,
+    interpretation: crate::ai::Interpretation,
+    diff: Option<Vec<crate::ai::FieldChange>>,
+    request: Option<RecommendRequest>,
+) -> AiProposalResponse {
+    AiProposalResponse {
+        mode: "provider".to_string(),
+        prompt_version: crate::ai::PROMPT_VERSION.to_string(),
+        provider: prepared.identity.clone(),
+        proposal: interpretation.proposal,
+        ambiguities: interpretation.ambiguities,
+        ignored_fields: interpretation.ignored_fields,
+        sent: prepared.prompt.scope.clone(),
+        confirm_required: true,
+        request,
+        diff,
+    }
+}
+
+async fn ai_parse(
+    State(state): State<AppState>,
+    Json(request): Json<ParseRequest>,
+) -> Result<Json<AiProposalResponse>, ApiError> {
+    let prepared = prepare(&state, &request)?;
+    let reply = call_provider(&state, prepared.completion.clone()).await?;
+    let content =
+        provider::extract_content(&reply).map_err(provider::ProviderFailure::into_api_error)?;
+    let interpretation = interpret(
+        &content,
+        &prepared.text,
+        prepared.snapshot.as_ref(),
+        &prepared.snapshot_id,
+        &prepared.prompt.included_skus,
+    )?;
+    // A parse never runs a search, mutates a snapshot or persists anything.
+    tracing::info!(
+        operation = "ai_parse",
+        inventory_records = prepared.prompt.scope.inventory_records,
+        "ai interpretation requested"
+    );
+    let proposed = interpretation.request.clone();
+    Ok(Json(interpretation_response(
+        &prepared,
+        interpretation,
+        None,
+        proposed,
+    )))
+}
+
+async fn ai_revise(
+    State(state): State<AppState>,
+    Json(request): Json<ReviseRequest>,
+) -> Result<Json<AiProposalResponse>, ApiError> {
+    let parse = request.as_parse();
+    let prepared = prepare(&state, &parse)?;
+    let reply = call_provider(&state, prepared.completion.clone()).await?;
+    let content =
+        provider::extract_content(&reply).map_err(provider::ProviderFailure::into_api_error)?;
+    let interpretation = interpret(
+        &content,
+        &prepared.text,
+        prepared.snapshot.as_ref(),
+        &prepared.snapshot_id,
+        &prepared.prompt.included_skus,
+    )?;
+    let diff = field_changes(&interpretation.proposal, &request.current);
+    let applied = revised_request(
+        &interpretation.proposal,
+        &request.current,
+        &prepared.snapshot_id,
+    );
+    tracing::info!(
+        operation = "ai_revise",
+        inventory_records = prepared.prompt.scope.inventory_records,
+        changed = diff.len(),
+        "ai interpretation requested"
+    );
+    Ok(Json(interpretation_response(
+        &prepared,
+        interpretation,
+        Some(diff),
+        applied,
+    )))
+}
+
 async fn api_not_found() -> Response {
     ApiError::not_found("route_not_found", "This API route does not exist.").into_response()
 }
@@ -501,6 +670,8 @@ pub fn build_router(state: AppState) -> Router {
             "/api/recommendations/{recommendation_id}/export",
             get(export_recommendation),
         )
+        .route("/api/ai/parse", post(ai_parse))
+        .route("/api/ai/revise", post(ai_revise))
         .route("/api/{*rest}", any(api_not_found))
         .layer(DefaultBodyLimit::max(11 * 1024 * 1024))
         .layer(TraceLayer::new_for_http())

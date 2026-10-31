@@ -1,6 +1,7 @@
 //! RigCraft inventory service: versioned private inventory with provenance and
 //! sourced, three-state compatibility verdicts.
 
+pub mod ai;
 pub mod api;
 pub mod commit;
 pub mod compatibility;

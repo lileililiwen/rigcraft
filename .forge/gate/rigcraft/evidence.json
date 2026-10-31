@@ -4,7 +4,7 @@
   "runtime": "forge",
   "profile": "full",
   "runtime_version": "forge 0.1.1",
-  "revision": "99583ae1f8574ffc50e129662cb8981e74a3a50b",
+  "revision": "24cd050590b339d41481c0e28e3f2279244148e7",
   "manifest_digest": "sha256:88b43c9d70487a99",
   "rule_pack_version": "workspace-governance@1",
   "aggregate": "passed",
@@ -12,7 +12,7 @@
     {
       "id": "build",
       "state": "pass",
-      "note": "diagnostic: Compiling rigcraft v0.1.0 (<project>)\n    Finished `dev` profile [unoptimized + debuginfo] target(s) in 1.61s\nmbx[cache]: 0 hits, 0 misses, 1 not looked up, 2 incremental; 0 B downloaded, 0 B uploaded, 0 B stored locally\nmbx[savings]: 129.8 GiB logical of old files removed to date. the b…[truncated]"
+      "note": "diagnostic: Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.06s"
     },
     {
       "id": "governance-quality",
@@ -36,24 +36,24 @@
     {
       "id": "security",
       "state": "pass",
-      "note": "diagnostic: Fetching advisory database from `https://github.com/RustSec/advisory-db.git`\n      Loaded 1395 security advisories (from /home/paul/.cargo/advisory-db)\n    Updating crates.io index\n    Scanning Cargo.lock for vulnerabilities (126 crate dependencies)"
+      "note": "diagnostic: Fetching advisory database from `https://github.com/RustSec/advisory-db.git`\n      Loaded 1395 security advisories (from /home/paul/.cargo/advisory-db)\n    Updating crates.io index\n    Scanning Cargo.lock for vulnerabilities (155 crate dependencies)"
     },
     {
       "id": "source-file-size",
       "state": "pass",
-      "note": "diagnostic: evaluated 17 of 17 candidate file(s); maximum 1000 physical line(s)"
+      "note": "diagnostic: evaluated 20 of 20 candidate file(s); maximum 1000 physical line(s)"
     },
     {
       "id": "tests",
       "state": "pass",
-      "note": "diagnostic: running 42 tests\ntest compatibility::tests::conflict_beats_a_separate_unknown ... ok\ntest commit::tests::hash_is_stable_for_reordered_requests ... ok\ntest commit::tests::accepting_all_sample_rows_builds_records ... ok\ntest commit::tests::corrections_version_the_old_snapshot ... ok\ntest c…[truncated]"
+      "note": "diagnostic: running 48 tests\ntest ai::tests::a_missing_key_names_the_deterministic_flow ... ok\ntest ai::tests::a_secret_key_never_prints_its_value ... ok\ntest ai::tests::an_oversized_or_empty_sentence_is_refused ... ok\ntest ai::tests::provider_urls_are_https_or_loopback_http ... ok\ntest ai::tests::a…[truncated]"
     },
     {
       "id": "ui-conformance",
       "state": "pass",
-      "note": "diagnostic: note rigcraft: content rules read 16 of 24 UI file(s): only files inside the declared ui.scope.roots are opened\n  note rigcraft: token source declares 17 colour literal(s); the comparison runs through dotnet-platform-libs/ui/scripts/lib/token-model.mjs, not a Python copy\nPASS: rigcraft u…[truncated]"
+      "note": "diagnostic: note rigcraft: content rules read 18 of 28 UI file(s): only files inside the declared ui.scope.roots are opened\n  note rigcraft: token source declares 17 colour literal(s); the comparison runs through dotnet-platform-libs/ui/scripts/lib/token-model.mjs, not a Python copy\nPASS: rigcraft u…[truncated]"
     }
   ],
-  "observed_at": "2026-10-31T09:48:49Z",
+  "observed_at": "2026-10-31T10:31:26Z",
   "dry_run": false
 }

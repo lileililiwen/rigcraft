@@ -462,4 +462,83 @@ describe("recommendation page", () => {
       fetchMock.mock.calls.some(([url]) => String(url) === "/api/recommendations"),
     ).toBe(false);
   });
+  it("applies a confirmed assistant proposal and then runs the deterministic search", async () => {
+    const bodies: unknown[] = [];
+    installFetch(async (url, init) => {
+      if (url === "/api/inventory/snapshots") {
+        return jsonResponse([summary]);
+      }
+      if (url === "/api/inventory/snapshots/snap-r1") {
+        return jsonResponse(snapshot);
+      }
+      if (url === "/api/ai/parse") {
+        return jsonResponse({
+          mode: "provider",
+          promptVersion: "ai-parse-v1",
+          provider: { kind: "mock", baseUrl: "http://127.0.0.1:9999/v1", model: "mock" },
+          proposal: {
+            budgetMinor: { value: 200000, source: "sentence", excerpt: "2000" },
+            currency: { value: "USD", source: "snapshot" },
+            useCase: { value: "office", source: "sentence", excerpt: "office" },
+            inventoryOnly: { value: true, source: "default" },
+            lockedSkus: { value: ["FIX-CPU"], source: "sentence", excerpt: "FIX-CPU" },
+            excludedSkus: { value: [], source: "default" },
+          },
+          ambiguities: [],
+          ignoredFields: [],
+          sent: {
+            sentence: true,
+            currency: true,
+            useCases: ["gaming", "office", "creation"],
+            inventoryFields: [],
+            inventoryRecords: 0,
+          },
+          confirmRequired: true,
+        });
+      }
+      if (url === "/api/recommendations" && init?.method === "POST") {
+        bodies.push(JSON.parse(String(init.body)));
+        return jsonResponse(report());
+      }
+      return jsonResponse({ error: { code: "unexpected", message: url } }, 500);
+    });
+    const user = userEvent.setup();
+    render(<RecommendPage />);
+
+    await screen.findByLabelText("Total budget (USD)");
+    await user.type(screen.getByLabelText("Provider key"), "sk-page-test-only");
+    await user.type(
+      screen.getByLabelText("Provider base URL"),
+      "http://127.0.0.1:9999/v1",
+    );
+    await user.type(screen.getByLabelText("Model name"), "mock");
+    await user.type(
+      screen.getByLabelText("Your sentence"),
+      "a 2000 office build, keep FIX-CPU",
+    );
+    await user.click(screen.getByLabelText(/I understand this sends my sentence/));
+    await user.click(screen.getByRole("button", { name: "Interpret sentence" }));
+    await screen.findByRole("heading", { name: "Proposed request — review and confirm" });
+    await user.click(screen.getByRole("button", { name: "Confirm and apply to the form" }));
+
+    await waitFor(() =>
+      expect(screen.getByLabelText("Total budget (USD)")).toHaveValue("2000.00"),
+    );
+    expect(screen.getByLabelText("Primary use")).toHaveValue("office");
+
+    await user.click(screen.getByRole("button", { name: "Generate recommendations" }));
+    expect(await screen.findByRole("heading", { name: "Recommended builds" })).toBeInTheDocument();
+    if (bodies.length !== 1) {
+      throw new Error(`expected one recommendation request, received ${bodies.length}`);
+    }
+    expect(bodies[0]).toMatchObject({
+      snapshotId: "snap-r1",
+      budgetMinor: 200000,
+      currency: "USD",
+      useCase: "office",
+      lockedSkus: ["FIX-CPU"],
+      excludedSkus: [],
+      inventoryOnly: true,
+    });
+  });
 });

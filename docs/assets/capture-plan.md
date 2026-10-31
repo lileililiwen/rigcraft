@@ -56,8 +56,31 @@ Wait for the page's stable ready state, then capture a state only after the live
 | `recommendation-compare-mobile.png` | `/recommend` | 390×844 | Comparison rows stacked as labelled cards |
 | `recommendation-no-solution-mobile.png` | `/recommend` | 390×844 | Binding constraint, blockers and adjustments |
 
-Details, commands, keyboard results, measured contrast and privacy review: `docs/evidence/inventory-import-browser.md`, `docs/evidence/compatibility-browser.md` and `docs/evidence/recommendation-browser.md`. Measured token contrast: `docs/evidence/token-contrast.json`. Lighthouse reports: `docs/evidence/inventory-lighthouse*/`, `docs/evidence/compatibility-lighthouse*/` and `docs/evidence/recommendation-lighthouse*/`.
+### BYOK planning captures (2026-10-31)
+
+Captured against a loopback OpenAI-compatible stub (`scripts/mock-openai-provider.py`); no real provider and no real key were used.
+
+| Capture | Route | Viewport | Condition |
+| --- | --- | --- | --- |
+| `byok-no-key-desktop.png` | `/recommend` | 1440×900 | No key configured; parse disabled with the reason |
+| `byok-consent-desktop.png` | `/recommend` | 1440×900 | Transport fields and sentence filled, consent unticked |
+| `byok-panel-desktop.png` | `/recommend` | 1440×900 | Assistant panel in the proposal state |
+| `byok-proposal-desktop.png` | `/recommend` | 1440×900 | Proposed request with per-field sources |
+| `byok-proposal-edited-desktop.png` | `/recommend` | 1440×900 | Budget edited; source line marks `· Edited by you` |
+| `byok-confirmed-desktop.png` | `/recommend` | 1440×900 | Confirmed; values applied and focus on Generate |
+| `byok-results-desktop.png` | `/recommend` | 1440×900 | Deterministic results after the confirmed request |
+| `byok-results-options-desktop.png` | `/recommend` | 1440×900 | Results region with the locked part at zero cost |
+| `byok-provider-error-desktop.png` | `/recommend` | 1440×900 | Provider HTTP 500 alert with retry and continue |
+| `byok-ambiguity-desktop.png` | `/recommend` | 1440×900 | Untraceable budget marked `! Needs confirmation` |
+| `byok-no-key-no-solution-desktop.png` | `/recommend` | 1440×900 | No-key journey, budget no-solution |
+| `byok-no-key-results-desktop.png` | `/recommend` | 1440×900 | No-key journey, three compatible options |
+| `byok-no-key-form-mobile.png` | `/recommend` | 390×844 | Assistant panel stacked, no overflow |
+| `byok-ambiguity-mobile.png` | `/recommend` | 390×844 | Proposal cards and ambiguity block stacked |
+| `byok-no-key-results-mobile.png` | `/recommend` | 390×844 | Option cards stacked, no overflow |
+| `byok-results-mobile.png` | `/recommend` | 390×844 | Results after the no-key journey |
+
+Details, commands, keyboard results, measured contrast and privacy review: `docs/evidence/inventory-import-browser.md`, `docs/evidence/compatibility-browser.md`, `docs/evidence/recommendation-browser.md` and `docs/evidence/byok-planning-browser.md`. Measured token contrast: `docs/evidence/token-contrast.json`. Lighthouse reports: `docs/evidence/inventory-lighthouse*/`, `docs/evidence/compatibility-lighthouse*/`, `docs/evidence/recommendation-lighthouse*/` and `docs/evidence/byok-lighthouse*/`.
 
 ## Refresh rule
 
-Refresh these captures after any change to `/inventory`, `/builds/check`, `/recommend`, the shared tokens, the import, check or recommendation API, the compatibility rules, the scoring version, or the rendered states. A capture that names an older revision is historical evidence, not current evidence.
+Refresh these captures after any change to `/inventory`, `/builds/check`, `/recommend`, the shared tokens, the import, check, recommendation or AI plan/revision API, the compatibility rules, the scoring version, the interpretation contract or the rendered states. A capture that names an older revision is historical evidence, not current evidence.
