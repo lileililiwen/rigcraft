@@ -4,11 +4,24 @@
 
 current_spec: none
 
-`requirement.md` is the product baseline. Inventory import and provenance is implemented, archived and tested: `/inventory` previews UTF-8 CSV, reports field-coded row errors, requires explicit duplicate decisions, commits immutable SQLite snapshots with per-field provenance, and creates new revisions for corrections. Compatibility checking, recommendation, BYOK planning and build diagnosis remain unimplemented packages. Deployment remains disabled.
+`requirement.md` is the product baseline. Inventory import and provenance is implemented, archived and tested: `/inventory` previews UTF-8 CSV, reports field-coded row errors, requires explicit duplicate decisions, commits immutable SQLite snapshots with per-field provenance, and creates new revisions for corrections. Evidence-backed compatibility is implemented and archived: `/builds/check` returns compatible, incompatible or unknown per versioned rule with compared values, provenance, specific unknown follow-ups, and revision-bound persisted reports that become stale. Recommendation, BYOK planning and build diagnosis remain unimplemented packages. Deployment remains disabled.
 
 ## Next action
 
-Select `evidence-backed-compatibility` only when implementation is requested. Set `current_spec: evidence-backed-compatibility` before work, complete and archive that one package, then stop. The dependency map remains in `ROADMAP.md`.
+Select `inventory-build-recommendation` only when implementation is requested. Set `current_spec: inventory-build-recommendation` before work, complete and archive that one package, then stop. The dependency map remains in `ROADMAP.md`.
+
+## Compatibility implementation evidence (2026-10-31, commit `2415aac`)
+
+- `cargo fmt --all -- --check` — pass. `cargo clippy --all-targets --all-features -- -D warnings` — pass.
+- `cargo test` — pass: 56 tests (38 unit, 10 inventory HTTP, 8 compatibility HTTP). Coverage includes each rule's pass/conflict/unknown path, conflict-over-unknown composition, incomplete-build unknown, selection validation, stable error codes, persisted report round-trip, chain-revision staleness, and SPA deep-link status.
+- `npm run check` — pass (15 measured token pairs + TypeScript). `npm test` — pass: 19 Vitest tests. `npm run build` — pass.
+- `./verify-local.sh` — pass (Cargo fmt/clippy/test, `npm ci`, check, typecheck, test). The script now carries an execute bit, so the README command runs as written.
+- `node scripts/check-openspec-change-names.mjs` — pass. `openspec validate --all --strict` — 5 passed, 0 failed. Archived with `openspec archive evidence-backed-compatibility --yes`; `openspec/specs/compatibility-evidence/spec.md` exists with a written Purpose.
+- Full Gate `/home/paul/code/forge/target/debug/forge gate . --profile full` — aggregate passed, 9 checks (build, security, governance-quality, placeholder, product-code-boundary, repository, source-file-size, tests, ui-conformance). The Gate labels the working-tree base revision `0418f7a08727`; its persisted evidence is `.forge/gate/rigcraft/evidence.json` and the implementation is commit `2415aac`. A first Gate run failed source-file-size (two files above 1000 lines); production/test code was split into `src/compatibility/{mod,rules}.rs` and `src/domain/specs.rs` before the passing run.
+- Browser evidence (Chrome DevTools MCP, production build, 1440×900 and 390×844): `docs/evidence/compatibility-browser.md`, captures in `docs/assets/compatibility-*.png`. Proved compatible (14 rules), incompatible (9 named conflicts), unknown (BIOS and radiator follow-ups), stale-after-edit, offline retry, empty inventory, keyboard radio/quantity path, and no horizontal overflow (`scrollWidth === clientWidth === 390`).
+- Accessibility: Lighthouse accessibility 100 with 0 failing audits on desktop and mobile (`docs/evidence/compatibility-lighthouse*/report.json`); measured contrast in `docs/evidence/token-contrast.json` (lowest new pair 5.46:1 for the incompatible badge).
+- Contract and persistence: `docs/compatibility-evidence.md`. `POST /api/builds/check`, `GET /api/builds/checks/{id}`, rule set `compat-rules-v1`, SQLite schema `2` with `check_reports(snapshot_id, snapshot_revision, rule_set_version, selection_json, report_json)`. Staleness follows `parentSnapshotId` children, not a re-read of the immutable snapshot row. Fixtures in `tests/fixtures/compatibility/` are synthetic and labelled `Fixture`.
+- Not done: a checked-in Playwright suite. The browser journey, responsive and accessibility checks were run through Chrome DevTools MCP, with Vitest covering component and state behaviour; this limitation is recorded in the evidence document.
 
 ## Inventory implementation evidence (2026-10-31, commit `ec0f123`)
 
