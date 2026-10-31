@@ -1,0 +1,7 @@
+sku,category,model,quantity,price,currency,specs
+CPU-1,cpu,AMD Ryzen 5 7600,2,199.00,USD,socket=AM5;tdp=65W
+CPU-1,cpu,AMD Ryzen 5 7600,1,199.00,USD,socket=AM5;tdp=65W
+RAM-1,ram,Kingston Fury 16GB Kit,abc,49.00,USD,memory_type=DDR5
+GPU-1,gpu,NVIDIA GeForce RTX 4070,1,,USD,length=304mm
+PSU-1,psu,Corsair RM750e,1,99.00,EUR,wattage=750W
+CASE-1,case,Corsair 4000D Airflow,1,79.00,USD,form_factor=ATX

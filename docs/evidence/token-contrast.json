@@ -1,0 +1,141 @@
+{
+  "schemaVersion": 1,
+  "standard": "WCAG 2.2 AA",
+  "source": {
+    "file": "apps/web/src/styles/vendor/tokens.css",
+    "sha256": "7ca6b7956b3f6b475254b4a5d0cf599724e4e1af5f0f88aba4fbccb9f38fc19b"
+  },
+  "pairs": [
+    {
+      "name": "Body text on page",
+      "foreground": "--color-foreground",
+      "background": "--color-background",
+      "resolvedForeground": "#f8fafc",
+      "resolvedBackground": "#0f172a",
+      "ratio": 17.06,
+      "required": 4.5,
+      "pass": true
+    },
+    {
+      "name": "Body text on surface",
+      "foreground": "--color-foreground",
+      "background": "--color-surface",
+      "resolvedForeground": "#f8fafc",
+      "resolvedBackground": "#334155",
+      "ratio": 9.9,
+      "required": 4.5,
+      "pass": true
+    },
+    {
+      "name": "Secondary text on page",
+      "foreground": "--color-muted-foreground",
+      "background": "--color-background",
+      "resolvedForeground": "#f1f5f9",
+      "resolvedBackground": "#0f172a",
+      "ratio": 16.3,
+      "required": 4.5,
+      "pass": true
+    },
+    {
+      "name": "Secondary text on muted",
+      "foreground": "--color-muted-foreground",
+      "background": "--color-muted",
+      "resolvedForeground": "#f1f5f9",
+      "resolvedBackground": "#334155",
+      "ratio": 9.45,
+      "required": 4.5,
+      "pass": true
+    },
+    {
+      "name": "Primary button label",
+      "foreground": "--color-on-primary",
+      "background": "--color-primary",
+      "resolvedForeground": "#0f172a",
+      "resolvedBackground": "#93c5fd",
+      "ratio": 9.9,
+      "required": 4.5,
+      "pass": true
+    },
+    {
+      "name": "Primary button hover label",
+      "foreground": "--color-on-primary",
+      "background": "--color-primary-hover",
+      "resolvedForeground": "#0f172a",
+      "resolvedBackground": "#bfdbfe",
+      "ratio": 12.56,
+      "required": 4.5,
+      "pass": true
+    },
+    {
+      "name": "Link on surface",
+      "foreground": "--color-primary",
+      "background": "--color-surface",
+      "resolvedForeground": "#93c5fd",
+      "resolvedBackground": "#334155",
+      "ratio": 5.74,
+      "required": 4.5,
+      "pass": true
+    },
+    {
+      "name": "Error text on surface",
+      "foreground": "--color-danger",
+      "background": "--color-surface",
+      "resolvedForeground": "#fca5a5",
+      "resolvedBackground": "#334155",
+      "ratio": 5.46,
+      "required": 4.5,
+      "pass": true
+    },
+    {
+      "name": "Success text on muted",
+      "foreground": "--color-success",
+      "background": "--color-muted",
+      "resolvedForeground": "#86efac",
+      "resolvedBackground": "#334155",
+      "ratio": 7.37,
+      "required": 4.5,
+      "pass": true
+    },
+    {
+      "name": "Warning text on muted",
+      "foreground": "--color-warning",
+      "background": "--color-muted",
+      "resolvedForeground": "#fcd34d",
+      "resolvedBackground": "#334155",
+      "ratio": 7.18,
+      "required": 4.5,
+      "pass": true
+    },
+    {
+      "name": "Control border on surface",
+      "foreground": "--color-border",
+      "background": "--color-surface",
+      "resolvedForeground": "#cbd5e1",
+      "resolvedBackground": "#334155",
+      "ratio": 6.97,
+      "required": 3,
+      "pass": true
+    },
+    {
+      "name": "Focus ring on page",
+      "foreground": "--focus-ring",
+      "background": "--color-background",
+      "resolvedForeground": "#bfdbfe",
+      "resolvedBackground": "#0f172a",
+      "ratio": 12.56,
+      "required": 3,
+      "pass": true
+    },
+    {
+      "name": "Focus ring on surface",
+      "foreground": "--focus-ring",
+      "background": "--color-surface",
+      "resolvedForeground": "#bfdbfe",
+      "resolvedBackground": "#334155",
+      "ratio": 7.29,
+      "required": 3,
+      "pass": true
+    }
+  ],
+  "status": "pass"
+}

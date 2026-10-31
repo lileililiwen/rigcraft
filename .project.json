@@ -6,7 +6,7 @@
   "lifecycle": "active",
   "verification": {
     "command": "cargo test",
-    "evidence_status": "planned"
+    "evidence_status": "verified"
   },
   "deployment": {
     "deployable": false,
@@ -69,10 +69,12 @@
   },
   "quality": {
     "product_roots": [
-      "src"
+      "src",
+      "apps/web/src"
     ],
     "languages": [
-      "rust"
+      "rust",
+      "typescript"
     ],
     "placeholder_threshold": 0
   },

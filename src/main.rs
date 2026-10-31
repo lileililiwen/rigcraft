@@ -1,20 +1,12 @@
-//! rigcraft: rust-web scaffold (deterministic asset 0.1.0).
+use rigcraft::{serve, Config};
 
-/// Stable greeting used by native tests.
-pub fn greeting() -> &'static str {
-    "hello from rigcraft"
-}
-
-fn main() {
-    println!("{}", greeting());
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn greeting_is_stable() {
-        assert_eq!(greeting(), "hello from rigcraft");
-    }
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    tracing_subscriber::fmt()
+        .with_env_filter(
+            tracing_subscriber::EnvFilter::try_from_default_env()
+                .unwrap_or_else(|_| "rigcraft=info,tower_http=info".into()),
+        )
+        .init();
+    serve(Config::from_env()).await
 }

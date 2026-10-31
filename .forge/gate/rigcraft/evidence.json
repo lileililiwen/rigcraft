@@ -4,7 +4,7 @@
   "runtime": "forge",
   "profile": "full",
   "runtime_version": "forge 0.1.1",
-  "revision": "8efd10f54d2000da838946b05f9d848205f545e3",
+  "revision": "f6ebf7d1daa014a2b1920e0ec81aab94c1691345",
   "manifest_digest": "sha256:88b43c9d70487a99",
   "rule_pack_version": "workspace-governance@1",
   "aggregate": "passed",
@@ -12,7 +12,7 @@
     {
       "id": "build",
       "state": "pass",
-      "note": "diagnostic: Compiling rigcraft v0.1.0 (<project>)\n    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.07s\nmbx[cache]: 0 hits, 0 misses, 1 not looked up; 0 B downloaded, 0 B uploaded, 4.3 MiB stored locally\nmbx[savings]: 2028 compilations served. ask rustc how many it remembers doing."
+      "note": "diagnostic: Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.04s"
     },
     {
       "id": "governance-quality",
@@ -36,24 +36,24 @@
     {
       "id": "security",
       "state": "pass",
-      "note": "diagnostic: Fetching advisory database from `https://github.com/RustSec/advisory-db.git`\n      Loaded 1395 security advisories (from /home/paul/.cargo/advisory-db)\n    Updating crates.io index\n    Scanning Cargo.lock for vulnerabilities (1 crate dependencies)"
+      "note": "diagnostic: Fetching advisory database from `https://github.com/RustSec/advisory-db.git`\n      Loaded 1395 security advisories (from /home/paul/.cargo/advisory-db)\n    Updating crates.io index\n    Scanning Cargo.lock for vulnerabilities (126 crate dependencies)"
     },
     {
       "id": "source-file-size",
       "state": "pass",
-      "note": "diagnostic: evaluated 1 of 1 candidate file(s); maximum 1000 physical line(s)"
+      "note": "diagnostic: evaluated 8 of 8 candidate file(s); maximum 1000 physical line(s)"
     },
     {
       "id": "tests",
       "state": "pass",
-      "note": "diagnostic: running 1 test\ntest tests::greeting_is_stable ... ok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s"
+      "note": "diagnostic: running 26 tests\ntest csv_import::tests::invalid_utf8_is_rejected ... ok\ntest csv_import::tests::duplicate_header_aliases_require_explicit_mapping ... ok\ntest csv_import::tests::missing_required_columns_are_reported_without_parsing ... ok\ntest csv_import::tests::explicit_mapping_selects_…[truncated]"
     },
     {
       "id": "ui-conformance",
       "state": "pass",
-      "note": "diagnostic: note rigcraft: content rules read 0 of 1 UI file(s): only files inside the declared ui.scope.roots are opened\n  note rigcraft: token source declares 17 colour literal(s); the comparison runs through dotnet-platform-libs/ui/scripts/lib/token-model.mjs, not a Python copy\nPASS: rigcraft ui_…[truncated]"
+      "note": "diagnostic: note rigcraft: content rules read 9 of 13 UI file(s): only files inside the declared ui.scope.roots are opened\n  note rigcraft: token source declares 17 colour literal(s); the comparison runs through dotnet-platform-libs/ui/scripts/lib/token-model.mjs, not a Python copy\nPASS: rigcraft ui…[truncated]"
     }
   ],
-  "observed_at": "2026-10-31T07:47:54Z",
+  "observed_at": "2026-10-31T08:30:14Z",
   "dry_run": false
 }

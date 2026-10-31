@@ -10,10 +10,10 @@
 
 ## Project facts
 
-- Stack: Forge `rust-web@0.1.0` Rust scaffold; edition and dependencies in `Cargo.toml`. React UI is required but absent.
-- Toolchain: Cargo; `cargo build`, `cargo test`.
-- Verify: `cargo test` (`.project.json`).
-- Layout: `src/` Rust scaffold; `scripts/` checks; `.standard/` pinned Forge pack; `docs/assets/` documentation evidence.
+- Stack: Rust 2021 Axum + SQLite service (`src/`), React/TypeScript Vite UI (`apps/web/`); dependencies in `Cargo.toml` and `apps/web/package.json`.
+- Toolchain: Cargo and Node/npm; `cargo build`, `cargo test`, `npm run build`, `npm test`.
+- Verify: `cargo test` (`.project.json`) plus `npm run check`, `npm test`, `npm run build`; `./verify-local.sh` rehearses all of them.
+- Layout: `src/` domain, API and SQLite store; `tests/` API tests and fixtures; `apps/web/` UI and Vitest tests; `scripts/` checks and contrast measurement; `.standard/` pinned Forge pack; `docs/` evidence, captures and the inventory contract.
 
 Any directory, tool, or command change updates this block in the same commit —
 an outdated facts block misleads every agent more than a missing one.

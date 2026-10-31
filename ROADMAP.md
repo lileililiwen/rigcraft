@@ -14,7 +14,7 @@ This is delivery order, not active OpenSpec changes. See `requirement.md`. Each 
 
 These packages are authored together at the user's request. Implementation remains serial: select one active package in dependency order, set `current_spec` in `HANDOFF.md`, complete and archive it, then stop.
 
-1. v0.1: confirm licensed data source, provenance and local storage; deliver inventory import and correction UI.
+1. v0.1 (implemented in `inventory-import-and-provenance`): provenance and local storage verified with user-supplied specs; inventory import and correction UI delivered. A licensed catalog source is still unconfirmed.
 2. v0.2: normalize parts and snapshots; implement three-state compatibility checks and evidence UI.
 3. v0.3: constrained recommendation, no-solution explanation, comparison and export; verify a complete browser journey without AI.
 4. Later: optional BYOK input and modification, upgrade planning and external-list diagnosis.
