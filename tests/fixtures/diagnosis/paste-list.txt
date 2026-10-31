@@ -1,0 +1,5 @@
+gpu: Fixture GeForce RTX 4070
+gpu: Mystery X9000 Adapter
+cpu: Fixture AM5 CPU 7600
+gpu: Fixture GeForce RTX 4070 Twin
+gpu: Fixture GeForce RTX 4070 Twin

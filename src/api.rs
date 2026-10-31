@@ -25,6 +25,9 @@ use crate::commit::{
 };
 use crate::compatibility::{check_build, CheckReport, CheckRequest};
 use crate::csv_import::{preview_csv, SAMPLE_CSV};
+use crate::diagnosis::{
+    diagnose, parse_list, DiagnoseRequest, DiagnosisReport, ParseListRequest, ParsedList,
+};
 use crate::domain::{preview_is_expired, Preview, Snapshot, SnapshotSummary};
 use crate::error::ApiError;
 use crate::recommend::{
@@ -482,6 +485,76 @@ async fn export_recommendation(
     Ok(response)
 }
 
+async fn parse_diagnosis_list(
+    State(state): State<AppState>,
+    Json(request): Json<ParseListRequest>,
+) -> Result<Json<ParsedList>, ApiError> {
+    let snapshot = if request.snapshot_id.trim().is_empty() {
+        None
+    } else {
+        Some(load_snapshot(&state, request.snapshot_id.trim())?)
+    };
+    Ok(Json(parse_list(snapshot.as_ref(), &request)?))
+}
+
+async fn diagnose_existing_build(
+    State(state): State<AppState>,
+    Json(request): Json<DiagnoseRequest>,
+) -> Result<Json<DiagnosisReport>, ApiError> {
+    if request.snapshot_id.trim().is_empty() {
+        return Err(ApiError::bad_request(
+            "snapshot_required",
+            "Choose an inventory snapshot first.",
+        )
+        .with_field("snapshotId"));
+    }
+    let snapshot = load_snapshot(&state, request.snapshot_id.trim())?;
+    let report = diagnose(&snapshot, &request)?;
+    state
+        .store
+        .insert_diagnosis(&report)
+        .map_err(storage_failure)?;
+    Ok(Json(report))
+}
+
+async fn get_diagnosis_report(
+    State(state): State<AppState>,
+    AxumPath(diagnosis_id): AxumPath<String>,
+) -> Result<Json<DiagnosisReport>, ApiError> {
+    let mut report = state
+        .store
+        .get_diagnosis(&diagnosis_id)
+        .map_err(|error| match error {
+            StoreError::NotFound => {
+                ApiError::not_found("diagnosis_not_found", "No build diagnosis has this ID.")
+            }
+            other => storage_failure(other),
+        })?;
+    match state
+        .store
+        .latest_chain_revision(&report.snapshot_id)
+        .map_err(storage_failure)?
+    {
+        Some(revision) => {
+            report.current_snapshot_revision = Some(revision);
+            if revision != report.snapshot_revision {
+                report.stale = true;
+                report.stale_reason = Some(format!(
+                    "The snapshot chain is now at revision {revision}; this diagnosis was made against revision {}.",
+                    report.snapshot_revision
+                ));
+            }
+        }
+        None => {
+            report.stale = true;
+            report.current_snapshot_revision = None;
+            report.stale_reason =
+                Some("The snapshot this diagnosis referenced no longer exists.".to_string());
+        }
+    }
+    Ok(Json(report))
+}
+
 struct Prepared {
     snapshot: Option<Snapshot>,
     snapshot_id: String,
@@ -670,6 +743,9 @@ pub fn build_router(state: AppState) -> Router {
             "/api/recommendations/{recommendation_id}/export",
             get(export_recommendation),
         )
+        .route("/api/diagnoses/parse", post(parse_diagnosis_list))
+        .route("/api/diagnoses", post(diagnose_existing_build))
+        .route("/api/diagnoses/{diagnosis_id}", get(get_diagnosis_report))
         .route("/api/ai/parse", post(ai_parse))
         .route("/api/ai/revise", post(ai_revise))
         .route("/api/{*rest}", any(api_not_found))

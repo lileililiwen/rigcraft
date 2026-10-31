@@ -105,6 +105,7 @@ const snapshot: Snapshot = {
 
 afterEach(() => {
   vi.unstubAllGlobals();
+  window.history.pushState({}, "", "/");
 });
 
 describe("inventory page", () => {
@@ -211,5 +212,32 @@ describe("inventory page", () => {
     await user.click(screen.getByRole("button", { name: "Retry" }));
     expect(await screen.findByRole("heading", { name: "Review import" })).toBeInTheDocument();
     expect(attempts).toBe(2);
+  });
+});
+
+describe("diagnosis route", () => {
+  it("renders the diagnosis page for /diagnose and marks the nav item", async () => {
+    window.history.pushState({}, "", "/diagnose");
+    vi.stubGlobal(
+      "fetch",
+      vi.fn((input: RequestInfo | URL) => {
+        if (String(input) === "/api/inventory/snapshots") {
+          return response([]);
+        }
+        return response({ error: { code: "unexpected", message: String(input) } }, 500);
+      }),
+    );
+    render(<App />);
+    expect(
+      await screen.findByRole("heading", {
+        level: 1,
+        name: "Diagnose an existing build",
+      }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Diagnose" })).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
+    await waitFor(() => expect(document.title).toBe("RigCraft build diagnosis"));
   });
 });

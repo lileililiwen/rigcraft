@@ -8,6 +8,10 @@ import type {
   CommitRequest,
   CommitResponse,
   CorrectionRequest,
+  DiagnoseRequest,
+  DiagnosisReport,
+  ParsedList,
+  ParseListRequest,
   Preview,
   RecommendationReport,
   RecommendRequest,
@@ -181,6 +185,33 @@ export async function downloadRecommendationExport(
   anchor.remove();
   URL.revokeObjectURL(url);
   return filename;
+}
+
+export async function parseDiagnosisList(
+  request: ParseListRequest,
+): Promise<ParsedList> {
+  const response = await fetch("/api/diagnoses/parse", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(request),
+  });
+  return readResponse<ParsedList>(response);
+}
+
+export async function diagnoseBuild(
+  request: DiagnoseRequest,
+): Promise<DiagnosisReport> {
+  const response = await fetch("/api/diagnoses", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(request),
+  });
+  return readResponse<DiagnosisReport>(response);
+}
+
+export async function getDiagnosis(id: string): Promise<DiagnosisReport> {
+  const response = await fetch(`/api/diagnoses/${encodeURIComponent(id)}`);
+  return readResponse<DiagnosisReport>(response);
 }
 
 export async function parseWithAssistant(

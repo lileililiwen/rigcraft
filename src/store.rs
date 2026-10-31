@@ -8,10 +8,11 @@ use rusqlite::{params, Connection, OptionalExtension};
 use serde_json;
 
 use crate::compatibility::CheckReport;
+use crate::diagnosis::DiagnosisReport;
 use crate::domain::{Preview, Record, Snapshot, SnapshotSource, SnapshotSummary, SnapshotTotals};
 use crate::recommend::RecommendationReport;
 
-const SCHEMA_VERSION: i64 = 3;
+const SCHEMA_VERSION: i64 = 4;
 
 #[derive(Debug)]
 pub enum StoreError {
@@ -367,6 +368,42 @@ impl Store {
         Ok(revision)
     }
 
+    /// Persist a completed diagnosis. It is derived data: no snapshot, stock or
+    /// plan state is mutated, and a failed validation never reaches this call.
+    pub fn insert_diagnosis(&self, report: &DiagnosisReport) -> StoreResult<()> {
+        let connection = self.lock();
+        connection.execute(
+            "INSERT INTO diagnoses
+             (id, created_at, snapshot_id, snapshot_revision, rule_set_version, status, report_json)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
+            params![
+                report.id,
+                report.created_at,
+                report.snapshot_id,
+                report.snapshot_revision,
+                report.rule_set_version,
+                "diagnosed",
+                serde_json::to_string(report)?,
+            ],
+        )?;
+        Ok(())
+    }
+
+    pub fn get_diagnosis(&self, id: &str) -> StoreResult<DiagnosisReport> {
+        let connection = self.lock();
+        let json = connection
+            .query_row(
+                "SELECT report_json FROM diagnoses WHERE id = ?1",
+                params![id],
+                |row| row.get::<_, String>(0),
+            )
+            .optional()?;
+        match json {
+            Some(json) => Ok(serde_json::from_str(&json)?),
+            None => Err(StoreError::NotFound),
+        }
+    }
+
     pub fn get_check_report(&self, check_id: &str) -> StoreResult<CheckReport> {
         let connection = self.lock();
         let json = connection
@@ -564,6 +601,24 @@ fn migrate(connection: &Connection) -> StoreResult<()> {
              );
              CREATE INDEX IF NOT EXISTS recommendations_snapshot
                 ON recommendations(snapshot_id, snapshot_revision, created_at);",
+        )?;
+    }
+    if version < 4 {
+        // Diagnoses are derived data: the report embeds the described build and
+        // its compatibility evidence, and references the snapshot revision it
+        // was computed against. Adding the table preserves every earlier row.
+        connection.execute_batch(
+            "CREATE TABLE IF NOT EXISTS diagnoses (
+                id TEXT PRIMARY KEY,
+                created_at TEXT NOT NULL,
+                snapshot_id TEXT NOT NULL REFERENCES snapshots(id),
+                snapshot_revision INTEGER NOT NULL,
+                rule_set_version TEXT NOT NULL,
+                status TEXT NOT NULL,
+                report_json TEXT NOT NULL
+             );
+             CREATE INDEX IF NOT EXISTS diagnoses_snapshot
+                ON diagnoses(snapshot_id, snapshot_revision, created_at);",
         )?;
     }
     if version < SCHEMA_VERSION {
@@ -772,6 +827,71 @@ mod tests {
         assert_eq!(snapshot.records[0].sku, "LEGACY");
         assert!(matches!(
             store.get_recommendation("missing"),
+            Err(StoreError::NotFound)
+        ));
+    }
+
+    #[test]
+    fn schema_four_preserves_v3_data_and_adds_diagnoses() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("inventory.sqlite3");
+        {
+            let connection = Connection::open(&path).unwrap();
+            connection
+                .execute_batch(
+                    "CREATE TABLE snapshots (
+                        id TEXT PRIMARY KEY,
+                        created_at TEXT NOT NULL,
+                        revision INTEGER NOT NULL,
+                        parent_snapshot_id TEXT REFERENCES snapshots(id),
+                        currency TEXT NOT NULL,
+                        source_filename TEXT NOT NULL,
+                        source_sha256 TEXT NOT NULL,
+                        note TEXT,
+                        unit_count INTEGER NOT NULL,
+                        value_minor INTEGER NOT NULL
+                     );
+                     CREATE TABLE records (
+                        id TEXT PRIMARY KEY,
+                        snapshot_id TEXT NOT NULL REFERENCES snapshots(id) ON DELETE CASCADE,
+                        position INTEGER NOT NULL,
+                        lot INTEGER NOT NULL,
+                        sku TEXT NOT NULL,
+                        category TEXT NOT NULL,
+                        model_raw TEXT NOT NULL,
+                        model_normalized TEXT NOT NULL,
+                        quantity INTEGER NOT NULL,
+                        price_minor INTEGER NOT NULL,
+                        currency TEXT NOT NULL,
+                        specs_json TEXT NOT NULL,
+                        provenance_json TEXT NOT NULL,
+                        match_json TEXT NOT NULL
+                     );
+                     INSERT INTO snapshots
+                        (id, created_at, revision, currency, source_filename, source_sha256,
+                         unit_count, value_minor)
+                        VALUES ('v3', '2026-10-30T00:00:00Z', 1, 'USD', 'v3.csv', 'sha', 1, 100);
+                     INSERT INTO records
+                        (id, snapshot_id, position, lot, sku, category, model_raw,
+                         model_normalized, quantity, price_minor, currency, specs_json,
+                         provenance_json, match_json)
+                        VALUES ('v3-r1', 'v3', 0, 1, 'V3', 'cpu', 'V3 CPU', 'V3 CPU', 1, 100,
+                                'USD', '[]', '{}',
+                                '{\"basis\":\"lexical\",\"confidence\":\"unverified\"}');",
+                )
+                .unwrap();
+            connection.pragma_update(None, "user_version", 3).unwrap();
+        }
+        let store = Store::open(&path).unwrap();
+        let version: i64 = store
+            .lock()
+            .pragma_query_value(None, "user_version", |row| row.get(0))
+            .unwrap();
+        assert_eq!(version, SCHEMA_VERSION);
+        let snapshot = store.get_snapshot("v3").unwrap();
+        assert_eq!(snapshot.records[0].sku, "V3");
+        assert!(matches!(
+            store.get_diagnosis("missing"),
             Err(StoreError::NotFound)
         ));
     }

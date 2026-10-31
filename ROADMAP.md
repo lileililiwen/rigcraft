@@ -12,12 +12,12 @@ This is delivery order, not active OpenSpec changes. See `requirement.md`. Each 
 | `byok-natural-language-planning` | Optional confirmed AI intent | RigCraft Rust + React | Provider adapter and assistant panel | Recommendation | Mock provider and no-key browser flows |
 | `existing-build-diagnosis` | Reuse and replacement advice | RigCraft Rust + React | Match, diagnose and review UI | Compatibility | Ambiguous match and upgrade browser flows |
 
-These packages are authored together at the user's request. Implementation remains serial: select one active package in dependency order, set `current_spec` in `HANDOFF.md`, complete and archive it, then stop.
+All five packages are implemented, archived and committed on `main`, in dependency order. A new product change starts a new OpenSpec change with its own package boundary, browser evidence and accessibility check.
 
 1. v0.1 (implemented in `inventory-import-and-provenance`): provenance and local storage verified with user-supplied specs; inventory import and correction UI delivered. A licensed catalog source is still unconfirmed.
 2. v0.2 (implemented in `evidence-backed-compatibility`): normalize parts and snapshots; three-state compatibility checks and evidence UI delivered.
 3. v0.3 (implemented in `inventory-build-recommendation`): constrained recommendation, no-solution explanation, comparison and export; the complete no-AI browser journey is verified.
-4. Later: optional BYOK input and modification, upgrade planning and external-list diagnosis.
+4. P1 (implemented in `byok-natural-language-planning` and `existing-build-diagnosis`): optional BYOK input and modification, existing-build upgrade planning and pasted external-list diagnosis.
 5. Deferred: FPS, merchant margin, live retail pricing, MCP and advanced optimization.
 
-Only a Forge scaffold and governance exist today. No release or deployment readiness is claimed.
+The five implementation packages above exist and are archived. No release or deployment readiness is claimed: deployment remains disabled in `.project.json`, and no licensed hardware catalog, live pricing or performance evidence is bundled.

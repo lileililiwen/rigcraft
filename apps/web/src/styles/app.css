@@ -979,3 +979,136 @@ tbody tr:last-child td {
     animation: none;
   }
 }
+
+.review-list {
+  display: grid;
+  gap: var(--space-3);
+  margin: var(--space-3) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.review-line {
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-background);
+}
+
+.review-line legend {
+  padding-inline: var(--space-1);
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.review-line__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+}
+
+.review-choices {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.review-choices .choice {
+  padding-block: var(--space-2);
+  border-top: 1px dashed var(--color-border);
+}
+
+.review-choices .choice label {
+  flex-wrap: wrap;
+}
+
+.manual-list {
+  margin: var(--space-3) 0 0;
+  padding-left: var(--space-6);
+}
+
+.manual-list li {
+  margin-bottom: var(--space-2);
+}
+
+.advice-group {
+  margin-top: var(--space-6);
+  padding-top: var(--space-3);
+  border-top: 2px solid var(--color-border);
+}
+
+.advice-group__title {
+  margin: 0 0 var(--space-1);
+  font-size: var(--font-body);
+}
+
+.advice-list {
+  display: grid;
+  gap: var(--space-3);
+  margin: var(--space-3) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.advice-card {
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-left: 6px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-background);
+}
+
+.advice-card--must_replace {
+  border-left-color: var(--color-danger);
+}
+
+.advice-card--should_upgrade {
+  border-left-color: var(--color-warning);
+}
+
+.advice-card--keep {
+  border-left-color: var(--color-success);
+}
+
+.advice-card__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.advice-card__part {
+  overflow-wrap: anywhere;
+}
+
+.cost-line {
+  margin-bottom: 0;
+}
+
+.plan-block {
+  margin-top: var(--space-6);
+  padding: var(--space-3);
+  border: 2px solid var(--color-primary);
+  border-radius: var(--radius-md);
+}
+
+.rule-list {
+  margin-top: var(--space-3);
+}
+
+.rule-list .rule-evidence {
+  padding-block: var(--space-2);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.rule-list .rule-evidence:last-child {
+  border-bottom: 0;
+}
+
+@media (max-width: 760px) {
+  .review-choices .choice label {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}

@@ -6,6 +6,7 @@ pub mod api;
 pub mod commit;
 pub mod compatibility;
 pub mod csv_import;
+pub mod diagnosis;
 pub mod domain;
 pub mod error;
 pub mod recommend;

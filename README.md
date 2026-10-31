@@ -1,10 +1,10 @@
 # RigCraft
 
-Open-source PC build planning from owned inventory, with traceable compatibility checks. See [requirements](requirement.md), [roadmap](ROADMAP.md), the [inventory import contract](docs/inventory-import.md), the [compatibility contract](docs/compatibility-evidence.md), the [recommendation contract](docs/build-recommendation.md) and the [BYOK planning contract](docs/ai-planning.md).
+Open-source PC build planning from owned inventory, with traceable compatibility checks. See [requirements](requirement.md), [roadmap](ROADMAP.md), the [inventory import contract](docs/inventory-import.md), the [compatibility contract](docs/compatibility-evidence.md), the [recommendation contract](docs/build-recommendation.md), the [BYOK planning contract](docs/ai-planning.md) and the [build diagnosis contract](docs/build-diagnosis.md).
 
 ## Status
 
-Inventory import and correction is implemented: `/inventory` previews a UTF-8 CSV, reports every row and field error, requires explicit duplicate decisions, commits an immutable SQLite snapshot with provenance, and creates a new revision for later corrections. `/builds/check` checks a selected build against one snapshot and reports compatible, incompatible or unknown for every rule, with the compared values, provenance and a specific follow-up for each unknown. `/recommend` searches only the selected snapshot for up to three complete, budget- and stock-valid builds, labels each with its reason, score and excluded alternatives, explains the binding budget, stock or compatibility constraint when there is none, and exports versioned JSON or a Markdown plan. Its optional assistant panel uses the operator's own provider key to turn one sentence into a proposed request with a source for every field; nothing runs until the operator confirms, the deterministic engine still re-validates every constraint, and the page is fully usable without a key. Build diagnosis remains a planned package; deployment is disabled.
+Inventory import and correction is implemented: `/inventory` previews a UTF-8 CSV, reports every row and field error, requires explicit duplicate decisions, commits an immutable SQLite snapshot with provenance, and creates a new revision for later corrections. `/builds/check` checks a selected build against one snapshot and reports compatible, incompatible or unknown for every rule, with the compared values, provenance and a specific follow-up for each unknown. `/recommend` searches only the selected snapshot for up to three complete, budget- and stock-valid builds, labels each with its reason, score and excluded alternatives, explains the binding budget, stock or compatibility constraint when there is none, and exports versioned JSON or a Markdown plan. Its optional assistant panel uses the operator's own provider key to turn one sentence into a proposed request with a source for every field; nothing runs until the operator confirms, the deterministic engine still re-validates every constraint, and the page is fully usable without a key. `/diagnose` takes a build the operator already owns — pasted lines matched to the snapshot, or parts entered by hand — and reports what must be replaced, what should be verified first and what is fine as is, with the rule evidence and cost of each; an ambiguous or unmatched line is never coerced to a nearby SKU, and a replacement plan is labelled validated only when the same compatibility engine accepts the whole upgraded build. Deployment remains disabled.
 
 ## Runtime
 
@@ -28,8 +28,9 @@ npm test
 npm run build
 ```
 
-Open `http://127.0.0.1:8080/inventory`, `http://127.0.0.1:8080/builds/check` or
-`http://127.0.0.1:8080/recommend` after building the Web app.
+Open `http://127.0.0.1:8080/inventory`, `http://127.0.0.1:8080/builds/check`,
+`http://127.0.0.1:8080/recommend` or `http://127.0.0.1:8080/diagnose` after
+building the Web app.
 
 ## Data and privacy
 
@@ -54,8 +55,12 @@ A provider key is optional and belongs to the operator. It is held in browser me
 - `GET /api/recommendations/{id}/export?format=json|markdown` — download the versioned artifact.
 - `POST /api/ai/parse` — interpret one sentence into a proposed request with a source per field (no search runs).
 - `POST /api/ai/revise` — propose a field-level revision of a confirmed request.
+- `GET /diagnose` — describe an existing build, resolve matches, and read reuse and upgrade advice.
+- `POST /api/diagnoses/parse` — parse and match a bounded pasted parts list; stores nothing.
+- `POST /api/diagnoses` — diagnose the confirmed build and persist the advice and validated plan.
+- `GET /api/diagnoses/{id}` — read a stored diagnosis and its staleness.
 
-Contract shapes, error codes and provenance rules: [docs/inventory-import.md](docs/inventory-import.md), [docs/compatibility-evidence.md](docs/compatibility-evidence.md), [docs/build-recommendation.md](docs/build-recommendation.md) and [docs/ai-planning.md](docs/ai-planning.md).
+Contract shapes, error codes and provenance rules: [docs/inventory-import.md](docs/inventory-import.md), [docs/compatibility-evidence.md](docs/compatibility-evidence.md), [docs/build-recommendation.md](docs/build-recommendation.md), [docs/ai-planning.md](docs/ai-planning.md) and [docs/build-diagnosis.md](docs/build-diagnosis.md).
 
 ## Shared layer
 
@@ -71,6 +76,7 @@ Referencing a kit package never grants the capability it implements.
 - `docs/evidence/compatibility-browser.md` — compatibility verdicts, conflicts, unknowns, stale state, keyboard, responsive, accessibility and privacy evidence.
 - `docs/evidence/recommendation-browser.md` — recommendation, comparison, export, no-solution, keyboard, responsive, accessibility and privacy evidence.
 - `docs/evidence/byok-planning-browser.md` — BYOK assistant parse → edit → confirm → deterministic result, no-key degradation, provider error, keyboard, responsive, accessibility and secret-handling evidence.
+- `docs/evidence/diagnosis-browser.md` — existing-build matching (ambiguity, miss, duplicate), reuse advice groups, validated/needs-evidence/rejected plan states, keyboard, responsive, accessibility and privacy evidence.
 - `docs/evidence/token-contrast.json` — measured WCAG 2.2 AA contrast.
-- `docs/evidence/inventory-lighthouse*/`, `docs/evidence/compatibility-lighthouse*/`, `docs/evidence/recommendation-lighthouse*/` and `docs/evidence/byok-lighthouse*/` — Lighthouse reports.
+- `docs/evidence/inventory-lighthouse*/`, `docs/evidence/compatibility-lighthouse*/`, `docs/evidence/recommendation-lighthouse*/`, `docs/evidence/byok-lighthouse*/` and `docs/evidence/diagnosis-lighthouse*/` — Lighthouse reports.
 - `docs/assets/` — captured UI states.

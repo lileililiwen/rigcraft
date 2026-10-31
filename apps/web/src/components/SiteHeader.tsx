@@ -1,4 +1,4 @@
-export type CurrentPage = "inventory" | "compatibility" | "recommend";
+export type CurrentPage = "inventory" | "compatibility" | "recommend" | "diagnose";
 
 export function SiteHeader({ current }: { current: CurrentPage }) {
   return (
@@ -8,7 +8,9 @@ export function SiteHeader({ current }: { current: CurrentPage }) {
           ? "Skip to compatibility check"
           : current === "recommend"
             ? "Skip to recommendation"
-            : "Skip to inventory"}
+            : current === "diagnose"
+              ? "Skip to build diagnosis"
+              : "Skip to inventory"}
       </a>
       <header className="site-header">
         <div className="site-header__inner">
@@ -30,6 +32,12 @@ export function SiteHeader({ current }: { current: CurrentPage }) {
               aria-current={current === "recommend" ? "page" : undefined}
             >
               Recommend
+            </a>
+            <a
+              href="/diagnose"
+              aria-current={current === "diagnose" ? "page" : undefined}
+            >
+              Diagnose
             </a>
           </nav>
         </div>

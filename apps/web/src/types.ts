@@ -275,6 +275,11 @@ export interface ApiErrorBody {
     requested?: number;
     available?: number;
     lots?: number;
+    limit?: number;
+    limitBytes?: number;
+    specCode?: string;
+    snapshotCurrency?: string;
+    requestCurrency?: string;
   };
 }
 
@@ -495,4 +500,193 @@ export interface AiCurrentRequest {
 
 export interface AiReviseRequest extends AiParseRequest {
   current: AiCurrentRequest;
+}
+
+export type MatchStatus = "matched" | "ambiguous" | "unmatched" | "invalid";
+
+export interface LineIssue {
+  code: string;
+  message: string;
+}
+
+export interface MatchCandidate {
+  sku: string;
+  category: string;
+  model: string;
+  priceMinor: number;
+  currency: string;
+  available: number;
+  coverage: number;
+  exact: boolean;
+  sharedTokens: string[];
+  extraTokens: string[];
+  missingTokens: string[];
+  provenance: Provenance | null;
+}
+
+export interface ParsedLine {
+  line: number;
+  raw: string;
+  status: MatchStatus;
+  category: string | null;
+  model: string;
+  quantity: number;
+  priceMinor: number | null;
+  issues: LineIssue[];
+  candidates: MatchCandidate[];
+  disambiguation?: string | null;
+  duplicateOf?: number | null;
+}
+
+export interface ParsedList {
+  matchVersion: string;
+  snapshotId: string;
+  currency: string;
+  lineCount: number;
+  lines: ParsedLine[];
+  limits: { maxLines: number; maxBytes: number; maxCandidates: number };
+}
+
+export interface ParseListRequest {
+  snapshotId: string;
+  text: string;
+  currency: string;
+}
+
+export type PartSource = "owned" | "snapshot";
+
+export interface BuildPartInput {
+  source: PartSource;
+  sku?: string;
+  category?: string;
+  model?: string;
+  quantity?: number;
+  specs?: string;
+  priceMinor?: number;
+}
+
+export interface DiagnoseRequest {
+  snapshotId: string;
+  currency: string;
+  build: BuildPartInput[];
+}
+
+export type AdviceAction = "must_replace" | "should_upgrade" | "keep";
+
+export interface AdviceCost {
+  currency: string;
+  keepMinor: number;
+  replacementSku: string | null;
+  replacementModel: string | null;
+  replacementMinor: number | null;
+  additionalMinor: number | null;
+  note: string;
+}
+
+export interface Advice {
+  row: number;
+  sku: string;
+  category: string;
+  model: string;
+  action: AdviceAction;
+  conditional: boolean;
+  reason: string;
+  ruleIds: string[];
+  evidence: RuleEvidence[];
+  verification?: string | null;
+  cost: AdviceCost;
+}
+
+export interface AdviceGroups {
+  mustReplace: number[];
+  shouldUpgrade: number[];
+  keep: number[];
+}
+
+export interface PlanOption {
+  row: number;
+  category: string;
+  sku: string;
+  model: string;
+  priceMinor: number;
+  status: Verdict;
+  resolves: string[];
+  ruleIds: string[];
+  followUps: string[];
+}
+
+export interface RejectedOption {
+  row: number;
+  category: string;
+  sku: string;
+  model: string;
+  priceMinor: number;
+  ruleIds: string[];
+  detail: string;
+}
+
+export interface PlanStep {
+  row: number;
+  category: string;
+  fromSku: string;
+  fromModel: string;
+  toSku: string;
+  toModel: string;
+  priceMinor: number;
+  ruleIds: string[];
+  reason: string;
+}
+
+export type PlanStatus =
+  | "not_needed"
+  | "validated"
+  | "needs_evidence"
+  | "no_option"
+  | "no_valid_plan";
+
+export interface UpgradePlan {
+  status: PlanStatus;
+  summary: string;
+  steps: PlanStep[];
+  options: PlanOption[];
+  rejected: RejectedOption[];
+  additionalCostMinor: number;
+  currency: string;
+  validation?: CheckReport | null;
+  followUps: string[];
+  evaluated: number;
+  method: string;
+}
+
+export interface DescribedPart {
+  row: number;
+  source: "description" | "snapshot";
+  sku: string;
+  category: string;
+  model: string;
+  quantity: number;
+  owned: boolean;
+  reportedPriceMinor: number | null;
+  specs: Spec[];
+  provenance: Record<string, Provenance>;
+  match: MatchInfo;
+}
+
+export interface DiagnosisReport {
+  id: string;
+  createdAt: string;
+  snapshotId: string;
+  snapshotRevision: number;
+  ruleSetVersion: string;
+  matchVersion: string;
+  adviceVersion: string;
+  currency: string;
+  build: DescribedPart[];
+  check: CheckReport;
+  advice: Advice[];
+  groups: AdviceGroups;
+  plan: UpgradePlan;
+  stale: boolean;
+  currentSnapshotRevision?: number | null;
+  staleReason?: string | null;
 }

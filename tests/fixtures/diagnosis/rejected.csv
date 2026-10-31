@@ -1,0 +1,12 @@
+sku,category,model,quantity,price,currency,specs
+FIX-REJ-CPU-AM5,cpu,Fixture AM5 CPU 7600,1,249.00,USD,socket=AM5;tdp=105W;peak_power=142W;igpu=no
+FIX-REJ-CPU-AM4,cpu,Fixture AM4 CPU 5600,1,119.00,USD,socket=AM4;tdp=65W;peak_power=88W;igpu=no
+FIX-REJ-MB-AM4-DDR4,motherboard,Fixture AM4 DDR4 Board,1,109.00,USD,socket=AM4;chipset=B550;memory_type=DDR4;form_factor=ATX;ram_slots=4;max_memory=64GB;bios_supports=Fixture AM4 CPU 5600;storage_interface=NVMe;pcie_version=PCIe4
+FIX-REJ-MB-AM5-DDR5,motherboard,Fixture AM5 DDR5 Board,1,159.00,USD,socket=AM5;chipset=B650;memory_type=DDR5;form_factor=ATX;ram_slots=4;max_memory=128GB;bios_supports=Fixture AM5 CPU 7600;storage_interface=NVMe;pcie_version=PCIe5
+FIX-REJ-RAM-DDR4,ram,Fixture DDR4 16GB Kit,1,49.00,USD,memory_type=DDR4;capacity=16GB;modules=2
+FIX-REJ-RAM-DDR5,ram,Fixture DDR5 16GB Kit,1,59.00,USD,memory_type=DDR5;capacity=16GB;modules=2
+FIX-REJ-GPU,gpu,Fixture PCIe4 GPU,1,349.00,USD,interface=PCIe4;length=300mm;tdp=220W;peak_power=260W;connector=2x8pin
+FIX-REJ-PSU,psu,Fixture 850W PSU,1,119.00,USD,wattage=850W;psu_connectors=2x8pin;form_factor=ATX;length=160mm
+FIX-REJ-CASE,case,Fixture ATX Case,1,89.00,USD,supported_form_factors=ATX;max_gpu_length=360mm;max_cooler_height=170mm;psu_form_factor=ATX;max_psu_length=180mm
+FIX-REJ-COOLER-AM5,cooler,Fixture AM5 Air Cooler,1,49.00,USD,cooler_socket=AM5;height=155mm;type=air
+FIX-REJ-SSD,storage,Fixture NVMe SSD,1,79.00,USD,interface=NVMe;capacity=1000GB
