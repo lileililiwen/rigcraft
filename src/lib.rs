@@ -3,12 +3,14 @@
 
 pub mod ai;
 pub mod api;
+mod backup_api;
 pub mod commit;
 pub mod compatibility;
 pub mod csv_import;
 pub mod diagnosis;
 pub mod domain;
 pub mod error;
+pub mod portability;
 pub mod recommend;
 pub mod store;
 

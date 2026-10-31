@@ -86,6 +86,10 @@ records[] {
 
 Money is an integer in minor units with one currency per batch. `404 snapshot_not_found` for unknown IDs. Each line total (`priceMinor × quantity`) and each snapshot total is computed with checked arithmetic; an amount that cannot be represented in a signed 64-bit integer is never saturated, and the write that produced it is rejected.
 
+### `GET /api/inventory/snapshots/{id}/export?format=csv|json`
+
+Exports the immutable snapshot. `csv` writes one row per lot with exactly the import columns above (`sku,category,model,quantity,price,currency,specs,source,sourceUrl`), so the file can be previewed and committed again; it is lossy and omits lot identity and per-field provenance references. `json` is the authoritative artifact with snapshot metadata, revision, parent, every lot and every field's normalized value and provenance. Both are deterministic and name the snapshot revision in the download filename. An unsupported or missing format is `400 export_format_unsupported`. The guarantees, restore contract and error codes are in [docs/data-portability.md](data-portability.md).
+
 ### `POST /api/inventory/snapshots/{id}/corrections`
 
 ```json
@@ -101,6 +105,7 @@ Creates a new snapshot with `revision + 1`, `parentSnapshotId` set to the old ID
 
 - `GET /api/imports/sample` — the sourced sample UTF-8 CSV download (see below).
 - `GET /api/health` — service health.
+- `GET /api/backup`, `POST /api/backup/inspect`, `POST /api/backup/restore` — whole-database backup and guarded restore, documented in [docs/data-portability.md](data-portability.md).
 - `GET /inventory` — Web flow; the Rust process serves the built SPA for extensionless client routes.
 - An unknown static or metadata path (for example `/assets/nope.js`, `/robots.txt`, `/llms.txt` or `/ai-catalog.json`) returns 404 rather than the SPA shell, because the build does not ship that file.
 - Unknown `/api/*` routes return JSON `route_not_found`.
@@ -127,6 +132,8 @@ The sample rows are CC BY 4.0 with attribution in `NOTICE`. The wider data-sourc
 `/inventory` covers empty, selecting, parsing, review, row correction, validation error, duplicate resolution, commit pending, committed, retry and earlier-revision states. The flow uses labelled controls, a live status region, `role="alert"` errors, visible focus, non-color-only badges with symbols, stacked mobile table cards and reduced-motion-safe CSS. Focus moves to the review heading, the snapshot heading, or the error alert after async transitions.
 
 Each specification is labelled `Operator-confirmed` (✎), `Catalog` (▣) or `Unknown` (?) from its recorded provenance, and every preview and snapshot row names whether its facts are catalog facts or operator-entered. The download area states the sample's CC BY 4.0 licence, the 2026-10-31 verification date and that prices are operator-entered.
+
+The `/inventory` page also has an **Export and backup** panel: CSV and JSON export of the selected snapshot, a whole-database SQLite download, and a restore that must be inspected and then confirmed by typing `RESTORE`, with a pre-restore safety copy named on success. See [docs/data-portability.md](data-portability.md).
 
 ## Evidence
 

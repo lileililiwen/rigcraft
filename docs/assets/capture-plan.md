@@ -107,3 +107,17 @@ Refresh these captures after any change to `/inventory`, `/builds/check`, `/reco
 | `catalog-import-provenance-desktop.png` | `/inventory` | 1440×900 | Committed revision 1; CPU provenance expanded with catalog and operator facts |
 | `catalog-import-provenance-mobile.png` | `/inventory` | 390×844 | The same revision as stacked cards |
 | `catalog-sample-check-desktop.png` | `/builds/check` | 1440×900 | Sample build with 12 compatible, 0 conflicts, 2 unknown |
+
+### Data portability captures (2026-11-01)
+
+| Capture | Route | Viewport | Condition |
+| --- | --- | --- | --- |
+| `data-portability-export-desktop.png` | `/inventory` | 1440×900 | Export panel with a committed snapshot, CSV and JSON buttons enabled |
+| `data-portability-export-mobile.png` | `/inventory` | 390×844 | The same panel stacked, no overflow |
+| `data-portability-inspected-desktop.png` | `/inventory` | 1440×900 | Backup inspected: integrity ok, schema 4, counts, replace button disabled |
+| `data-portability-confirmed-desktop.png` | `/inventory` | 1440×900 | Typed RESTORE, replace enabled |
+| `data-portability-restored-desktop.png` | `/inventory` | 1440×900 | Restored summary and the pre-restore safety-copy path |
+| `data-portability-rejected-desktop.png` | `/inventory` | 1440×900 | Non-SQLite upload rejected with `backup_not_sqlite`, inventory still visible |
+| `data-portability-rejected-mobile.png` | `/inventory` | 390×844 | The rejected state stacked, no overflow |
+
+Details: `docs/evidence/data-portability-browser.md`. Lighthouse reports: `docs/evidence/data-portability-lighthouse/` and `docs/evidence/data-portability-lighthouse-mobile/`.

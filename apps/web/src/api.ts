@@ -3,6 +3,7 @@ import type {
   AiProposalResponse,
   AiReviseRequest,
   ApiErrorBody,
+  BackupInspection,
   CheckReport,
   CheckRequest,
   CommitRequest,
@@ -10,11 +11,13 @@ import type {
   CorrectionRequest,
   DiagnoseRequest,
   DiagnosisReport,
+  DownloadedFile,
   ParsedList,
   ParseListRequest,
   Preview,
   RecommendationReport,
   RecommendRequest,
+  RestoreSummary,
   Snapshot,
   SnapshotSummary,
 } from "./types";
@@ -129,6 +132,94 @@ export async function getCheckReport(checkId: string): Promise<CheckReport> {
 }
 
 export const sampleCsvUrl = "/api/imports/sample";
+
+function dispositionFilename(response: Response, fallback: string): string {
+  const disposition = response.headers.get("Content-Disposition") ?? "";
+  return /filename="([^"]+)"/.exec(disposition)?.[1] ?? fallback;
+}
+
+function saveBlob(blob: Blob, filename: string): void {
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = filename;
+  document.body.append(anchor);
+  anchor.click();
+  anchor.remove();
+  URL.revokeObjectURL(url);
+}
+
+async function downloadFailure(response: Response): Promise<never> {
+  const text = await response.text();
+  let body: { error?: ApiErrorBody } | null = null;
+  try {
+    body = JSON.parse(text) as { error?: ApiErrorBody };
+  } catch {
+    body = null;
+  }
+  throw new ApiFailure(
+    response.status,
+    body?.error ?? {
+      code: "download_failed",
+      message: `The download returned status ${response.status}.`,
+    },
+  );
+}
+
+/** Download one snapshot as the importer's CSV or the authoritative JSON. */
+export async function downloadSnapshotExport(
+  snapshotId: string,
+  format: "csv" | "json",
+): Promise<DownloadedFile> {
+  const response = await fetch(
+    `/api/inventory/snapshots/${encodeURIComponent(snapshotId)}/export?format=${format}`,
+  );
+  if (!response.ok) {
+    return downloadFailure(response);
+  }
+  const text = await response.text();
+  const filename = dispositionFilename(
+    response,
+    `rigcraft-inventory-snapshot.${format}`,
+  );
+  saveBlob(
+    new Blob([text], {
+      type: format === "csv" ? "text/csv;charset=utf-8" : "application/json",
+    }),
+    filename,
+  );
+  return {
+    filename,
+    note: response.headers.get("X-Rigcraft-Export-Note"),
+  };
+}
+
+/** Download the whole live database as a standalone SQLite file. */
+export async function downloadBackup(): Promise<string> {
+  const response = await fetch("/api/backup");
+  if (!response.ok) {
+    return downloadFailure(response);
+  }
+  const blob = await response.blob();
+  const filename = dispositionFilename(response, "rigcraft-backup.sqlite3");
+  saveBlob(blob, filename);
+  return filename;
+}
+
+export async function inspectBackup(file: File): Promise<BackupInspection> {
+  const form = new FormData();
+  form.append("file", file, file.name);
+  const response = await fetch("/api/backup/inspect", { method: "POST", body: form });
+  return readResponse<BackupInspection>(response);
+}
+
+export async function restoreBackup(file: File): Promise<RestoreSummary> {
+  const form = new FormData();
+  form.append("file", file, file.name);
+  form.append("confirm", "restore");
+  const response = await fetch("/api/backup/restore", { method: "POST", body: form });
+  return readResponse<RestoreSummary>(response);
+}
 
 export async function recommendBuild(
   request: RecommendRequest,

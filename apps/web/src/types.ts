@@ -282,6 +282,10 @@ export interface ApiErrorBody {
     specCode?: string;
     snapshotCurrency?: string;
     requestCurrency?: string;
+    preRestorePath?: string;
+    reason?: string;
+    schemaVersion?: number;
+    supportedSchemaVersion?: number;
   };
 }
 
@@ -701,4 +705,32 @@ export interface DiagnosisReport {
   stale: boolean;
   currentSnapshotRevision?: number | null;
   staleReason?: string | null;
+}
+
+export interface DatabaseCounts {
+  schemaVersion: number;
+  snapshotCount: number;
+  latestRevision: number | null;
+  createdAt: string | null;
+  recordCount: number;
+  lotCount: number;
+}
+
+export interface BackupInspection {
+  fileName: string;
+  sizeBytes: number;
+  integrity: string;
+  counts: DatabaseCounts;
+}
+
+export interface RestoreSummary {
+  restored: boolean;
+  sourceSchemaVersion: number;
+  preRestorePath: string;
+  counts: DatabaseCounts;
+}
+
+export interface DownloadedFile {
+  filename: string;
+  note: string | null;
 }

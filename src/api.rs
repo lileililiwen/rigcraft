@@ -20,6 +20,7 @@ use crate::ai::{
     validate_provider_url, validate_text, AiProposalResponse, BuiltPrompt, ParseRequest,
     ProviderAdapter, ProviderIdentity, ReviseRequest,
 };
+use crate::backup_api::{download_backup, export_snapshot, inspect_backup, restore_backup};
 use crate::commit::{
     build_correction, build_records, decision_hash, snapshot_from_preview, CommitRequest,
     CommitResponse, CorrectionRequest,
@@ -60,7 +61,7 @@ impl AppState {
     }
 }
 
-fn storage_failure(error: StoreError) -> ApiError {
+pub(crate) fn storage_failure(error: StoreError) -> ApiError {
     tracing::error!(error = %error, "inventory storage operation failed");
     ApiError::internal("The inventory store could not complete this request.")
 }
@@ -354,11 +355,11 @@ async fn get_check_report(
 }
 
 #[derive(Debug, serde::Deserialize)]
-struct ExportQuery {
-    format: Option<String>,
+pub(crate) struct ExportQuery {
+    pub(crate) format: Option<String>,
 }
 
-fn load_snapshot(state: &AppState, snapshot_id: &str) -> Result<Snapshot, ApiError> {
+pub(crate) fn load_snapshot(state: &AppState, snapshot_id: &str) -> Result<Snapshot, ApiError> {
     state
         .store
         .get_snapshot(snapshot_id)
@@ -748,9 +749,16 @@ pub fn build_router(state: AppState) -> Router {
         .route("/api/inventory/snapshots", get(list_snapshots))
         .route("/api/inventory/snapshots/{snapshot_id}", get(get_snapshot))
         .route(
+            "/api/inventory/snapshots/{snapshot_id}/export",
+            get(export_snapshot),
+        )
+        .route(
             "/api/inventory/snapshots/{snapshot_id}/corrections",
             post(correct_snapshot),
         )
+        .route("/api/backup", get(download_backup))
+        .route("/api/backup/inspect", post(inspect_backup))
+        .route("/api/backup/restore", post(restore_backup))
         .route("/api/builds/check", post(check_compatibility))
         .route("/api/builds/checks/{check_id}", get(get_check_report))
         .route("/api/recommendations", post(recommend_build))

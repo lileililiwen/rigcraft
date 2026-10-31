@@ -4,6 +4,7 @@ import type {
   DuplicateAction,
   FieldError,
   Preview,
+  RestoreSummary,
   Snapshot,
   SnapshotSummary,
 } from "../types";
@@ -27,6 +28,7 @@ import { ImportForm } from "./ImportForm";
 import { PreviewReview } from "./PreviewReview";
 import { SiteHeader } from "./SiteHeader";
 import { SnapshotPanel } from "./SnapshotPanel";
+import { DataPortability } from "./DataPortability";
 
 type Phase = "empty" | "parsing" | "review" | "committing" | "committed" | "failed";
 
@@ -88,10 +90,12 @@ export function InventoryPage() {
       const summaries = await listSnapshots();
       setHistory(summaries);
       setHistoryError(null);
+      return summaries;
     } catch (error) {
       setHistoryError(
         error instanceof ApiFailure ? error.message : "Snapshot history is unavailable.",
       );
+      return null;
     }
   }
 
@@ -251,6 +255,30 @@ export function InventoryPage() {
     setServerIssues({});
     setLive("Ready for a new CSV import.");
     window.setTimeout(() => document.getElementById("inventory-file")?.focus(), 0);
+  }
+
+  async function handleRestored(summary: RestoreSummary) {
+    setProblem(null);
+    setRetry(null);
+    const summaries = await refreshHistory();
+    if (summaries && summaries.length > 0) {
+      try {
+        const next = await getSnapshot(summaries[0].id);
+        setSnapshot(next);
+        setPreview(null);
+        setPhase("committed");
+        setLive(
+          `Restored ${summary.counts.recordCount} records. Viewing revision ${next.revision}.`,
+        );
+        return;
+      } catch (error) {
+        setProblem(describeFailure(error));
+      }
+    }
+    setSnapshot(null);
+    setPreview(null);
+    setPhase("empty");
+    setLive("The restored database has no snapshots. Import a CSV to start.");
   }
 
   const latestRevision =
@@ -432,6 +460,12 @@ export function InventoryPage() {
             </ul>
           </section>
         ) : null}
+
+        <DataPortability
+          snapshot={snapshot}
+          history={history}
+          onRestored={(summary) => void handleRestored(summary)}
+        />
       </main>
     </>
   );

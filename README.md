@@ -1,10 +1,10 @@
 # RigCraft
 
-Open-source PC build planning from owned inventory, with traceable compatibility checks. See [requirements](requirement.md), [roadmap](ROADMAP.md), the [inventory import contract](docs/inventory-import.md), the [compatibility contract](docs/compatibility-evidence.md), the [recommendation contract](docs/build-recommendation.md), the [BYOK planning contract](docs/ai-planning.md), the [build diagnosis contract](docs/build-diagnosis.md) and the [data-source assessment](docs/data-sources.md).
+Open-source PC build planning from owned inventory, with traceable compatibility checks. See [requirements](requirement.md), [roadmap](ROADMAP.md), the [inventory import contract](docs/inventory-import.md), the [data portability contract](docs/data-portability.md), the [compatibility contract](docs/compatibility-evidence.md), the [recommendation contract](docs/build-recommendation.md), the [BYOK planning contract](docs/ai-planning.md), the [build diagnosis contract](docs/build-diagnosis.md) and the [data-source assessment](docs/data-sources.md).
 
 ## Status
 
-Inventory import and correction is implemented: `/inventory` previews a UTF-8 CSV, reports every row and field error, requires explicit duplicate decisions, commits an immutable SQLite snapshot with provenance, and creates a new revision for later corrections. `/builds/check` checks a selected build against one snapshot and reports compatible, incompatible or unknown for every rule, with the compared values, provenance and a specific follow-up for each unknown. `/recommend` searches only the selected snapshot for up to three complete, budget- and stock-valid builds, labels each with its reason, score and excluded alternatives, explains the binding budget, stock or compatibility constraint when there is none, and exports versioned JSON or a Markdown plan. Its optional assistant panel uses the operator's own provider key to turn one sentence into a proposed request with a source for every field; nothing runs until the operator confirms, the deterministic engine still re-validates every constraint, and the page is fully usable without a key. `/diagnose` takes a build the operator already owns — pasted lines matched to the snapshot, or parts entered by hand — and reports what must be replaced, what should be verified first, what is fine as is and what no rule could evaluate, with the rule evidence and cost of each; an ambiguous or unmatched line is never coerced to a nearby SKU, and a replacement plan is labelled validated only when the same compatibility engine accepts the whole upgraded build. Deployment remains disabled.
+Inventory import and correction is implemented: `/inventory` previews a UTF-8 CSV, reports every row and field error, requires explicit duplicate decisions, commits an immutable SQLite snapshot with provenance, and creates a new revision for later corrections. The same page exports a snapshot as the importer's CSV or the authoritative JSON, downloads the whole catalog as a standard SQLite backup, and restores a backup only after an inspection and a typed confirmation; a pre-restore copy protects the previous catalog. `/builds/check` checks a selected build against one snapshot and reports compatible, incompatible or unknown for every rule, with the compared values, provenance and a specific follow-up for each unknown. `/recommend` searches only the selected snapshot for up to three complete, budget- and stock-valid builds, labels each with its reason, score and excluded alternatives, explains the binding budget, stock or compatibility constraint when there is none, and exports versioned JSON or a Markdown plan. Its optional assistant panel uses the operator's own provider key to turn one sentence into a proposed request with a source for every field; nothing runs until the operator confirms, the deterministic engine still re-validates every constraint, and the page is fully usable without a key. `/diagnose` takes a build the operator already owns — pasted lines matched to the snapshot, or parts entered by hand — and reports what must be replaced, what should be verified first, what is fine as is and what no rule could evaluate, with the rule evidence and cost of each; an ambiguous or unmatched line is never coerced to a nearby SKU, and a replacement plan is labelled validated only when the same compatibility engine accepts the whole upgraded build. Deployment remains disabled.
 
 ## Runtime
 
@@ -26,7 +26,7 @@ Browser regression suite:
 ```sh
 cargo build                    # prerequisite: the service binary
 npm run build                  # prerequisite: the bundle the service serves
-npm run test:e2e               # real Chrome, 11 browser tests, under a minute
+npm run test:e2e               # real Chrome, 14 browser tests, under a minute
 ```
 
 `npm run test:e2e` picks a free loopback port, starts `target/debug/rigcraft`
@@ -57,6 +57,8 @@ building the Web app.
 
 Inventory is stored in SQLite outside the repository: `RIGCRAFT_DATA_DIR`, otherwise `$XDG_DATA_HOME/rigcraft` or `$HOME/.local/share/rigcraft`. One currency is used per import batch and money is stored in integer minor units. CSV contents and optional cost fields are not logged. The service binds to loopback by default.
 
+A snapshot export, a backup and an inspection happen only on an explicit request to this local service. The JSON export and a database backup contain the complete private inventory, including purchase costs if stored; treat those files like the database itself. Restore writes a permanent `inventory.sqlite3.pre-restore-<UTC>` safety copy into the data directory first. See [docs/data-portability.md](docs/data-portability.md).
+
 A provider key is optional and belongs to the operator. It is held in browser memory for the session only, is never stored, logged, exported or echoed, and is sent only to the provider URL the operator enters. The assistant sends the sentence, the snapshot currency, the allowed use-case names and — only on explicit opt-in — a bounded part list; the inventory is never sent by default. No key, provider or catalog is configured or bundled.
 
 ## Routes
@@ -65,7 +67,11 @@ A provider key is optional and belongs to the operator. It is held in browser me
 - `POST /api/imports` — CSV preview.
 - `POST /api/imports/{previewId}/commit` — atomic snapshot commit.
 - `GET /api/inventory/snapshots` and `GET /api/inventory/snapshots/{id}` — history and immutable snapshots.
+- `GET /api/inventory/snapshots/{id}/export?format=csv|json` — importer-column CSV or the authoritative JSON artifact.
 - `POST /api/inventory/snapshots/{id}/corrections` — new revision.
+- `GET /api/backup` — consistent whole-database copy as a standard SQLite file.
+- `POST /api/backup/inspect` — validate an uploaded backup and return its counts without writing.
+- `POST /api/backup/restore` — validate, write a pre-restore copy and replace the live catalog with the upload.
 - `GET /api/imports/sample` — sourced sample CSV (see Licensing).
 - `GET /builds/check` — select parts from a snapshot and read sourced verdicts.
 - `POST /api/builds/check` — run and persist a compatibility report.
@@ -81,7 +87,7 @@ A provider key is optional and belongs to the operator. It is held in browser me
 - `POST /api/diagnoses` — diagnose the confirmed build and persist the advice and validated plan.
 - `GET /api/diagnoses/{id}` — read a stored diagnosis and its staleness.
 
-Contract shapes, error codes and provenance rules: [docs/inventory-import.md](docs/inventory-import.md), [docs/compatibility-evidence.md](docs/compatibility-evidence.md), [docs/build-recommendation.md](docs/build-recommendation.md), [docs/ai-planning.md](docs/ai-planning.md) and [docs/build-diagnosis.md](docs/build-diagnosis.md).
+Contract shapes, error codes and provenance rules: [docs/inventory-import.md](docs/inventory-import.md), [docs/data-portability.md](docs/data-portability.md), [docs/compatibility-evidence.md](docs/compatibility-evidence.md), [docs/build-recommendation.md](docs/build-recommendation.md), [docs/ai-planning.md](docs/ai-planning.md) and [docs/build-diagnosis.md](docs/build-diagnosis.md).
 
 ## Licensing
 
@@ -116,7 +122,8 @@ Referencing a kit package never grants the capability it implements.
 - `docs/evidence/diagnosis-browser.md` — existing-build matching (ambiguity, miss, duplicate), reuse advice groups, validated/needs-evidence/rejected plan states, keyboard, responsive, accessibility and privacy evidence.
 - `docs/evidence/correctness-audit-browser.md` — corrected unverified advice group, stable `/diagnose` numbering, ISO 8601 UTC timestamps and static/metadata 404 behaviour.
 - `docs/evidence/catalog-seed-browser.md` — corrected sourced sample download, a catalog-column import and the operator-versus-catalog distinction.
-- `docs/evidence/browser-suite.md` — the checked-in Playwright suite: command, the eleven tests and what each holds, and its explicit non-coverage.
+- `docs/evidence/browser-suite.md` — the checked-in Playwright suite: command, the fourteen tests and what each holds, and its explicit non-coverage.
+- `docs/evidence/data-portability-browser.md` — snapshot export, backup download, inspected restore, the typed confirmation guard and a rejected restore.
 - `docs/evidence/token-contrast.json` — measured WCAG 2.2 AA contrast.
-- `docs/evidence/inventory-lighthouse*/`, `docs/evidence/compatibility-lighthouse*/`, `docs/evidence/recommendation-lighthouse*/`, `docs/evidence/byok-lighthouse*/`, `docs/evidence/diagnosis-lighthouse*/`, `docs/evidence/correctness-diagnose-lighthouse*/` and `docs/evidence/catalog-lighthouse*/` — Lighthouse reports.
+- `docs/evidence/inventory-lighthouse*/`, `docs/evidence/compatibility-lighthouse*/`, `docs/evidence/recommendation-lighthouse*/`, `docs/evidence/byok-lighthouse*/`, `docs/evidence/diagnosis-lighthouse*/`, `docs/evidence/correctness-diagnose-lighthouse*/`, `docs/evidence/catalog-lighthouse*/` and `docs/evidence/data-portability-lighthouse*/` — Lighthouse reports.
 - `docs/assets/` — captured UI states.

@@ -3,16 +3,29 @@
 use std::fmt;
 use std::path::{Path, PathBuf};
 use std::sync::Mutex;
+use std::time::Duration;
 
-use rusqlite::{params, Connection, OptionalExtension};
+use rusqlite::backup::Backup;
+use rusqlite::{params, Connection, OpenFlags, OptionalExtension};
 use serde_json;
 
 use crate::compatibility::CheckReport;
 use crate::diagnosis::DiagnosisReport;
 use crate::domain::{Preview, Record, Snapshot, SnapshotSource, SnapshotSummary, SnapshotTotals};
+use crate::portability::{self, BackupProblem, RestoreSummary};
 use crate::recommend::RecommendationReport;
 
-const SCHEMA_VERSION: i64 = 4;
+pub const SCHEMA_VERSION: i64 = 4;
+
+/// A restore that could not finish. `pre_restore_path` is present whenever the
+/// safety copy was written, so the operator is told which file holds the
+/// catalog as it was before the attempt.
+#[derive(Debug)]
+pub enum RestoreFailure {
+    Problem(BackupProblem),
+    PreRestoreCopyFailed,
+    RestoreFailed { pre_restore_path: String },
+}
 
 #[derive(Debug)]
 pub enum StoreError {
@@ -86,6 +99,79 @@ impl Store {
 
     pub fn db_path(&self) -> &Path {
         &self.db_path
+    }
+
+    /// Write a consistent standalone copy of the live database. `VACUUM INTO`
+    /// reads committed data, including WAL content, and refuses to overwrite an
+    /// existing file, so callers pass a fresh temporary path.
+    pub fn backup_to(&self, path: &Path) -> StoreResult<()> {
+        let connection = self.lock();
+        connection.execute("VACUUM INTO ?1", params![path.to_string_lossy()])?;
+        Ok(())
+    }
+
+    /// Replace the live catalog with an already-validated SQLite file.
+    ///
+    /// The current database is copied to a pre-restore file first. SQLite's
+    /// online backup API then copies the upload into the live connection as one
+    /// destination transaction: if it does not reach completion, finishing the
+    /// handle rolls the destination back, so there is no half-restored state.
+    pub fn restore_from(&self, source: &Path) -> Result<RestoreSummary, RestoreFailure> {
+        let mut connection = self.lock();
+        let pre_restore = self
+            .db_path
+            .with_file_name(portability::pre_restore_filename());
+        let pre_restore_path = pre_restore.display().to_string();
+        connection
+            .execute("VACUUM INTO ?1", params![pre_restore_path.clone()])
+            .map_err(|_| RestoreFailure::PreRestoreCopyFailed)?;
+
+        let source_connection =
+            Connection::open_with_flags(source, OpenFlags::SQLITE_OPEN_READ_ONLY).map_err(
+                |_| RestoreFailure::RestoreFailed {
+                    pre_restore_path: pre_restore_path.clone(),
+                },
+            )?;
+        let source_schema_version: i64 = source_connection
+            .query_row("PRAGMA user_version", [], |row| row.get(0))
+            .map_err(|_| RestoreFailure::RestoreFailed {
+                pre_restore_path: pre_restore_path.clone(),
+            })?;
+        {
+            let destination = &mut *connection;
+            let backup = Backup::new(&source_connection, destination).map_err(|_| {
+                RestoreFailure::RestoreFailed {
+                    pre_restore_path: pre_restore_path.clone(),
+                }
+            })?;
+            backup
+                .run_to_completion(100, Duration::from_millis(10), None)
+                .map_err(|_| RestoreFailure::RestoreFailed {
+                    pre_restore_path: pre_restore_path.clone(),
+                })?;
+        }
+        drop(source_connection);
+
+        let failure = || RestoreFailure::RestoreFailed {
+            pre_restore_path: pre_restore_path.clone(),
+        };
+        connection
+            .pragma_update(None, "foreign_keys", "ON")
+            .map_err(|_| failure())?;
+        let _: String = connection
+            .query_row("PRAGMA journal_mode=WAL", [], |row| row.get(0))
+            .map_err(|_| failure())?;
+        // An upload older than this build migrates forward through the same
+        // forward-only path a normal reopen uses.
+        migrate(&connection).map_err(|_| failure())?;
+        let counts =
+            portability::counts_from(&connection, SCHEMA_VERSION).map_err(|_| failure())?;
+        Ok(RestoreSummary {
+            restored: true,
+            source_schema_version,
+            pre_restore_path,
+            counts,
+        })
     }
 
     fn lock(&self) -> std::sync::MutexGuard<'_, Connection> {

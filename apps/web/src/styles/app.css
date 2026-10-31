@@ -597,6 +597,46 @@ tbody tr:last-child td {
   font-weight: 700;
 }
 
+.portability-grid {
+  margin-top: var(--space-4);
+}
+
+.restore-panel,
+.restore-preview,
+.restore-success {
+  margin-top: var(--space-6);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--color-border);
+}
+
+.restore-panel h3,
+.restore-preview h3,
+.restore-success h3 {
+  margin: 0 0 var(--space-2);
+  font-size: var(--font-large);
+}
+
+.restore-preview h3:focus,
+.restore-success h3:focus {
+  outline: none;
+}
+
+.restore-preview .summary-grid {
+  margin-block: var(--space-4);
+}
+
+.restore-preview .alert {
+  margin-block: var(--space-4);
+}
+
+.restore-preview .alert p {
+  margin: var(--space-1) 0 0;
+}
+
+.restore-success {
+  border-top-color: var(--color-primary);
+}
+
 .field--inline {
   max-width: 34rem;
 }
