@@ -2,7 +2,7 @@ import { useState } from "react";
 import type { RecordChange, RecordItem, Snapshot } from "../types";
 import { correctSnapshot, ApiFailure } from "../api";
 import {
-  formatDate,
+  formatTimestamp,
   formatMoney,
   priceToMinor,
   shortId,
@@ -107,7 +107,9 @@ export function SnapshotPanel({
         </div>
         <div>
           <dt>Committed</dt>
-          <dd>{formatDate(snapshot.createdAt)}</dd>
+          <dd>
+            <time dateTime={snapshot.createdAt}>{formatTimestamp(snapshot.createdAt)}</time>
+          </dd>
         </div>
         <div>
           <dt>Currency</dt>

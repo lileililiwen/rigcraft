@@ -198,15 +198,17 @@ export function formatMoney(minor: number, currency: string): string {
   }
 }
 
-export function formatDate(iso: string): string {
+/**
+ * One timestamp format for the whole UI: ISO 8601 in UTC. It never consults
+ * `navigator.language`, so a zh-locale browser and an en-locale browser render
+ * the same string.
+ */
+export function formatTimestamp(iso: string): string {
   const value = new Date(iso);
   if (Number.isNaN(value.getTime())) {
     return iso;
   }
-  return value.toLocaleString(undefined, {
-    dateStyle: "medium",
-    timeStyle: "short",
-  });
+  return value.toISOString().replace(/\.000Z$/, "Z");
 }
 
 export function shortId(id: string): string {

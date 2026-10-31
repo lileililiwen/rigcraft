@@ -518,6 +518,111 @@ async fn exports_round_trip_the_report_and_name_the_check_reports() {
 }
 
 #[tokio::test]
+async fn markdown_export_escapes_operator_text_and_keeps_columns() {
+    let harness = Harness::new();
+    let snapshot = harness.fixture("export-injection.csv").await;
+    let (_, report) = harness
+        .recommend(snapshot["id"].as_str().unwrap(), 200_000)
+        .await;
+    let id = report["id"].as_str().unwrap();
+
+    let (status, _, body) = harness
+        .raw(
+            Request::builder()
+                .method("GET")
+                .uri(format!("/api/recommendations/{id}/export?format=markdown"))
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await;
+    assert_eq!(status, StatusCode::OK);
+    assert!(!body.contains("<script>"), "raw HTML leaked into Markdown");
+    assert!(body.contains("&lt;script&gt;alert(1)&lt;/script&gt;"));
+    assert!(body.contains("\\|"), "the pipe was not escaped");
+    assert!(body.contains("\\\\"), "the backslash was not escaped");
+
+    // A row is `| c1 | c2 | ... | c7 |`: seven columns means eight pipes.
+    let row = body
+        .lines()
+        .find(|line| line.contains("FIX-X-CASE"))
+        .expect("the injected case row is present");
+    let escapes = row
+        .chars()
+        .fold((0usize, 0usize), |(pipes, slashes), ch| match ch {
+            '\\' => (pipes, slashes + 1),
+            '|' if slashes % 2 == 0 => (pipes + 1, 0),
+            '|' => (pipes, 0),
+            _ => (pipes, 0),
+        });
+    assert_eq!(escapes.0, 8, "expected 7 columns in the parts table: {row}");
+
+    // The JSON export stays exact data: no Markdown escaping is applied.
+    let (status, _, json_body) = harness
+        .raw(
+            Request::builder()
+                .method("GET")
+                .uri(format!("/api/recommendations/{id}/export?format=json"))
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await;
+    assert_eq!(status, StatusCode::OK);
+    let exported: Value = serde_json::from_str(json_body.split_once('\n').unwrap().1).unwrap();
+    assert_eq!(exported["report"], report);
+    assert!(exported["report"]["candidates"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .flat_map(|candidate| candidate["parts"].as_array().unwrap())
+        .any(|part| part["model"]
+            .as_str()
+            .unwrap()
+            .contains("Fixture Case | <script>alert(1)</script> \\ Airflow")));
+}
+
+#[tokio::test]
+async fn currency_is_normalized_case_insensitively() {
+    let harness = Harness::new();
+    let snapshot = harness.fixture("feasible.csv").await;
+    let snapshot_id = snapshot["id"].as_str().unwrap();
+    let (status, report) = harness
+        .post(
+            "/api/recommendations",
+            &json!({
+                "snapshotId": snapshot_id,
+                "budgetMinor": 200_000,
+                "currency": "usd",
+                "useCase": "gaming",
+                "inventoryOnly": true,
+                "lockedSkus": [],
+                "excludedSkus": []
+            }),
+        )
+        .await;
+    assert_eq!(status, StatusCode::OK, "{report}");
+    assert_eq!(report["currency"], "USD");
+    assert_eq!(report["request"]["currency"], "USD");
+
+    let (status, error) = harness
+        .post(
+            "/api/recommendations",
+            &json!({
+                "snapshotId": snapshot_id,
+                "budgetMinor": 200_000,
+                "currency": "us",
+                "useCase": "gaming",
+                "inventoryOnly": true,
+                "lockedSkus": [],
+                "excludedSkus": []
+            }),
+        )
+        .await;
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+    assert_eq!(error["error"]["code"], "currency_format");
+    assert_eq!(error["error"]["field"], "currency");
+}
+
+#[tokio::test]
 async fn a_correction_marks_the_stored_report_stale() {
     let harness = Harness::new();
     let snapshot = harness.fixture("feasible.csv").await;

@@ -17,7 +17,7 @@ import {
   reviewProblems,
   reviewedParts,
 } from "../diagnosis";
-import { formatDate, formatMoney, shortId } from "../inventory";
+import { formatTimestamp, formatMoney, shortId } from "../inventory";
 import { DiagnosisReportPanel } from "./DiagnosisReportPanel";
 import { SiteHeader } from "./SiteHeader";
 
@@ -307,7 +307,7 @@ export function DiagnosePage() {
           result.groups.mustReplace.length
         } part(s) must be replaced, ${result.groups.shouldUpgrade.length} should be verified, ${
           result.groups.keep.length
-        } can be kept. Upgrade plan: ${result.plan.status.replace(/_/g, " ")}.`,
+        } can be kept, ${result.groups.unverified.length} were not evaluated by any rule. Upgrade plan: ${result.plan.status.replace(/_/g, " ")}.`,
       );
     } catch (error) {
       setProblem(describeFailure(error));
@@ -328,9 +328,9 @@ export function DiagnosePage() {
         <p className="lede">
           Describe the PC you already have — paste a parts list, or add parts by hand with
           whatever specifications you can confirm. The diagnosis reuses the compatibility
-          engine, then separates what must be replaced, what should be verified first and
-          what is fine as is. A replacement plan is only shown as validated when the
-          checker accepts the whole upgraded build.
+          engine, then separates what must be replaced, what should be verified first,
+          what is fine as is and what no rule could evaluate. A replacement plan is only
+          shown as validated when the checker accepts the whole upgraded build.
         </p>
         <p className="privacy-note">
           Matching compares your lines with the selected local snapshot only. No hardware
@@ -423,7 +423,7 @@ export function DiagnosePage() {
                   {snapshots.map((entry) => (
                     <option key={entry.id} value={entry.id}>
                       Revision {entry.revision} · {entry.sourceFilename} ·{" "}
-                      {formatDate(entry.createdAt)} · {entry.recordCount} records ·{" "}
+                      {formatTimestamp(entry.createdAt)} · {entry.recordCount} records ·{" "}
                       {shortId(entry.id)}
                     </option>
                   ))}
@@ -507,123 +507,132 @@ export function DiagnosePage() {
           </section>
         ) : null}
 
-        {list ? (
+        {snapshot ? (
           <section className="panel" aria-labelledby="review-title">
             <h2 className="panel__title" id="review-title" tabIndex={-1} ref={reviewRef}>
               3. Review the matches
             </h2>
-            <p className="small muted">
-              A matched line is only a suggestion: the diagnosis uses the SKU you choose
-              here. Ambiguous lines start with no choice, and nothing is coerced to the
-              nearest part.
-            </p>
-            <ol className="review-list">
-              {list.lines.map((line) => {
-                const meta = MATCH_META[line.status];
-                const choice = choices[line.line] ?? "";
-                const unusable = line.duplicateOf != null || line.status === "invalid";
-                return (
-                  <li className="review-line" key={line.line}>
-                    <fieldset>
-                      <legend>
-                        Line {line.line} — {line.raw}
-                      </legend>
-                      <div className="review-line__meta">
-                        <span className={`badge badge--${meta.className}`}>
-                          <span className="badge__symbol" aria-hidden="true">
-                            {meta.symbol}
-                          </span>
-                          {meta.label}
-                        </span>
-                        <span className="small muted">
-                          {line.category ? categoryLabel(line.category) : "Category not stated"}{" "}
-                          · quantity {line.quantity}
-                          {line.priceMinor !== null
-                            ? ` · ${formatMoney(line.priceMinor, list.currency)}`
-                            : ""}
-                          {" · "}
-                          {lineDecisionLabel(line, choice)}
-                        </span>
-                      </div>
-                      {line.issues.map((issue) => (
-                        <p className="field__error" key={issue.code}>
-                          {issue.message}
-                        </p>
-                      ))}
-                      {line.duplicateOf != null ? (
-                        <p className="small muted">
-                          Line {line.duplicateOf} already describes this part, so this
-                          duplicate is not added.
-                        </p>
-                      ) : null}
-                      {unusable ? null : (
-                        <div className="review-choices">
-                          {line.candidates.map((candidate) => (
-                            <div className="choice" key={candidate.sku}>
-                              <input
-                                type="radio"
-                                id={`line-${line.line}-${candidate.sku}`}
-                                name={`line-${line.line}`}
-                                value={candidate.sku}
-                                checked={choice === candidate.sku}
-                                disabled={busy}
-                                onChange={() => resolve(line, candidate.sku)}
-                              />
-                              <label htmlFor={`line-${line.line}-${candidate.sku}`}>
-                                <span>
-                                  {candidate.model}{" "}
-                                  <span className="mono small">{candidate.sku}</span>
-                                  {candidate.exact ? " · exact tokens" : " · partial tokens"}
-                                </span>
-                                <span className="small muted">
-                                  {formatMoney(candidate.priceMinor, candidate.currency)} ·{" "}
-                                  {candidate.available} in stock
-                                  {candidate.extraTokens.length > 0
-                                    ? ` · adds ${candidate.extraTokens.join(", ")}`
-                                    : ""}
-                                  {candidate.missingTokens.length > 0
-                                    ? ` · missing ${candidate.missingTokens.join(", ")}`
-                                    : ""}
-                                </span>
-                              </label>
-                            </div>
-                          ))}
-                          <div className="choice">
-                            <input
-                              type="radio"
-                              id={`line-${line.line}-skip`}
-                              name={`line-${line.line}`}
-                              value={SKIP}
-                              checked={choice === SKIP}
-                              disabled={busy}
-                              onChange={() => resolve(line, SKIP)}
-                            />
-                            <label htmlFor={`line-${line.line}-skip`}>
-                              Leave this line out of the diagnosis
-                            </label>
+            {list ? (
+              <>
+                <p className="small muted">
+                  A matched line is only a suggestion: the diagnosis uses the SKU you choose
+                  here. Ambiguous lines start with no choice, and nothing is coerced to the
+                  nearest part.
+                </p>
+                <ol className="review-list">
+                  {list.lines.map((line) => {
+                    const meta = MATCH_META[line.status];
+                    const choice = choices[line.line] ?? "";
+                    const unusable = line.duplicateOf != null || line.status === "invalid";
+                    return (
+                      <li className="review-line" key={line.line}>
+                        <fieldset>
+                          <legend>
+                            Line {line.line} — {line.raw}
+                          </legend>
+                          <div className="review-line__meta">
+                            <span className={`badge badge--${meta.className}`}>
+                              <span className="badge__symbol" aria-hidden="true">
+                                {meta.symbol}
+                              </span>
+                              {meta.label}
+                            </span>
+                            <span className="small muted">
+                              {line.category ? categoryLabel(line.category) : "Category not stated"}{" "}
+                              · quantity {line.quantity}
+                              {line.priceMinor !== null
+                                ? ` · ${formatMoney(line.priceMinor, list.currency)}`
+                                : ""}
+                              {" · "}
+                              {lineDecisionLabel(line, choice)}
+                            </span>
                           </div>
-                        </div>
-                      )}
-                      {line.status === "unmatched" || line.status === "ambiguous" ? (
-                        <p className="follow-up">
-                          {line.disambiguation}{" "}
-                          <button
-                            type="button"
-                            className="link-button"
-                            onClick={() => describeLineByHand(line)}
-                          >
-                            Add it by hand instead
-                          </button>
-                        </p>
-                      ) : null}
-                      {line.disambiguation && line.status === "invalid" ? (
-                        <p className="follow-up">{line.disambiguation}</p>
-                      ) : null}
-                    </fieldset>
-                  </li>
-                );
-              })}
-            </ol>
+                          {line.issues.map((issue) => (
+                            <p className="field__error" key={issue.code}>
+                              {issue.message}
+                            </p>
+                          ))}
+                          {line.duplicateOf != null ? (
+                            <p className="small muted">
+                              Line {line.duplicateOf} already describes this part, so this
+                              duplicate is not added.
+                            </p>
+                          ) : null}
+                          {unusable ? null : (
+                            <div className="review-choices">
+                              {line.candidates.map((candidate) => (
+                                <div className="choice" key={candidate.sku}>
+                                  <input
+                                    type="radio"
+                                    id={`line-${line.line}-${candidate.sku}`}
+                                    name={`line-${line.line}`}
+                                    value={candidate.sku}
+                                    checked={choice === candidate.sku}
+                                    disabled={busy}
+                                    onChange={() => resolve(line, candidate.sku)}
+                                  />
+                                  <label htmlFor={`line-${line.line}-${candidate.sku}`}>
+                                    <span>
+                                      {candidate.model}{" "}
+                                      <span className="mono small">{candidate.sku}</span>
+                                      {candidate.exact ? " · exact tokens" : " · partial tokens"}
+                                    </span>
+                                    <span className="small muted">
+                                      {formatMoney(candidate.priceMinor, candidate.currency)} ·{" "}
+                                      {candidate.available} in stock
+                                      {candidate.extraTokens.length > 0
+                                        ? ` · adds ${candidate.extraTokens.join(", ")}`
+                                        : ""}
+                                      {candidate.missingTokens.length > 0
+                                        ? ` · missing ${candidate.missingTokens.join(", ")}`
+                                        : ""}
+                                    </span>
+                                  </label>
+                                </div>
+                              ))}
+                              <div className="choice">
+                                <input
+                                  type="radio"
+                                  id={`line-${line.line}-skip`}
+                                  name={`line-${line.line}`}
+                                  value={SKIP}
+                                  checked={choice === SKIP}
+                                  disabled={busy}
+                                  onChange={() => resolve(line, SKIP)}
+                                />
+                                <label htmlFor={`line-${line.line}-skip`}>
+                                  Leave this line out of the diagnosis
+                                </label>
+                              </div>
+                            </div>
+                          )}
+                          {line.status === "unmatched" || line.status === "ambiguous" ? (
+                            <p className="follow-up">
+                              {line.disambiguation}{" "}
+                              <button
+                                type="button"
+                                className="link-button"
+                                onClick={() => describeLineByHand(line)}
+                              >
+                                Add it by hand instead
+                              </button>
+                            </p>
+                          ) : null}
+                          {line.disambiguation && line.status === "invalid" ? (
+                            <p className="follow-up">{line.disambiguation}</p>
+                          ) : null}
+                        </fieldset>
+                      </li>
+                    );
+                  })}
+                </ol>
+              </>
+            ) : (
+              <p className="small muted">
+                Match a pasted list in step 2 to review its lines here. Parts you add by
+                hand appear in step 4, and the diagnosis runs from step 4.
+              </p>
+            )}
           </section>
         ) : null}
 
@@ -751,8 +760,9 @@ export function DiagnosePage() {
             </h2>
             <p>
               Resolve the match review and run the diagnosis. The result groups every part
-              into must replace, should upgrade or fine as is, cites the rule evidence, and
-              validates any replacement plan against the same compatibility engine.
+              into must replace, should upgrade, fine as is or not verified, cites the rule
+              evidence, and validates any replacement plan against the same compatibility
+              engine.
             </p>
           </section>
         ) : null}

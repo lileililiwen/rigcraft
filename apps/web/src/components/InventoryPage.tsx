@@ -18,7 +18,7 @@ import {
   canCommit,
   continuationSummary,
   defaultDecisions,
-  formatDate,
+  formatTimestamp,
   formatMoney,
   shortId,
 } from "../inventory";
@@ -411,7 +411,7 @@ export function InventoryPage() {
               {history.map((entry) => (
                 <li key={entry.id}>
                   <span>
-                    Revision {entry.revision} · {formatDate(entry.createdAt)} ·{" "}
+                    Revision {entry.revision} · {formatTimestamp(entry.createdAt)} ·{" "}
                     {entry.recordCount} records ·{" "}
                     {formatMoney(entry.valueMinor, entry.currency)}
                     {entry.note ? ` · ${entry.note}` : ""}

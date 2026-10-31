@@ -283,6 +283,24 @@ async fn pasted_input_is_bounded_and_validated() {
     assert_eq!(status, StatusCode::BAD_REQUEST);
     assert_eq!(error["error"]["code"], "currency_required");
 
+    let (status, parsed) = harness
+        .post(
+            "/api/diagnoses/parse",
+            &json!({ "snapshotId": snapshot["id"], "currency": "usd", "text": "gpu: Fixture RTX 4070" }),
+        )
+        .await;
+    assert_eq!(status, StatusCode::OK, "{parsed}");
+    assert_eq!(parsed["currency"], "USD");
+
+    let (status, error) = harness
+        .post(
+            "/api/diagnoses/parse",
+            &json!({ "snapshotId": snapshot["id"], "currency": "us", "text": "gpu: Fixture RTX 4070" }),
+        )
+        .await;
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+    assert_eq!(error["error"]["code"], "currency_format");
+
     let (status, error) = harness
         .post(
             "/api/diagnoses/parse",
@@ -497,6 +515,46 @@ async fn a_missing_fact_is_a_conditional_upgrade_not_a_replacement() {
         .unwrap();
     assert_eq!(bios["status"], "unknown");
     assert!(bios["followUp"].as_str().unwrap().contains("BIOS"));
+}
+
+#[tokio::test]
+async fn parts_with_no_evaluated_rule_are_not_presented_as_fine() {
+    let harness = Harness::new();
+    let snapshot = harness.fixture("upgrade.csv").await;
+    let build = vec![
+        owned(
+            "cpu",
+            "Fixture AM5 CPU 7600",
+            "socket=AM5;tdp=105W;peak_power=142W;igpu=no",
+        ),
+        owned(
+            "gpu",
+            "Fixture PCIe4 GPU",
+            "interface=PCIe4;length=300mm;tdp=200W;peak_power=240W;connector=2x8pin",
+        ),
+        owned(
+            "ram",
+            "Fixture DDR5 16GB Kit",
+            "memory_type=DDR5;capacity=16GB;modules=2",
+        ),
+    ];
+    let (status, report) = diagnose(&harness, &snapshot, json!(build)).await;
+    assert_eq!(status, StatusCode::OK, "{report}");
+
+    assert_eq!(report["check"]["rules"].as_array().unwrap().len(), 0);
+    assert_eq!(
+        report["check"]["summary"],
+        json!({ "compatible": 0, "incompatible": 0, "unknown": 0 })
+    );
+    assert_eq!(report["groups"]["mustReplace"], json!([]));
+    assert_eq!(report["groups"]["shouldUpgrade"], json!([]));
+    assert_eq!(report["groups"]["keep"], json!([]));
+    assert_eq!(report["groups"]["unverified"], json!([1, 2, 3]));
+    for advice in report["advice"].as_array().unwrap() {
+        assert_eq!(advice["action"], "unverified", "{advice}");
+        assert!(advice["ruleIds"].as_array().unwrap().is_empty());
+        assert!(advice["reason"].as_str().unwrap().contains("not verified"));
+    }
 }
 
 #[tokio::test]

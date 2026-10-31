@@ -22,7 +22,7 @@ to `/inventory`. No AI key, catalog or network service is consulted.
 
 ## HTTP contract
 
-All JSON uses camelCase. Errors keep the inventory shape:
+All JSON uses camelCase. Every rejection, including a malformed or wrongly typed JSON body, is `application/json` in this shape (`invalid_json` / `invalid_body` for extractor failures):
 
 ```json
 { "error": { "code": "budget_required", "message": "...", "field": "budgetMinor" } }
@@ -43,7 +43,7 @@ All JSON uses camelCase. Errors keep the inventory shape:
 ```
 
 - `budgetMinor` is a positive integer in minor units (400 `budget_required`, `budget_invalid`).
-- `currency` must be the snapshot currency (400 `currency_required`, `currency_format`, `currency_mismatch`).
+- `currency` must be the snapshot currency (400 `currency_required`, `currency_format`, `currency_mismatch`). It is case-insensitive and normalized to three uppercase ASCII letters (`usd` becomes `USD`; `us` is rejected).
 - `useCase` is `gaming`, `office` or `creation` (400 `use_case_required`, `use_case_unsupported`).
 - `inventoryOnly` may be omitted or true. False is rejected with 400 `catalog_unavailable` because no licensed catalog exists; inventory-only is never silently bypassed.
 - A SKU may appear once in each list (400 `duplicate_sku`, `locked_sku_invalid`, `excluded_sku_invalid`).
@@ -93,7 +93,10 @@ Unknown id: 404 `recommendation_not_found`.
   id, rule-set version, status, summary and unknown follow-ups.
 - `markdown`: `text/markdown` plan with the same options, parts, prices, stock and
   verdicts, reasons, unselected alternatives, unknown follow-ups, evidence source
-  references and a manual-confirmation notice.
+  references and a manual-confirmation notice. Every dynamic table cell escapes
+  backslash and pipe, replaces line breaks with a space, and renders `<` and `>` as
+  `&lt;` and `&gt;`, so operator text cannot add a column or inject HTML. The JSON
+  export stays exact data and is never escaped.
 - Both set `Content-Disposition: attachment` with a `.json` or `.md` filename.
 - Any other format: 400 `export_format_unsupported`.
 

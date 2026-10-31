@@ -4,7 +4,7 @@ Open-source PC build planning from owned inventory, with traceable compatibility
 
 ## Status
 
-Inventory import and correction is implemented: `/inventory` previews a UTF-8 CSV, reports every row and field error, requires explicit duplicate decisions, commits an immutable SQLite snapshot with provenance, and creates a new revision for later corrections. `/builds/check` checks a selected build against one snapshot and reports compatible, incompatible or unknown for every rule, with the compared values, provenance and a specific follow-up for each unknown. `/recommend` searches only the selected snapshot for up to three complete, budget- and stock-valid builds, labels each with its reason, score and excluded alternatives, explains the binding budget, stock or compatibility constraint when there is none, and exports versioned JSON or a Markdown plan. Its optional assistant panel uses the operator's own provider key to turn one sentence into a proposed request with a source for every field; nothing runs until the operator confirms, the deterministic engine still re-validates every constraint, and the page is fully usable without a key. `/diagnose` takes a build the operator already owns — pasted lines matched to the snapshot, or parts entered by hand — and reports what must be replaced, what should be verified first and what is fine as is, with the rule evidence and cost of each; an ambiguous or unmatched line is never coerced to a nearby SKU, and a replacement plan is labelled validated only when the same compatibility engine accepts the whole upgraded build. Deployment remains disabled.
+Inventory import and correction is implemented: `/inventory` previews a UTF-8 CSV, reports every row and field error, requires explicit duplicate decisions, commits an immutable SQLite snapshot with provenance, and creates a new revision for later corrections. `/builds/check` checks a selected build against one snapshot and reports compatible, incompatible or unknown for every rule, with the compared values, provenance and a specific follow-up for each unknown. `/recommend` searches only the selected snapshot for up to three complete, budget- and stock-valid builds, labels each with its reason, score and excluded alternatives, explains the binding budget, stock or compatibility constraint when there is none, and exports versioned JSON or a Markdown plan. Its optional assistant panel uses the operator's own provider key to turn one sentence into a proposed request with a source for every field; nothing runs until the operator confirms, the deterministic engine still re-validates every constraint, and the page is fully usable without a key. `/diagnose` takes a build the operator already owns — pasted lines matched to the snapshot, or parts entered by hand — and reports what must be replaced, what should be verified first, what is fine as is and what no rule could evaluate, with the rule evidence and cost of each; an ambiguous or unmatched line is never coerced to a nearby SKU, and a replacement plan is labelled validated only when the same compatibility engine accepts the whole upgraded build. Deployment remains disabled.
 
 ## Runtime
 
@@ -12,10 +12,14 @@ Rust service (Axum + SQLite) and React/TypeScript Web app (Vite).
 
 ```sh
 cargo run                      # serves the API and apps/web/dist on 127.0.0.1:8080
+RIGCRAFT_ADDR=127.0.0.1:8787 cargo run   # use another port when 8080 is taken
 npm install
 npm run build                  # builds the Web app
 ./verify-local.sh              # format, clippy, Cargo tests, Web checks and tests
 ```
+
+`RIGCRAFT_ADDR` overrides the loopback bind address; use it when port 8080 is
+occupied. `RIGCRAFT_DATA_DIR` moves the SQLite file described below.
 
 Individual checks:
 
@@ -77,6 +81,7 @@ Referencing a kit package never grants the capability it implements.
 - `docs/evidence/recommendation-browser.md` — recommendation, comparison, export, no-solution, keyboard, responsive, accessibility and privacy evidence.
 - `docs/evidence/byok-planning-browser.md` — BYOK assistant parse → edit → confirm → deterministic result, no-key degradation, provider error, keyboard, responsive, accessibility and secret-handling evidence.
 - `docs/evidence/diagnosis-browser.md` — existing-build matching (ambiguity, miss, duplicate), reuse advice groups, validated/needs-evidence/rejected plan states, keyboard, responsive, accessibility and privacy evidence.
+- `docs/evidence/correctness-audit-browser.md` — corrected unverified advice group, stable `/diagnose` numbering, ISO 8601 UTC timestamps and static/metadata 404 behaviour.
 - `docs/evidence/token-contrast.json` — measured WCAG 2.2 AA contrast.
-- `docs/evidence/inventory-lighthouse*/`, `docs/evidence/compatibility-lighthouse*/`, `docs/evidence/recommendation-lighthouse*/`, `docs/evidence/byok-lighthouse*/` and `docs/evidence/diagnosis-lighthouse*/` — Lighthouse reports.
+- `docs/evidence/inventory-lighthouse*/`, `docs/evidence/compatibility-lighthouse*/`, `docs/evidence/recommendation-lighthouse*/`, `docs/evidence/byok-lighthouse*/`, `docs/evidence/diagnosis-lighthouse*/` and `docs/evidence/correctness-diagnose-lighthouse*/` — Lighthouse reports.
 - `docs/assets/` — captured UI states.

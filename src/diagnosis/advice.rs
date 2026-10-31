@@ -23,6 +23,7 @@ use super::{
 pub const MUST_REPLACE: &str = "must_replace";
 pub const SHOULD_UPGRADE: &str = "should_upgrade";
 pub const KEEP: &str = "keep";
+pub const UNVERIFIED: &str = "unverified";
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
@@ -62,6 +63,7 @@ pub struct AdviceGroups {
     pub must_replace: Vec<usize>,
     pub should_upgrade: Vec<usize>,
     pub keep: Vec<usize>,
+    pub unverified: Vec<usize>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -442,7 +444,7 @@ fn advice_for(
                 .map(|search| replacement_cost(currency, search, true))
                 .unwrap_or_else(|| keep_cost(currency)),
         )
-    } else {
+    } else if !passes.is_empty() {
         let titles: Vec<String> = check
             .rules
             .iter()
@@ -452,17 +454,23 @@ fn advice_for(
         (
             KEEP,
             false,
-            if titles.is_empty() {
-                "No rule that could run involves this part; it is retained exactly as described."
-                    .to_string()
-            } else {
-                format!(
-                    "Every rule that involves this part passed: {}. Keep it.",
-                    titles.join(", ")
-                )
-            },
+            format!(
+                "Every rule that involves this part passed: {}. Keep it.",
+                titles.join(", ")
+            ),
             passes,
             evidence_for(check, &record_id, Verdict::Compatible),
+            None,
+            keep_cost(currency),
+        )
+    } else {
+        (
+            UNVERIFIED,
+            false,
+            "No rule that could run involves this part, so the checker did not evaluate it. Its compatibility is not verified and it is retained exactly as described."
+                .to_string(),
+            Vec::new(),
+            Vec::new(),
             None,
             keep_cost(currency),
         )
@@ -744,7 +752,8 @@ pub(crate) fn advise(
         match entry.action.as_str() {
             MUST_REPLACE => groups.must_replace.push(entry.row),
             SHOULD_UPGRADE => groups.should_upgrade.push(entry.row),
-            _ => groups.keep.push(entry.row),
+            KEEP => groups.keep.push(entry.row),
+            _ => groups.unverified.push(entry.row),
         }
     }
 

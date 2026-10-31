@@ -27,6 +27,7 @@ export const ACTION_META: Record<AdviceAction, StatusMeta> = {
   must_replace: { symbol: "✕", label: "Must replace", className: "incompatible" },
   should_upgrade: { symbol: "?", label: "Should upgrade", className: "unknown" },
   keep: { symbol: "✓", label: "Fine as is", className: "compatible" },
+  unverified: { symbol: "—", label: "Not verified", className: "unknown" },
 };
 
 export const PLAN_META: Record<PlanStatus, StatusMeta> = {
@@ -167,7 +168,9 @@ export function groupRows(
       ? report.groups.mustReplace
       : action === "should_upgrade"
         ? report.groups.shouldUpgrade
-        : report.groups.keep;
+        : action === "keep"
+          ? report.groups.keep
+          : report.groups.unverified;
   const byRow = new Map(report.advice.map((entry) => [entry.row, entry]));
   return rows
     .map((row) => byRow.get(row))
@@ -184,6 +187,13 @@ export function reportHeadline(report: DiagnosisReport): string {
     `${conflict} conflict${conflict === 1 ? "" : "s"}`,
     `${unknown} unknown`,
   ];
+  if (report.groups.unverified.length > 0) {
+    parts.push(
+      `${report.groups.unverified.length} part${
+        report.groups.unverified.length === 1 ? "" : "s"
+      } not evaluated by any rule`,
+    );
+  }
   if (report.check.completeness.status === "incomplete") {
     parts.push(
       `${report.check.completeness.missing.length} required part${

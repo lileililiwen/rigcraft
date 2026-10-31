@@ -1,7 +1,7 @@
 import type { Advice, DiagnosisReport, RuleEvidence, RuleResult } from "../types";
 import { categoryLabel } from "../compatibility";
 import { ACTION_META, PLAN_META, groupRows, reportHeadline, verdictWord } from "../diagnosis";
-import { formatDate, formatMoney, shortId, sourceLabel } from "../inventory";
+import { formatTimestamp, formatMoney, shortId, sourceLabel } from "../inventory";
 import { VERDICT_META } from "../compatibility";
 
 function EvidenceList({ evidence }: { evidence: RuleEvidence[] }) {
@@ -31,7 +31,9 @@ function EvidenceList({ evidence }: { evidence: RuleEvidence[] }) {
                 {" "}
                 · {sourceLabel(entry.provenance.source)} ·{" "}
                 <span className="tag">{entry.provenance.reference}</span> ·{" "}
-                {entry.provenance.observedAt}
+                <time dateTime={entry.provenance.observedAt}>
+                  {formatTimestamp(entry.provenance.observedAt)}
+                </time>
               </span>
             ) : (
               <span className="small muted"> · No source recorded</span>
@@ -149,6 +151,8 @@ export function DiagnosisReportPanel({ report }: { report: DiagnosisReport }) {
   const mustReplace = groupRows(report, "must_replace");
   const shouldUpgrade = groupRows(report, "should_upgrade");
   const keep = groupRows(report, "keep");
+  const unverified = groupRows(report, "unverified");
+  const evaluatedParts = report.build.length - unverified.length;
   return (
     <section
       className={`panel result-panel${report.stale ? " result-panel--stale" : ""}`}
@@ -178,8 +182,11 @@ export function DiagnosisReportPanel({ report }: { report: DiagnosisReport }) {
             : `Incomplete build · ${report.check.completeness.missing.length} missing`}
         </span>
         <span className="small muted">
-          Checked {formatDate(report.check.checkedAt)} · snapshot revision{" "}
-          {report.snapshotRevision} · rule set {report.ruleSetVersion} ·{" "}
+          Checked{" "}
+          <time dateTime={report.check.checkedAt}>
+            {formatTimestamp(report.check.checkedAt)}
+          </time>{" "}
+          · snapshot revision {report.snapshotRevision} · rule set {report.ruleSetVersion} ·{" "}
           {shortId(report.id)}
         </span>
       </div>
@@ -197,7 +204,20 @@ export function DiagnosisReportPanel({ report }: { report: DiagnosisReport }) {
           <dt>Unknown</dt>
           <dd>{report.check.summary.unknown}</dd>
         </div>
+        <div>
+          <dt>Parts not evaluated</dt>
+          <dd>{unverified.length}</dd>
+        </div>
       </dl>
+      <p className="small muted">
+        {evaluatedParts} of {report.build.length} described part
+        {report.build.length === 1 ? "" : "s"} were checked by at least one rule.
+        {unverified.length > 0
+          ? ` ${unverified.length} part${
+              unverified.length === 1 ? "" : "s"
+            } had no rule that could run and remain unverified.`
+          : " Every part was checked by at least one rule."}
+      </p>
 
       {report.check.completeness.status === "incomplete" ? (
         <div className="diagnostic-block diagnostic-block--unknown">
@@ -230,6 +250,12 @@ export function DiagnosisReportPanel({ report }: { report: DiagnosisReport }) {
         description="Every rule involving these parts passed, or the plan resolves their conflict elsewhere."
         entries={keep}
         emptyText="No part is kept by this diagnosis."
+      />
+      <Group
+        title="Not verified — no rule evaluated"
+        description="No rule that could run involves these parts, so the checker did not evaluate them. This is not a compatibility claim."
+        entries={unverified}
+        emptyText="Every described part was involved in at least one evaluated rule."
       />
 
       <section className="plan-block" aria-labelledby="plan-title">

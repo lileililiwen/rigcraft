@@ -19,8 +19,8 @@ use crate::compatibility::{
     check_build, CheckReport, CheckRequest, RuleEvidence, SelectionItem, Verdict,
 };
 use crate::domain::{
-    normalize_category, normalize_model, now_rfc3339, parse_currency, parse_specs, MatchInfo,
-    Provenance, Record, Snapshot, SnapshotSource, Spec,
+    normalize_category, normalize_model, now_rfc3339, parse_currency, parse_specs,
+    totals_overflow_error, MatchInfo, Provenance, Record, Snapshot, SnapshotSource, Spec,
 };
 use crate::error::ApiError;
 
@@ -543,7 +543,11 @@ fn validate_build(
     Ok((currency, parts, observed_at))
 }
 
-fn described_snapshot(parts: &[PartSpec], currency: &str, observed_at: &str) -> Snapshot {
+fn described_snapshot(
+    parts: &[PartSpec],
+    currency: &str,
+    observed_at: &str,
+) -> Result<Snapshot, ApiError> {
     let records: Vec<Record> = parts
         .iter()
         .map(|part| {
@@ -559,7 +563,7 @@ fn described_snapshot(parts: &[PartSpec], currency: &str, observed_at: &str) -> 
         digest.update(record.category.as_bytes());
         digest.update(record.quantity.to_le_bytes());
     }
-    Snapshot {
+    Ok(Snapshot {
         id: "diagnosis:described-build".to_string(),
         created_at: observed_at.to_string(),
         revision: 0,
@@ -572,9 +576,9 @@ fn described_snapshot(parts: &[PartSpec], currency: &str, observed_at: &str) -> 
         note: Some(
             "Existing build described by the operator; not purchasable inventory.".to_string(),
         ),
-        totals: Snapshot::totals_for(&records),
+        totals: Snapshot::totals_for(&records).map_err(|_| totals_overflow_error())?,
         records,
-    }
+    })
 }
 
 /// Evaluate one described build with the compatibility engine. `replacements`
@@ -584,7 +588,7 @@ pub(crate) fn check_described(
     currency: &str,
     replacements: &BTreeMap<usize, Record>,
 ) -> Result<CheckReport, ApiError> {
-    let mut snapshot = described_snapshot(parts, currency, &now_rfc3339());
+    let mut snapshot = described_snapshot(parts, currency, &now_rfc3339())?;
     let mut records: Vec<Record> = parts
         .iter()
         .map(|part| match replacements.get(&part.row) {
@@ -612,7 +616,8 @@ pub(crate) fn check_described(
     // The described build is its own snapshot, so a replacement record is
     // spliced in before the engine reads it back by SKU.
     snapshot.records = records;
-    snapshot.totals = Snapshot::totals_for(&snapshot.records);
+    snapshot.totals =
+        Snapshot::totals_for(&snapshot.records).map_err(|_| totals_overflow_error())?;
     check_build(
         &snapshot,
         &CheckRequest {

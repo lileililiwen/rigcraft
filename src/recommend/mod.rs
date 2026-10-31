@@ -507,7 +507,7 @@ mod tests {
                 sha256: "abc".to_string(),
             },
             note: None,
-            totals: Snapshot::totals_for(&records),
+            totals: Snapshot::totals_for(&records).unwrap(),
             records,
         }
     }

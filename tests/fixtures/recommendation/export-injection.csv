@@ -1,0 +1,9 @@
+sku,category,model,quantity,price,currency,specs
+FIX-X-CPU,cpu,Fixture AM5 CPU 7600,2,199.00,USD,socket=AM5;tdp=65W;peak_power=88W;igpu=no;perf_score=70pt
+FIX-X-MB,motherboard,Fixture B650 Board,2,159.00,USD,socket=AM5;memory_type=DDR5;form_factor=ATX;ram_slots=4;max_memory=192GB;bios_supports=Fixture AM5 CPU 7600;storage_interface=NVMe;pcie_version=PCIe5
+FIX-X-RAM,ram,Fixture DDR5 16GB Kit,4,59.00,USD,memory_type=DDR5;capacity=16GB;modules=2
+FIX-X-GPU,gpu,Fixture PCIe4 GPU 4060,2,299.00,USD,interface=PCIe4;length=240mm;tdp=115W;peak_power=140W;connector=1x8pin;perf_score=65pt
+FIX-X-PSU,psu,Fixture 650W PSU,2,79.00,USD,wattage=650W;psu_connectors=2x8pin;form_factor=ATX;length=160mm
+FIX-X-CASE,case,Fixture Case | <script>alert(1)</script> \ Airflow,2,89.00,USD,supported_form_factors=ATX;max_gpu_length=360mm;max_cooler_height=170mm;psu_form_factor=ATX;max_psu_length=180mm
+FIX-X-COOLER,cooler,Fixture AM5 Air Cooler,2,49.00,USD,cooler_socket=AM5;height=155mm;type=air
+FIX-X-SSD,storage,Fixture NVMe 1TB SSD,3,79.00,USD,interface=NVMe;capacity=1000GB

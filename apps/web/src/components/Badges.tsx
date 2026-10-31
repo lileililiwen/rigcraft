@@ -1,5 +1,5 @@
 import type { FieldError, Provenance, Spec } from "../types";
-import { sourceLabel } from "../inventory";
+import { formatTimestamp, sourceLabel } from "../inventory";
 
 const STATUS = {
   valid: { symbol: "✓", text: "Valid" },
@@ -105,7 +105,8 @@ export function ProvenanceList({
         {entries.map(([field, value]) => (
           <li key={field}>
             <strong>{field}</strong>: {sourceLabel(value.source)} ·{" "}
-            <span className="tag">{value.reference}</span> · {value.observedAt}
+            <span className="tag">{value.reference}</span> ·{" "}
+            <time dateTime={value.observedAt}>{formatTimestamp(value.observedAt)}</time>
           </li>
         ))}
       </ul>

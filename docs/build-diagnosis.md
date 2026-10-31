@@ -7,7 +7,8 @@ This package delivers the reuse and replacement advice required by `requirement.
 REQ-I02). It takes a build the operator already owns — parts matched from one
 immutable snapshot or described by hand — and diagnoses it with the same
 compatibility engine and rule set as `/builds/check`. It then separates what must
-be replaced, what should be verified first and what is fine as is, and validates a
+be replaced, what should be verified first, what is fine as is and what no rule
+could evaluate, and validates a
 replacement plan as one whole build before presenting it.
 
 Out of scope: automatic local hardware detection, live pricing, purchase,
@@ -29,7 +30,7 @@ replacement prices; with none it explains the empty state and links to
 
 ## HTTP contract
 
-All JSON uses camelCase. Errors keep the inventory shape:
+All JSON uses camelCase. Every rejection, including a malformed or wrongly typed JSON body, is `application/json` in this shape (`invalid_json` / `invalid_body` for extractor failures):
 
 ```json
 { "error": { "code": "part_invalid", "message": "...", "field": "build", "row": 4 } }
@@ -48,9 +49,9 @@ All JSON uses camelCase. Errors keep the inventory shape:
 - `text` is limited to 8 KiB and 40 non-empty lines. Empty input is 400
   `text_required`; oversized text is 400 `text_too_large`; too many lines is 400
   `line_limit_exceeded` with `details.limit`.
-- `currency` is required and must be three uppercase letters (400
-  `currency_required`, `currency_format`) and must equal the snapshot currency
-  (400 `currency_mismatch`).
+- `currency` is required and must be exactly three ASCII letters (400
+  `currency_required`, `currency_format`), is normalized to upper case, and must
+  equal the snapshot currency (400 `currency_mismatch`).
 - `snapshotId` may be omitted, in which case every line is unmatched and manual
   entry is the only path. An unknown snapshot is 404 `snapshot_not_found`.
 - Nothing is persisted and no diagnosis exists after parsing.
@@ -114,7 +115,8 @@ limits { maxLines, maxBytes, maxCandidates }
   `category_multiple`.
 - Validation completes before any check or write, so a rejected request stores no
   partial build.
-- Currency is required and must equal the snapshot currency (400
+- Currency is required, normalized to upper case from any case, must be exactly
+  three ASCII letters, and must equal the snapshot currency (400
   `currency_required`, `currency_format`, `currency_mismatch`). Unknown snapshot:
   404 `snapshot_not_found`.
 
@@ -128,11 +130,11 @@ build[] { row, source(description|snapshot), sku, category, model, quantity,
           owned, reportedPriceMinor, specs[], provenance, match },
 check { ...the compatibility CheckReport for the described build... },
 advice[] { row, sku, category, model,
-           action(must_replace|should_upgrade|keep), conditional, reason,
+           action(must_replace|should_upgrade|keep|unverified), conditional, reason,
            ruleIds[], evidence[], verification?, cost {
              currency, keepMinor, replacementSku?, replacementModel?,
              replacementMinor?, additionalMinor?, note } },
-groups { mustReplace[], shouldUpgrade[], keep[] },
+groups { mustReplace[], shouldUpgrade[], keep[], unverified[] },
 plan {
   status(not_needed|validated|needs_evidence|no_option|no_valid_plan),
   summary, steps[] { row, category, fromSku, fromModel, toSku, toModel,
@@ -170,7 +172,11 @@ opinion:
   `verification` name the exact question; the cost note says nothing is bought
   until the evidence is confirmed.
 - `keep` — every rule involving the part passed, or the plan resolves that part's
-  conflict by replacing another part.
+  conflict by replacing another part. A part whose rules passed is never moved out
+  of this group.
+- `unverified` — no rule that could run involves the part, so the checker evaluated
+  nothing about it. Its reason says the compatibility is not verified; it is never
+  presented as fine or as a pass.
 - Cost is explicit for every part: keeping costs zero; a replacement price comes
   from the snapshot. Retained owned parts are never charged again and no trade-in
   or resale value is assumed. When the snapshot has no candidate, the report says
@@ -231,18 +237,27 @@ report row and does not mutate a snapshot. Database location remains
 ## Web states
 
 `/diagnose` covers: no snapshot, paste entry, match review, ambiguity, unmatched
-line, duplicate line, invalid line, diagnosing, results with the three advice
+line, duplicate line, invalid line, diagnosing, results with the four advice
 groups, validated plan, needs-evidence plan, no-option plan, rejected plan, request
-failure with retry, and stale after a snapshot revision. It uses labelled controls,
-a polite live status region, a `role="alert"` failure, focus on the match-review and
-result headings, symbol-plus-text status, visible focus, stacked cards at phone
-width and reduced-motion-safe transitions.
+failure with retry, and stale after a snapshot revision. The numbered skeleton is
+stable: sections 1 (snapshot), 2 (paste), 3 (match review), 4 (manual entry) and 5
+(result) keep their numbers before a list is matched, and section 3 shows an empty
+state until then. It uses labelled controls, a polite live status region, a
+`role="alert"` failure, focus on the match-review and result headings, symbol-plus-
+text status, visible focus, stacked cards at phone width and reduced-motion-safe
+transitions. Every visible timestamp is ISO 8601 UTC through one shared helper and
+does not change with the browser locale.
 
 ## Evidence
 
 - `docs/assets/diagnosis-*.png` — browser states at 1440×900 and 390×844.
 - `docs/evidence/diagnosis-browser.md` — journey, keyboard, responsive,
   accessibility, privacy and measured contrast.
+- `docs/evidence/correctness-audit-browser.md` — the unverified group, stable
+  numbering, ISO 8601 UTC timestamps and static 404s from the correctness audit.
 - `docs/evidence/token-contrast.json` — measured WCAG 2.2 AA contrast.
 - `docs/evidence/diagnosis-lighthouse/` and `docs/evidence/diagnosis-lighthouse-mobile/`
   — Lighthouse audits.
+- `docs/evidence/correctness-diagnose-lighthouse/` and
+  `docs/evidence/correctness-diagnose-lighthouse-mobile/` — re-run after the audit:
+  accessibility, best practices, SEO and agentic browsing all 100.

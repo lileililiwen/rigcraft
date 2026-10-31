@@ -406,3 +406,64 @@ async fn failed_commit_leaves_no_snapshot() {
     let (_, snapshots) = harness.get("/api/inventory/snapshots").await;
     assert!(snapshots.as_array().unwrap().is_empty());
 }
+
+#[tokio::test]
+async fn a_commit_whose_line_total_overflows_is_rejected() {
+    let harness = Harness::new();
+    let csv = b"sku,category,model,quantity,price,currency\nBIG,cpu,Fixture Big CPU,2,92233720368547758.07,USD\n";
+    let (status, preview) = harness.preview("overflow.csv", csv, "USD").await;
+    assert_eq!(status, StatusCode::OK, "{preview}");
+    assert_eq!(preview["rows"][0]["status"], "valid", "{preview}");
+    assert_eq!(
+        preview["rows"][0]["normalized"]["priceMinor"],
+        i64::MAX as u64
+    );
+
+    let preview_id = preview["previewId"].as_str().unwrap();
+    let (status, error) = harness.commit(preview_id, &all_accept(&preview)).await;
+    assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY);
+    assert_eq!(error["error"]["code"], "price_overflow");
+    assert_eq!(error["error"]["field"], "price");
+    let (_, snapshots) = harness.get("/api/inventory/snapshots").await;
+    assert!(snapshots.as_array().unwrap().is_empty());
+}
+
+#[tokio::test]
+async fn a_correction_whose_line_total_overflows_writes_no_revision() {
+    let harness = Harness::new();
+    let (_, preview) = harness
+        .preview("sample.csv", SAMPLE_CSV.as_bytes(), "USD")
+        .await;
+    let preview_id = preview["previewId"].as_str().unwrap();
+    let (status, committed) = harness.commit(preview_id, &all_accept(&preview)).await;
+    assert_eq!(status, StatusCode::OK);
+    let snapshot = &committed["snapshot"];
+    let snapshot_id = snapshot["id"].as_str().unwrap().to_string();
+    let record_id = snapshot["records"][0]["id"].as_str().unwrap().to_string();
+
+    let (status, error) = harness
+        .correct(
+            &snapshot_id,
+            &json!({
+                "changes": [{
+                    "recordId": record_id,
+                    "quantity": 2,
+                    "priceMinor": i64::MAX,
+                }]
+            }),
+        )
+        .await;
+    assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY);
+    assert_eq!(error["error"]["code"], "price_overflow");
+    assert_eq!(error["error"]["field"], "price");
+
+    let (_, snapshots) = harness.get("/api/inventory/snapshots").await;
+    assert_eq!(snapshots.as_array().unwrap().len(), 1);
+    let (_, original) = harness
+        .get(&format!("/api/inventory/snapshots/{snapshot_id}"))
+        .await;
+    assert_eq!(
+        original["totals"]["valueMinor"],
+        snapshot["totals"]["valueMinor"]
+    );
+}

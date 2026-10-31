@@ -21,7 +21,7 @@ import {
   verdictMeta,
 } from "../compatibility";
 import type { SelectionState } from "../compatibility";
-import { formatDate, formatMoney, shortId, sourceLabel } from "../inventory";
+import { formatTimestamp, formatMoney, shortId, sourceLabel } from "../inventory";
 import { ProvenanceList, SpecList } from "./Badges";
 import { SiteHeader } from "./SiteHeader";
 
@@ -105,7 +105,9 @@ function RuleEvidence({ rule }: { rule: RuleResult }) {
                   {" "}
                   · {sourceLabel(entry.provenance.source)} ·{" "}
                   <span className="tag">{entry.provenance.reference}</span> ·{" "}
-                  {entry.provenance.observedAt}
+                  <time dateTime={entry.provenance.observedAt}>
+                    {formatTimestamp(entry.provenance.observedAt)}
+                  </time>
                 </span>
               ) : (
                 <span className="small muted"> · No source recorded</span>
@@ -432,7 +434,7 @@ export function CheckPage() {
                   {snapshots.map((entry) => (
                     <option key={entry.id} value={entry.id}>
                       Revision {entry.revision} · {entry.sourceFilename} ·{" "}
-                      {formatDate(entry.createdAt)} · {entry.recordCount} records ·{" "}
+                      {formatTimestamp(entry.createdAt)} · {entry.recordCount} records ·{" "}
                       {shortId(entry.id)}
                     </option>
                   ))}
@@ -616,8 +618,11 @@ export function CheckPage() {
                 {completionLabel(report)}
               </span>
               <span className="small muted">
-                Checked {formatDate(report.checkedAt)} · snapshot revision{" "}
-                {report.snapshotRevision}
+                Checked{" "}
+                <time dateTime={report.checkedAt}>
+                  {formatTimestamp(report.checkedAt)}
+                </time>{" "}
+                · snapshot revision {report.snapshotRevision}
                 {stale &&
                 report.currentSnapshotRevision != null &&
                 report.currentSnapshotRevision !== report.snapshotRevision

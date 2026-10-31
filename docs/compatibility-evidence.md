@@ -16,7 +16,7 @@ The check route is `/builds/check`. The page needs an inventory snapshot; when n
 
 ## HTTP contract
 
-All JSON uses camelCase. Errors keep the inventory shape:
+All JSON uses camelCase. Every rejection, including a malformed or wrongly typed JSON body, is `application/json` in this shape (`invalid_json` / `invalid_body` for extractor failures):
 
 ```json
 { "error": { "code": "sku_not_found", "message": "...", "field": "selection", "details": { "sku": "..." } } }
@@ -119,7 +119,7 @@ Checks do not mutate snapshots, reserve stock, or write a partial report. Databa
 
 ## Web states
 
-The Rust process serves the SPA shell for `/inventory` and `/builds/check` with HTTP 200; unknown `/api/*` routes remain JSON `route_not_found` 404 responses.
+The Rust process serves the SPA shell for extensionless client routes such as `/inventory` and `/builds/check`; an unknown static or metadata path is a real 404, and unknown `/api/*` routes remain JSON `route_not_found` 404 responses.
 
 `/builds/check` covers no snapshot, empty selection, selecting, checking, complete, incompatible, unknown, stale after a part or snapshot change, snapshot-load failure, and check failure with retry. It uses labelled radio/checkbox groups and quantity fields, a live status region, `role="alert"` failures, visible focus, focus on the result heading, symbol-plus-text verdicts, stacked mobile cards, and reduced-motion-safe CSS. The result lists conflict diagnostics, every unknown follow-up, and a per-rule evidence disclosure with source and observation time.
 

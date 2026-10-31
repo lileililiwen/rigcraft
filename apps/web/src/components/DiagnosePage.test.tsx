@@ -197,6 +197,19 @@ function diagnosis(): DiagnosisReport {
         provenance: { model: provenance },
         match: { basis: "lexical", confidence: "unverified" },
       },
+      {
+        row: 3,
+        source: "description",
+        sku: "OWNED-03",
+        category: "ram",
+        model: "Fixture DDR5 16GB Kit",
+        quantity: 1,
+        owned: true,
+        reportedPriceMinor: null,
+        specs: [],
+        provenance: { model: provenance },
+        match: { basis: "user-described", confidence: "unverified" },
+      },
     ],
     check: {
       id: "check-1",
@@ -308,8 +321,29 @@ function diagnosis(): DiagnosisReport {
           note: "Keep this part until the missing fact is confirmed; nothing is bought today.",
         },
       },
+      {
+        row: 3,
+        sku: "OWNED-03",
+        category: "ram",
+        model: "Fixture DDR5 16GB Kit",
+        action: "unverified",
+        conditional: false,
+        reason:
+          "No rule that could run involves this part, so the checker did not evaluate it. Its compatibility is not verified and it is retained exactly as described.",
+        ruleIds: [],
+        evidence: [],
+        cost: {
+          currency: "USD",
+          keepMinor: 0,
+          replacementSku: null,
+          replacementModel: null,
+          replacementMinor: null,
+          additionalMinor: null,
+          note: "Already owned: keeping this part adds no purchase cost and takes no stock.",
+        },
+      },
     ],
-    groups: { mustReplace: [1], shouldUpgrade: [2], keep: [] },
+    groups: { mustReplace: [1], shouldUpgrade: [2], keep: [], unverified: [3] },
     plan: {
       status: "validated",
       summary:
@@ -479,6 +513,18 @@ describe("build diagnosis page", () => {
     ).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: /Fine as is/ })).toBeInTheDocument();
     expect(
+      screen.getByRole("heading", { name: /Not verified — no rule evaluated/ }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/No rule that could run involves this part, so the checker did not evaluate it/),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/2 of 3 described parts were checked by at least one rule/),
+    ).toBeInTheDocument();
+    const checkedAt = document.querySelector('time[datetime="2026-10-31T12:05:00Z"]');
+    expect(checkedAt).not.toBeNull();
+    expect(checkedAt).toHaveTextContent("2026-10-31T12:05:00Z");
+    expect(
       screen.getByText(/The checker found a definite conflict involving this part/),
     ).toBeInTheDocument();
     expect(screen.getAllByText("Validated").length).toBeGreaterThan(0);
@@ -499,6 +545,25 @@ describe("build diagnosis page", () => {
         screen.queryByRole("heading", { name: "Build diagnosis" }),
       ).not.toBeInTheDocument(),
     );
+  });
+
+  it("renders a stable numbered skeleton with a review empty state", async () => {
+    installFetch();
+    render(<DiagnosePage />);
+    await screen.findByLabelText("Parts list");
+
+    for (const title of [
+      "1. Choose an inventory snapshot",
+      "2. Paste the parts list",
+      "3. Review the matches",
+      "4. Add a part by hand",
+      "5. Read the diagnosis",
+    ]) {
+      expect(screen.getByRole("heading", { name: title })).toBeInTheDocument();
+    }
+    expect(
+      screen.getByText(/Match a pasted list in step 2 to review its lines here/),
+    ).toBeInTheDocument();
   });
 
   it("never preselects an ambiguous line and blocks an unresolved review", async () => {

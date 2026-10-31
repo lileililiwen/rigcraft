@@ -4,6 +4,7 @@ use std::collections::BTreeMap;
 use std::path::PathBuf;
 use std::sync::Arc;
 
+use axum::extract::multipart::MultipartRejection;
 use axum::extract::{DefaultBodyLimit, Multipart, Path as AxumPath, Query, State};
 use axum::http::{header, HeaderValue, StatusCode};
 use axum::response::{Html, IntoResponse, Response};
@@ -29,7 +30,7 @@ use crate::diagnosis::{
     diagnose, parse_list, DiagnoseRequest, DiagnosisReport, ParseListRequest, ParsedList,
 };
 use crate::domain::{preview_is_expired, Preview, Snapshot, SnapshotSummary};
-use crate::error::ApiError;
+use crate::error::{ApiError, ApiJson};
 use crate::recommend::{
     export_json, export_markdown, recommend, RecommendRequest, RecommendationReport,
 };
@@ -83,8 +84,15 @@ async fn sample_csv() -> impl IntoResponse {
 
 async fn preview_import(
     State(state): State<AppState>,
-    mut multipart: Multipart,
+    multipart: Result<Multipart, MultipartRejection>,
 ) -> Result<Json<Preview>, ApiError> {
+    let mut multipart = multipart.map_err(|rejection| {
+        ApiError::bad_request(
+            "invalid_body",
+            "Send this request as multipart/form-data with a valid boundary.",
+        )
+        .with_details(serde_json::json!({ "reason": rejection.body_text() }))
+    })?;
     let mut file: Option<(String, Vec<u8>)> = None;
     let mut currency: Option<String> = None;
     let mut mapping: BTreeMap<String, String> = BTreeMap::new();
@@ -169,7 +177,7 @@ async fn preview_import(
 async fn commit_import(
     State(state): State<AppState>,
     AxumPath(preview_id): AxumPath<String>,
-    Json(request): Json<CommitRequest>,
+    ApiJson(request): ApiJson<CommitRequest>,
 ) -> Result<Json<CommitResponse>, ApiError> {
     let stored = state
         .store
@@ -207,7 +215,7 @@ async fn commit_import(
         ));
     }
     let records = build_records(&stored.preview, &request)?;
-    let candidate = snapshot_from_preview(&stored.preview, records, &stored.sha256);
+    let candidate = snapshot_from_preview(&stored.preview, records, &stored.sha256)?;
     match state.store.commit_preview(&preview_id, &hash, &candidate) {
         Ok(CommitOutcome::Created) => Ok(Json(CommitResponse {
             snapshot_id: candidate.id.clone(),
@@ -260,7 +268,7 @@ async fn get_snapshot(
 async fn correct_snapshot(
     State(state): State<AppState>,
     AxumPath(snapshot_id): AxumPath<String>,
-    Json(request): Json<CorrectionRequest>,
+    ApiJson(request): ApiJson<CorrectionRequest>,
 ) -> Result<Json<Snapshot>, ApiError> {
     let snapshot = state
         .store
@@ -281,7 +289,7 @@ async fn correct_snapshot(
 
 async fn check_compatibility(
     State(state): State<AppState>,
-    Json(request): Json<CheckRequest>,
+    ApiJson(request): ApiJson<CheckRequest>,
 ) -> Result<Json<CheckReport>, ApiError> {
     if request.snapshot_id.trim().is_empty() {
         return Err(ApiError::bad_request(
@@ -393,7 +401,7 @@ fn with_staleness(
 
 async fn recommend_build(
     State(state): State<AppState>,
-    Json(request): Json<RecommendRequest>,
+    ApiJson(request): ApiJson<RecommendRequest>,
 ) -> Result<Json<RecommendationReport>, ApiError> {
     if request.snapshot_id.trim().is_empty() {
         return Err(ApiError::bad_request(
@@ -487,7 +495,7 @@ async fn export_recommendation(
 
 async fn parse_diagnosis_list(
     State(state): State<AppState>,
-    Json(request): Json<ParseListRequest>,
+    ApiJson(request): ApiJson<ParseListRequest>,
 ) -> Result<Json<ParsedList>, ApiError> {
     let snapshot = if request.snapshot_id.trim().is_empty() {
         None
@@ -499,7 +507,7 @@ async fn parse_diagnosis_list(
 
 async fn diagnose_existing_build(
     State(state): State<AppState>,
-    Json(request): Json<DiagnoseRequest>,
+    ApiJson(request): ApiJson<DiagnoseRequest>,
 ) -> Result<Json<DiagnosisReport>, ApiError> {
     if request.snapshot_id.trim().is_empty() {
         return Err(ApiError::bad_request(
@@ -643,7 +651,7 @@ fn interpretation_response(
 
 async fn ai_parse(
     State(state): State<AppState>,
-    Json(request): Json<ParseRequest>,
+    ApiJson(request): ApiJson<ParseRequest>,
 ) -> Result<Json<AiProposalResponse>, ApiError> {
     let prepared = prepare(&state, &request)?;
     let reply = call_provider(&state, prepared.completion.clone()).await?;
@@ -673,7 +681,7 @@ async fn ai_parse(
 
 async fn ai_revise(
     State(state): State<AppState>,
-    Json(request): Json<ReviseRequest>,
+    ApiJson(request): ApiJson<ReviseRequest>,
 ) -> Result<Json<AiProposalResponse>, ApiError> {
     let parse = request.as_parse();
     let prepared = prepare(&state, &parse)?;
@@ -719,6 +727,17 @@ async fn web_not_built() -> Response {
         .into_response()
 }
 
+/// History-mode routes have no file extension. A path with a dot in its last
+/// segment is a static or metadata file: it is served when it exists and is a
+/// 404 otherwise, never the SPA shell.
+fn is_client_route(path: &str) -> bool {
+    if path.starts_with("/assets/") {
+        return false;
+    }
+    let last = path.trim_end_matches('/').rsplit('/').next().unwrap_or("");
+    !last.contains('.')
+}
+
 pub fn build_router(state: AppState) -> Router {
     let web_dir = state.web_dir.clone();
     let router = Router::new()
@@ -756,11 +775,18 @@ pub fn build_router(state: AppState) -> Router {
     match std::fs::read_to_string(&index) {
         Ok(index_body) => {
             // A client-side route such as `/builds/check` is not a file on
-            // disk. Serve the SPA shell with 200 rather than the 404 status a
-            // bare file fallback would attach to an existing index file.
-            let spa = move || {
+            // disk. Serve the SPA shell with 200 for extensionless routes, but
+            // keep a real 404 for an unknown asset or metadata file so no
+            // unshipped `robots.txt` or catalog masquerades as HTML.
+            let spa = move |uri: axum::http::Uri| {
                 let index_body = index_body.clone();
-                async move { Html(index_body) }
+                async move {
+                    if is_client_route(uri.path()) {
+                        Html(index_body).into_response()
+                    } else {
+                        (StatusCode::NOT_FOUND, "Not found.").into_response()
+                    }
+                }
             };
             let spa_service = Router::new().fallback(spa);
             router.fallback_service(ServeDir::new(web_dir).fallback(spa_service))

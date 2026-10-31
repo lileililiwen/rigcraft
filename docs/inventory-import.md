@@ -30,9 +30,13 @@ All JSON uses camelCase. Errors use:
 { "error": { "code": "mapping_missing", "message": "...", "field": "category", "row": 4, "details": {} } }
 ```
 
+Every rejection is `application/json` in that shape, including failures raised before a handler runs. Unparseable or wrongly typed JSON is HTTP 400 `invalid_json`; a missing JSON content type, a malformed multipart body and a body-limit rejection are `invalid_body`. No rejection returns `text/plain`.
+
 ### `POST /api/imports`
 
 `multipart/form-data` with `file` (UTF-8 CSV, ≤ 10 MiB), `currency` (ISO 4217) and optional `mapping` (JSON object of logical field to column header).
+
+Currency is case-insensitive and normalized to three uppercase ASCII letters: `usd` and `USD` both become `USD`, while `us` is `currency_format`.
 
 Logical fields: `sku`, `category`, `model`, `quantity`, `price`, `currency`, `specs`, `cost`. Required: the first five. Header aliases are detected case-insensitively; an explicit mapping wins. Ambiguous aliases require an explicit choice.
 
@@ -80,7 +84,7 @@ records[] {
 }
 ```
 
-Money is an integer in minor units with one currency per batch. `404 snapshot_not_found` for unknown IDs.
+Money is an integer in minor units with one currency per batch. `404 snapshot_not_found` for unknown IDs. Each line total (`priceMinor × quantity`) and each snapshot total is computed with checked arithmetic; an amount that cannot be represented in a signed 64-bit integer is never saturated, and the write that produced it is rejected.
 
 ### `POST /api/inventory/snapshots/{id}/corrections`
 
@@ -91,13 +95,14 @@ Money is an integer in minor units with one currency per batch. `404 snapshot_no
 }
 ```
 
-Creates a new snapshot with `revision + 1`, `parentSnapshotId` set to the old ID, and new provenance for changed fields. The old snapshot is never edited. Supported changes: `quantity`, `priceMinor`, `sku`, `category`, `model`, `specs`. Unknown records return 404; an empty change set returns `422 no_changes`.
+Creates a new snapshot with `revision + 1`, `parentSnapshotId` set to the old ID, and new provenance for changed fields. The old snapshot is never edited. Supported changes: `quantity`, `priceMinor`, `sku`, `category`, `model`, `specs`. Unknown records return 404; an empty change set returns `422 no_changes`. A change whose line total or resulting snapshot total cannot be represented returns `422 price_overflow` with field `price` and writes no revision; a commit with the same condition is rejected the same way.
 
 ### Other routes
 
 - `GET /api/imports/sample` — sample UTF-8 CSV download.
 - `GET /api/health` — service health.
-- `GET /inventory` — Web flow; the Rust process serves the built SPA with an index fallback.
+- `GET /inventory` — Web flow; the Rust process serves the built SPA for extensionless client routes.
+- An unknown static or metadata path (for example `/assets/nope.js`, `/robots.txt`, `/llms.txt` or `/ai-catalog.json`) returns 404 rather than the SPA shell, because the build does not ship that file.
 - Unknown `/api/*` routes return JSON `route_not_found`.
 
 ## Provenance and unknown values

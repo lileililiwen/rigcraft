@@ -571,7 +571,7 @@ export interface DiagnoseRequest {
   build: BuildPartInput[];
 }
 
-export type AdviceAction = "must_replace" | "should_upgrade" | "keep";
+export type AdviceAction = "must_replace" | "should_upgrade" | "keep" | "unverified";
 
 export interface AdviceCost {
   currency: string;
@@ -601,6 +601,7 @@ export interface AdviceGroups {
   mustReplace: number[];
   shouldUpgrade: number[];
   keep: number[];
+  unverified: number[];
 }
 
 export interface PlanOption {

@@ -8,8 +8,8 @@ use uuid::Uuid;
 
 use crate::domain::{
     make_record, normalize_category, normalize_model, normalize_sku, now_rfc3339, parse_specs,
-    row_from_values, FieldError, Preview, PreviewRow, Provenance, Record, RowValues, Snapshot,
-    SnapshotSource,
+    row_from_values, totals_overflow_error, FieldError, Preview, PreviewRow, Provenance, Record,
+    RowValues, Snapshot, SnapshotSource,
 };
 use crate::error::ApiError;
 
@@ -382,9 +382,13 @@ pub fn decision_hash(request: &CommitRequest) -> String {
     format!("{:x}", hasher.finalize())
 }
 
-pub fn snapshot_from_preview(preview: &Preview, records: Vec<Record>, sha256: &str) -> Snapshot {
-    let totals = Snapshot::totals_for(&records);
-    Snapshot {
+pub fn snapshot_from_preview(
+    preview: &Preview,
+    records: Vec<Record>,
+    sha256: &str,
+) -> Result<Snapshot, ApiError> {
+    let totals = Snapshot::totals_for(&records).map_err(|_| totals_overflow_error())?;
+    Ok(Snapshot {
         id: Uuid::new_v4().to_string(),
         created_at: now_rfc3339(),
         revision: 1,
@@ -397,7 +401,7 @@ pub fn snapshot_from_preview(preview: &Preview, records: Vec<Record>, sha256: &s
         note: None,
         records,
         totals,
-    }
+    })
 }
 
 pub fn build_correction(
@@ -539,7 +543,7 @@ pub fn build_correction(
     for record in &mut records {
         record.id = Uuid::new_v4().to_string();
     }
-    let totals = Snapshot::totals_for(&records);
+    let totals = Snapshot::totals_for(&records).map_err(|_| totals_overflow_error())?;
     Ok(Snapshot {
         id: new_id,
         created_at: observed_at,
@@ -651,7 +655,7 @@ mod tests {
     fn corrections_version_the_old_snapshot() {
         let preview = preview();
         let records = build_records(&preview, &accept_all(&preview)).unwrap();
-        let snapshot = snapshot_from_preview(&preview, records, "sha");
+        let snapshot = snapshot_from_preview(&preview, records, "sha").unwrap();
         let request = CorrectionRequest {
             note: Some("Stock recount".to_string()),
             changes: vec![RecordChange {

@@ -4,6 +4,7 @@ import {
   canCommit,
   defaultDecisions,
   formatMoney,
+  formatTimestamp,
   priceToMinor,
   rowIssues,
   rowsNeedingResolution,
@@ -116,5 +117,27 @@ describe("inventory decisions", () => {
     expect(priceToMinor("1299.5")).toBe(129950);
     expect(priceToMinor("1.234")).toBeNull();
     expect(formatMoney(129900, "USD")).toMatch(/1,299/);
+  });
+
+  it("formats timestamps as ISO 8601 UTC regardless of browser locale", () => {
+    const original = Object.getOwnPropertyDescriptor(navigator, "language");
+    try {
+      for (const locale of ["en-US", "zh-CN", "ar-EG"]) {
+        Object.defineProperty(navigator, "language", {
+          value: locale,
+          configurable: true,
+        });
+        expect(formatTimestamp("2026-11-01T20:13:01Z")).toBe("2026-11-01T20:13:01Z");
+        expect(formatTimestamp("2026-11-01T20:13:01.500Z")).toBe(
+          "2026-11-01T20:13:01.500Z",
+        );
+        expect(formatTimestamp("2026-11-01T20:13:01+08:00")).toBe("2026-11-01T12:13:01Z");
+      }
+    } finally {
+      if (original) {
+        Object.defineProperty(navigator, "language", original);
+      }
+    }
+    expect(formatTimestamp("not-a-date")).toBe("not-a-date");
   });
 });

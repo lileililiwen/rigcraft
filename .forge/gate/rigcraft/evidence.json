@@ -4,7 +4,7 @@
   "runtime": "forge",
   "profile": "full",
   "runtime_version": "forge 0.1.1",
-  "revision": "6979a44a32081d48751c4569c7e41dc57d65dbc0",
+  "revision": "db9b625000e13e26816379453bea56c76543e3ae",
   "manifest_digest": "sha256:88b43c9d70487a99",
   "rule_pack_version": "workspace-governance@1",
   "aggregate": "passed",
@@ -12,7 +12,7 @@
     {
       "id": "build",
       "state": "pass",
-      "note": "diagnostic: Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.21s"
+      "note": "diagnostic: Compiling cc v1.10.0\n   Compiling generic-array v0.14.7\n   Compiling ahash v0.8.12\n   Compiling encoding_rs v0.8.44\n   Compiling ring v0.17.14\n   Compiling libsqlite3-sys v0.30.1\n   Compiling multer v3.1.0\n   Compiling block-buffer v0.10.4\n   Compiling rustls v0.23.46\n   Compiling crypto…[truncated]"
     },
     {
       "id": "governance-quality",
@@ -46,14 +46,14 @@
     {
       "id": "tests",
       "state": "pass",
-      "note": "diagnostic: running 52 tests\ntest ai::tests::a_missing_key_names_the_deterministic_flow ... ok\ntest ai::tests::a_secret_key_never_prints_its_value ... ok\ntest ai::tests::an_oversized_or_empty_sentence_is_refused ... ok\ntest ai::tests::an_unknown_snapshot_does_not_claim_a_currency ... ok\ntest ai::tes…[truncated]"
+      "note": "diagnostic: running 53 tests\ntest ai::tests::a_secret_key_never_prints_its_value ... ok\ntest ai::tests::a_missing_key_names_the_deterministic_flow ... ok\ntest ai::tests::an_oversized_or_empty_sentence_is_refused ... ok\ntest ai::tests::provider_urls_are_https_or_loopback_http ... ok\ntest ai::tests::a…[truncated]"
     },
     {
       "id": "ui-conformance",
       "state": "pass",
-      "note": "diagnostic: note rigcraft: content rules read 21 of 33 UI file(s): only files inside the declared ui.scope.roots are opened\n  note rigcraft: token source declares 17 colour literal(s); the comparison runs through dotnet-platform-libs/ui/scripts/lib/token-model.mjs, not a Python copy\nPASS: rigcraft u…[truncated]"
+      "note": "diagnostic: note rigcraft: content rules read 21 of 35 UI file(s): only files inside the declared ui.scope.roots are opened\n  note rigcraft: token source declares 17 colour literal(s); the comparison runs through dotnet-platform-libs/ui/scripts/lib/token-model.mjs, not a Python copy\nPASS: rigcraft u…[truncated]"
     }
   ],
-  "observed_at": "2026-10-31T11:20:38Z",
+  "observed_at": "2026-10-31T12:49:38Z",
   "dry_run": false
 }

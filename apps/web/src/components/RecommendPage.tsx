@@ -14,7 +14,7 @@ import {
   recommendBuild,
 } from "../api";
 import { PART_CATEGORIES, verdictMeta } from "../compatibility";
-import { formatDate, formatMoney, shortId } from "../inventory";
+import { formatTimestamp, formatMoney, shortId } from "../inventory";
 import {
   USE_CASES,
   bindingLabel,
@@ -440,7 +440,7 @@ export function RecommendPage() {
                   {snapshots.map((entry) => (
                     <option key={entry.id} value={entry.id}>
                       Revision {entry.revision} · {entry.sourceFilename} ·{" "}
-                      {formatDate(entry.createdAt)} · {entry.recordCount} records ·{" "}
+                      {formatTimestamp(entry.createdAt)} · {entry.recordCount} records ·{" "}
                       {shortId(entry.id)}
                     </option>
                   ))}

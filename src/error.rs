@@ -1,3 +1,5 @@
+use axum::extract::rejection::JsonRejection;
+use axum::extract::{FromRequest, Request};
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use axum::Json;
@@ -83,4 +85,49 @@ impl IntoResponse for ApiError {
         }
         (self.status, Json(json!({ "error": error }))).into_response()
     }
+}
+
+/// JSON body extractor that converts an axum rejection into the documented
+/// error envelope instead of the plain-text body the built-in extractor returns.
+pub struct ApiJson<T>(pub T);
+
+impl<T, S> FromRequest<S> for ApiJson<T>
+where
+    Json<T>: FromRequest<S, Rejection = JsonRejection>,
+    S: Send + Sync,
+{
+    type Rejection = ApiError;
+
+    async fn from_request(request: Request, state: &S) -> Result<Self, Self::Rejection> {
+        match Json::<T>::from_request(request, state).await {
+            Ok(Json(value)) => Ok(ApiJson(value)),
+            Err(rejection) => Err(json_rejection(rejection)),
+        }
+    }
+}
+
+fn json_rejection(rejection: JsonRejection) -> ApiError {
+    let status = rejection.status();
+    let reason = rejection.body_text();
+    let error = match &rejection {
+        JsonRejection::MissingJsonContentType(_) => {
+            ApiError::bad_request("invalid_body", "Send this request as application/json.")
+        }
+        JsonRejection::BytesRejection(_) => ApiError::new(
+            status,
+            "invalid_body",
+            "The request body could not be read.",
+        ),
+        JsonRejection::JsonDataError(_) | JsonRejection::JsonSyntaxError(_) => {
+            ApiError::bad_request(
+                "invalid_json",
+                "The JSON request body could not be parsed. Check its syntax and field types.",
+            )
+        }
+        _ => ApiError::bad_request(
+            "invalid_json",
+            "The JSON request body could not be parsed. Check its syntax and field types.",
+        ),
+    };
+    error.with_details(json!({ "reason": reason }))
 }

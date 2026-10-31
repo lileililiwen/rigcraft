@@ -260,20 +260,42 @@ pub struct SnapshotSummary {
     pub note: Option<String>,
 }
 
+/// A line total, unit count, or snapshot value that cannot be represented in a
+/// signed 64-bit integer. Callers reject the write instead of saturating.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct TotalsOverflow;
+
 impl Snapshot {
-    pub fn totals_for(records: &[Record]) -> SnapshotTotals {
+    pub fn totals_for(records: &[Record]) -> Result<SnapshotTotals, TotalsOverflow> {
         let mut totals = SnapshotTotals {
             record_count: records.len(),
             ..SnapshotTotals::default()
         };
         for record in records {
-            totals.unit_count = totals.unit_count.saturating_add(record.quantity);
+            let line_total = record
+                .price_minor
+                .checked_mul(record.quantity)
+                .ok_or(TotalsOverflow)?;
+            totals.unit_count = totals
+                .unit_count
+                .checked_add(record.quantity)
+                .ok_or(TotalsOverflow)?;
             totals.value_minor = totals
                 .value_minor
-                .saturating_add(record.price_minor.saturating_mul(record.quantity));
+                .checked_add(line_total)
+                .ok_or(TotalsOverflow)?;
         }
-        totals
+        Ok(totals)
     }
+}
+
+/// The documented 422 for an amount that cannot be represented.
+pub fn totals_overflow_error() -> ApiError {
+    ApiError::unprocessable(
+        "price_overflow",
+        "A line total or the snapshot total is too large to store. Lower the price or quantity.",
+    )
+    .with_field("price")
 }
 
 pub fn now_rfc3339() -> String {
@@ -804,5 +826,41 @@ mod tests {
         assert!(preview_is_expired(created, now));
         assert!(!preview_is_expired(created, now - Duration::hours(2)));
         assert!(preview_is_expired("not-a-timestamp", now));
+    }
+
+    fn total_record(price_minor: i64, quantity: i64) -> Record {
+        Record {
+            id: "record".to_string(),
+            lot: 1,
+            sku: "SKU".to_string(),
+            category: "cpu".to_string(),
+            model_raw: "Part".to_string(),
+            model_normalized: "Part".to_string(),
+            quantity,
+            price_minor,
+            currency: "USD".to_string(),
+            specs: Vec::new(),
+            provenance: BTreeMap::new(),
+            match_info: MatchInfo::default(),
+        }
+    }
+
+    #[test]
+    fn totals_use_checked_arithmetic_and_reject_overflow() {
+        let totals = Snapshot::totals_for(&[total_record(100, 3)]).unwrap();
+        assert_eq!(totals.unit_count, 3);
+        assert_eq!(totals.value_minor, 300);
+
+        let line_overflow = Snapshot::totals_for(&[total_record(i64::MAX, 2)]);
+        assert_eq!(line_overflow, Err(TotalsOverflow));
+
+        let sum_overflow = Snapshot::totals_for(&[
+            total_record(i64::MAX / 2 + 1, 1),
+            total_record(i64::MAX / 2 + 1, 1),
+        ]);
+        assert_eq!(sum_overflow, Err(TotalsOverflow));
+
+        let unit_overflow = Snapshot::totals_for(&[total_record(0, i64::MAX), total_record(0, 1)]);
+        assert_eq!(unit_overflow, Err(TotalsOverflow));
     }
 }

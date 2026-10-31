@@ -35,6 +35,20 @@ fn verdict_label(status: Verdict) -> &'static str {
     }
 }
 
+/// Dynamic prose: keep it on one line and make embedded HTML literal.
+fn markdown_text(value: &str) -> String {
+    value
+        .replace(['\r', '\n'], " ")
+        .replace('<', "&lt;")
+        .replace('>', "&gt;")
+}
+
+/// A Markdown table cell. The backslash is escaped before the pipe so the
+/// inserted `\|` is not escaped again; no operator text can add a column.
+fn markdown_cell(value: &str) -> String {
+    markdown_text(&value.replace('\\', "\\\\").replace('|', "\\|"))
+}
+
 pub fn export_json(report: &RecommendationReport, snapshot: &Snapshot) -> serde_json::Value {
     let checks: Vec<serde_json::Value> = report
         .candidates
@@ -111,9 +125,9 @@ pub fn export_markdown(report: &RecommendationReport) -> String {
     if report.stale {
         out.push_str(&format!(
             "- **Stale:** {}\n",
-            report.stale_reason.clone().unwrap_or_else(|| {
+            markdown_text(&report.stale_reason.clone().unwrap_or_else(|| {
                 "the snapshot changed after this report was created.".to_string()
-            })
+            }))
         ));
     }
     out.push_str(&format!(
@@ -131,31 +145,43 @@ pub fn export_markdown(report: &RecommendationReport) -> String {
     if !report.request.locked_skus.is_empty() {
         out.push_str(&format!(
             "- Locked (owned): {}\n",
-            report.request.locked_skus.join(", ")
+            report
+                .request
+                .locked_skus
+                .iter()
+                .map(|sku| markdown_text(sku))
+                .collect::<Vec<_>>()
+                .join(", ")
         ));
     }
     if !report.request.excluded_skus.is_empty() {
         out.push_str(&format!(
             "- Excluded by request: {}\n",
-            report.request.excluded_skus.join(", ")
+            report
+                .request
+                .excluded_skus
+                .iter()
+                .map(|sku| markdown_text(sku))
+                .collect::<Vec<_>>()
+                .join(", ")
         ));
     }
     out.push('\n');
 
     if let Some(no_solution) = &report.no_solution {
         out.push_str("## No solution\n\n");
-        out.push_str(&format!("**{}**\n\n", no_solution.headline));
-        out.push_str(&format!("{}\n\n", no_solution.explanation));
+        out.push_str(&format!("**{}**\n\n", markdown_text(&no_solution.headline)));
+        out.push_str(&format!("{}\n\n", markdown_text(&no_solution.explanation)));
         if !no_solution.blockers.is_empty() {
             out.push_str("Blockers:\n");
             for blocker in &no_solution.blockers {
-                out.push_str(&format!("- {}\n", blocker.detail));
+                out.push_str(&format!("- {}\n", markdown_text(&blocker.detail)));
             }
             out.push('\n');
         }
         out.push_str("What can be adjusted:\n");
         for item in &no_solution.adjustable {
-            out.push_str(&format!("- {item}\n"));
+            out.push_str(&format!("- {}\n", markdown_text(item)));
         }
         out.push('\n');
     }
@@ -166,7 +192,7 @@ pub fn export_markdown(report: &RecommendationReport) -> String {
             out.push_str(&format!(
                 "### {}. {} — {} ({})\n\n",
                 candidate.rank,
-                candidate.label,
+                markdown_text(&candidate.label),
                 format_money(candidate.total_minor, currency),
                 verdict_label(candidate.overall_status)
             ));
@@ -207,19 +233,19 @@ pub fn export_markdown(report: &RecommendationReport) -> String {
                     .unwrap_or_default();
                 out.push_str(&format!(
                     "| {} | {} | `{}` | {} | {} | {} | {} |\n",
-                    part.category,
-                    part.model,
-                    part.sku,
+                    markdown_cell(&part.category),
+                    markdown_cell(&part.model),
+                    markdown_cell(&part.sku),
                     part.quantity,
                     format_money(part.unit_price_minor, currency),
                     format_money(part.line_total_minor, currency),
-                    stock
+                    markdown_cell(&stock)
                 ));
             }
             out.push('\n');
             out.push_str("Why this build:\n");
             for reason in &candidate.reasons {
-                out.push_str(&format!("- {reason}\n"));
+                out.push_str(&format!("- {}\n", markdown_text(reason)));
             }
             out.push('\n');
             if !candidate.alternatives.is_empty() {
@@ -227,11 +253,11 @@ pub fn export_markdown(report: &RecommendationReport) -> String {
                 for alternative in &candidate.alternatives {
                     out.push_str(&format!(
                         "- {} {} (`{}`) at {}: {}\n",
-                        alternative.category,
-                        alternative.model,
-                        alternative.sku,
+                        markdown_text(&alternative.category),
+                        markdown_text(&alternative.model),
+                        markdown_text(&alternative.sku),
                         format_money(alternative.line_total_minor, currency),
-                        alternative.detail
+                        markdown_text(&alternative.detail)
                     ));
                 }
                 out.push('\n');
@@ -239,7 +265,7 @@ pub fn export_markdown(report: &RecommendationReport) -> String {
             if !candidate.unknown_follow_ups.is_empty() {
                 out.push_str("Confirm before building:\n");
                 for follow_up in &candidate.unknown_follow_ups {
-                    out.push_str(&format!("- {follow_up}\n"));
+                    out.push_str(&format!("- {}\n", markdown_text(follow_up)));
                 }
                 out.push('\n');
             }
@@ -248,7 +274,11 @@ pub fn export_markdown(report: &RecommendationReport) -> String {
         out.push_str("## Comparison\n\n");
         out.push_str("| |");
         for candidate in &report.candidates {
-            out.push_str(&format!(" {} {}", candidate.rank, candidate.label));
+            out.push_str(&format!(
+                " {} {}",
+                candidate.rank,
+                markdown_cell(&candidate.label)
+            ));
         }
         out.push_str(" |\n| --- |");
         for _ in &report.candidates {
@@ -278,7 +308,10 @@ pub fn export_markdown(report: &RecommendationReport) -> String {
         }
         out.push_str("\n| Check report |");
         for candidate in &report.candidates {
-            out.push_str(&format!(" `{}` |", candidate.check_report_id));
+            out.push_str(&format!(
+                " `{}` |",
+                markdown_cell(&candidate.check_report_id)
+            ));
         }
         out.push_str("\n\n");
     }
@@ -288,7 +321,10 @@ pub fn export_markdown(report: &RecommendationReport) -> String {
         for exclusion in &report.exclusions {
             out.push_str(&format!(
                 "- `{}` ({}) — {}: {}\n",
-                exclusion.sku, exclusion.category, exclusion.reason, exclusion.detail
+                markdown_text(&exclusion.sku),
+                markdown_text(&exclusion.category),
+                markdown_text(&exclusion.reason),
+                markdown_text(&exclusion.detail)
             ));
         }
         out.push('\n');
@@ -298,7 +334,7 @@ pub fn export_markdown(report: &RecommendationReport) -> String {
     if !references.is_empty() {
         out.push_str("## Evidence sources\n\n");
         for reference in references {
-            out.push_str(&format!("- {reference}\n"));
+            out.push_str(&format!("- {}\n", markdown_text(&reference)));
         }
         out.push('\n');
     }

@@ -15,6 +15,7 @@ import {
   canCommit,
   continuationSummary,
   formatMoney,
+  formatTimestamp,
   overrideValues,
   rowIssues,
   rowsNeedingResolution,
@@ -128,8 +129,9 @@ export function PreviewReview({
           </div>
         </dl>
         <p className="small muted">
-          Preview expires {new Date(preview.expiresAt).toLocaleString()}. No row is
-          written until you commit, and a failed commit writes nothing.
+          Preview expires{" "}
+          <time dateTime={preview.expiresAt}>{formatTimestamp(preview.expiresAt)}</time>. No
+          row is written until you commit, and a failed commit writes nothing.
         </p>
 
         <div className="table-wrap">
