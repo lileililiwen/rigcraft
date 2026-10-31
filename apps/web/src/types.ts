@@ -38,6 +38,8 @@ export interface RowValues {
   price: string;
   currency: string;
   specs: string;
+  source?: string;
+  sourceUrl?: string;
 }
 
 export interface NormalizedRow {

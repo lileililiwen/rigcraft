@@ -10,20 +10,35 @@ use crate::domain::{
 use crate::error::ApiError;
 
 pub const LOGICAL_FIELDS: &[&str] = &[
-    "sku", "category", "model", "quantity", "price", "currency", "specs", "cost",
+    "sku",
+    "category",
+    "model",
+    "quantity",
+    "price",
+    "currency",
+    "specs",
+    "cost",
+    "source",
+    "sourceUrl",
 ];
 
 pub const REQUIRED_FIELDS: &[&str] = &["sku", "category", "model", "quantity", "price"];
 
-pub const SAMPLE_CSV: &str = "sku,category,model,quantity,price,currency,specs\n\
-CPU-5800X,cpu,AMD Ryzen 7 5800X,2,189.00,USD,socket=AM5;tdp=105W\n\
-MB-B650-ATX,motherboard,ASUS ROG STRIX B650E-F,1,249.00,USD,socket=AM5;form_factor=ATX;memory_type=DDR5\n\
-RAM-32-6000,ram,Kingston Fury Beast 32GB Kit,3,109.50,USD,memory_type=DDR5;capacity=32GB\n\
-GPU-4070,gpu,NVIDIA GeForce RTX 4070 Founders Edition,1,549.00,USD,length=304mm;interface=PCIe 4.0 x16\n\
-PSU-750,psu,Corsair RM750e,2,99.00,USD,wattage=750W;form_factor=ATX;connector=12VHPWR\n\
-CASE-4000D,case,Corsair 4000D Airflow,2,79.00,USD,form_factor=ATX;length=453mm;height=466mm\n\
-COOL-AK620,cooler,Thermalright Peerless Assassin 120 SE,1,35.90,USD,height=155mm;cooler_socket=AM5\n\
-SSD-990-1TB,storage,Samsung 990 Pro 1TB,4,119.00,USD,interface=PCIe 4.0 x4;capacity=1000GB\n";
+/// One physically buildable AM5 machine. Every compatibility fact was checked
+/// against the manufacturer page in `sourceUrl` on 2026-10-31; facts those pages
+/// do not state (BIOS support, peak power) are omitted so they stay unknown.
+/// Quantity and price are operator-entered sample stock values, not market data.
+pub const SAMPLE_CSV: &str = "sku,category,model,quantity,price,currency,specs,source,sourceUrl\n\
+CPU-7800X3D,cpu,AMD Ryzen 7 7800X3D,1,449.00,USD,socket=AM5;tdp=120W;igpu=yes,catalog:manufacturer@2026-10-31,https://www.amd.com/en/products/processors/desktops/ryzen/7000-series/amd-ryzen-7-7800x3d.html\n\
+MB-B650E-F,motherboard,ASUS ROG STRIX B650E-F GAMING WIFI,1,229.00,USD,socket=AM5;form_factor=ATX;memory_type=DDR5;ram_slots=4;max_memory=192GB;pcie_version=PCIe 5.0;storage_interface=PCIe 4.0 x4,catalog:manufacturer@2026-10-31,https://rog.asus.com/motherboards/rog-strix/rog-strix-b650e-f-gaming-wifi-model/spec/\n\
+RAM-FURY-32-6000,ram,Kingston FURY Beast 32GB (2x16GB) DDR5-6000 CL36,1,124.00,USD,memory_type=DDR5;capacity=32GB;modules=2,catalog:manufacturer@2026-10-31,https://www.kingston.com/dataSheets/KF560C36BBEK2-32.pdf\n\
+GPU-4070-FE,gpu,NVIDIA GeForce RTX 4070 Founders Edition,1,549.00,USD,length=244mm;interface=PCIe 4.0 x16;tdp=200W;vram=12GB;connector=2x8pin,catalog:manufacturer@2026-10-31,https://www.nvidia.com/en-us/geforce/graphics-cards/40-series/rtx-4070-4070ti/\n\
+PSU-RM750E,psu,Corsair RM750e,1,99.00,USD,wattage=750W;form_factor=ATX;length=140mm;psu_connectors=1x16pin+3x8pin,catalog:manufacturer@2026-10-31,https://www.corsair.com/us/en/p/psu/cp-9020262-na/rm750e-fully-modular-low-noise-atx-power-supply-cp-9020262-na\n\
+CASE-4000D,case,Corsair 4000D AIRFLOW Tempered Glass,1,94.00,USD,supported_form_factors=E-ATX+ATX+micro-ATX+Mini-ITX;max_gpu_length=360mm;max_cooler_height=170mm;max_psu_length=220mm;psu_form_factor=ATX,catalog:manufacturer@2026-10-31,https://www.corsair.com/us/en/p/case/cc-9011200-ww/4000d-airflow-tempered-glass-mid-tower-atx-case-cc-9011200-ww\n\
+COOL-PA120SE,cooler,Thermalright Peerless Assassin 120 SE,1,39.90,USD,height=155mm;cooler_socket=AM5;type=air,catalog:manufacturer@2026-10-31,https://www.thermalright.com/product/peerless-assassin-120-se/\n\
+SSD-MP600-1TB,storage,Corsair MP600 PRO NH 1TB,1,89.00,USD,interface=PCIe 4.0 x4;capacity=1000GB;form_factor=M.2 2280,catalog:manufacturer@2026-10-31,https://www.corsair.com/us/en/p/data-storage/cssd-f1000gbmp600pnh/mp600-pro-nh-1tb-pcie-gen4-x4-nvme-m-2-ssd-cssd-f1000gbmp600pnh\n\
+SSD-MP600-2TB,storage,Corsair MP600 PRO NH 2TB,1,149.00,USD,interface=PCIe 4.0 x4;capacity=2000GB;form_factor=M.2 2280,catalog:manufacturer@2026-10-31,https://www.corsair.com/us/en/p/data-storage/cssd-f2000gbmp600pnh/mp600-pro-nh-2tb-pcie-gen4-x4-nvme-m-2-ssd-cssd-f2000gbmp600pnh\n\
+SSD-MP600-4TB,storage,Corsair MP600 PRO NH 4TB,1,299.00,USD,interface=PCIe 4.0 x4;capacity=4000GB;form_factor=M.2 2280,catalog:manufacturer@2026-10-31,https://www.corsair.com/us/en/p/data-storage/cssd-f4000gbmp600pnh/mp600-pro-nh-4tb-pcie-gen4-x4-nvme-m-2-ssd-cssd-f4000gbmp600pnh\n";
 
 #[derive(Debug, Clone)]
 pub struct ParsedCsv {
@@ -49,6 +64,8 @@ fn aliases_for(logical: &str) -> &'static [&'static str] {
         "currency" => &["currency", "ccy"],
         "specs" => &["specs", "specifications", "spec"],
         "cost" => &["cost", "purchaseprice", "buyprice"],
+        "source" => &["source", "datasource", "provenancesource"],
+        "sourceUrl" => &["sourceurl", "provenanceurl"],
         _ => &[],
     }
 }
@@ -258,6 +275,8 @@ pub fn preview_csv(
             price: cell(&record, indexes["price"]),
             currency: cell(&record, indexes["currency"]),
             specs: cell(&record, indexes["specs"]),
+            source: cell(&record, indexes["source"]),
+            source_url: cell(&record, indexes["sourceUrl"]),
         };
         let mut evaluated = evaluate_row(&values, &batch_currency, &reference, &observed_at);
         if record.len() > headers.len() {
@@ -399,15 +418,23 @@ mod tests {
         )
         .unwrap();
         assert_eq!(parsed.preview.currency, "USD");
-        assert_eq!(parsed.preview.summary.total, 8);
+        assert_eq!(parsed.preview.summary.total, 10);
         assert_eq!(parsed.preview.summary.errors, 0);
         assert_eq!(
             parsed.preview.rows[0].normalized.category.as_deref(),
             Some("cpu")
         );
-        assert_eq!(parsed.preview.rows[0].normalized.price_minor, Some(18900));
-        assert_eq!(parsed.preview.rows[0].specs.len(), 2);
+        assert_eq!(parsed.preview.rows[0].normalized.price_minor, Some(44900));
+        assert_eq!(parsed.preview.rows[0].specs.len(), 3);
         assert_eq!(parsed.preview.rows[0].provenance["sku"].source, "user");
+        assert_eq!(
+            parsed.preview.rows[0].provenance["model"].source,
+            "catalog:manufacturer@2026-10-31"
+        );
+        assert_eq!(
+            parsed.preview.rows[0].match_info.confidence,
+            "catalog-declared"
+        );
     }
 
     #[test]

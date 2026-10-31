@@ -249,7 +249,14 @@ fn ram_slots(parts: &BuildParts) -> Option<RuleResult> {
 }
 
 fn pcie_generation(value: &str) -> Option<u32> {
-    let digits: String = value.chars().filter(|ch| ch.is_ascii_digit()).collect();
+    // Read the first number in the value, so the manufacturer's own wording
+    // ("PCIe 4.0 x16", "PCIe5", "5.0") yields the generation rather than every
+    // digit in the string.
+    let digits: String = value
+        .chars()
+        .skip_while(|ch| !ch.is_ascii_digit())
+        .take_while(|ch| ch.is_ascii_digit())
+        .collect();
     digits.parse::<u32>().ok()
 }
 
@@ -883,4 +890,18 @@ pub(super) fn evaluate_rules(parts: &BuildParts) -> Vec<RuleResult> {
             .then_with(|| a.rule_id.cmp(&b.rule_id))
     });
     rules
+}
+
+#[cfg(test)]
+mod tests {
+    use super::pcie_generation;
+
+    #[test]
+    fn pcie_generation_reads_the_first_number() {
+        assert_eq!(pcie_generation("PCIe 4.0 x16"), Some(4));
+        assert_eq!(pcie_generation("PCIe 5.0"), Some(5));
+        assert_eq!(pcie_generation("PCIe5"), Some(5));
+        assert_eq!(pcie_generation("5.0"), Some(5));
+        assert_eq!(pcie_generation("unknown"), None);
+    }
 }

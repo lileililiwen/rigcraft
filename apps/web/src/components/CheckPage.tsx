@@ -738,8 +738,9 @@ export function CheckPage() {
               </table>
             </div>
             <p className="privacy-note">
-              Verdicts cite the inventory snapshot's user-provided facts. No licensed
-              hardware catalog is used; model match confidence remains unverified.
+              Verdicts cite each fact's recorded provenance. A declared catalog source
+              is shown as catalog-declared; RigCraft does not query or verify it, and a
+              missing fact stays unknown.
             </p>
             <div className="button-row">
               <button

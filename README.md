@@ -1,6 +1,6 @@
 # RigCraft
 
-Open-source PC build planning from owned inventory, with traceable compatibility checks. See [requirements](requirement.md), [roadmap](ROADMAP.md), the [inventory import contract](docs/inventory-import.md), the [compatibility contract](docs/compatibility-evidence.md), the [recommendation contract](docs/build-recommendation.md), the [BYOK planning contract](docs/ai-planning.md) and the [build diagnosis contract](docs/build-diagnosis.md).
+Open-source PC build planning from owned inventory, with traceable compatibility checks. See [requirements](requirement.md), [roadmap](ROADMAP.md), the [inventory import contract](docs/inventory-import.md), the [compatibility contract](docs/compatibility-evidence.md), the [recommendation contract](docs/build-recommendation.md), the [BYOK planning contract](docs/ai-planning.md), the [build diagnosis contract](docs/build-diagnosis.md) and the [data-source assessment](docs/data-sources.md).
 
 ## Status
 
@@ -27,7 +27,7 @@ Individual checks:
 cargo fmt --all -- --check
 cargo clippy --all-targets --all-features -- -D warnings
 cargo test
-npm run check                  # measured token contrast + TypeScript
+npm run check                  # measured contrast + converter tests + TypeScript
 npm test
 npm run build
 ```
@@ -49,7 +49,7 @@ A provider key is optional and belongs to the operator. It is held in browser me
 - `POST /api/imports/{previewId}/commit` — atomic snapshot commit.
 - `GET /api/inventory/snapshots` and `GET /api/inventory/snapshots/{id}` — history and immutable snapshots.
 - `POST /api/inventory/snapshots/{id}/corrections` — new revision.
-- `GET /api/imports/sample` — sample CSV.
+- `GET /api/imports/sample` — sourced sample CSV (see Licensing).
 - `GET /builds/check` — select parts from a snapshot and read sourced verdicts.
 - `POST /api/builds/check` — run and persist a compatibility report.
 - `GET /api/builds/checks/{id}` — read a stored report and its staleness.
@@ -65,6 +65,22 @@ A provider key is optional and belongs to the operator. It is held in browser me
 - `GET /api/diagnoses/{id}` — read a stored diagnosis and its staleness.
 
 Contract shapes, error codes and provenance rules: [docs/inventory-import.md](docs/inventory-import.md), [docs/compatibility-evidence.md](docs/compatibility-evidence.md), [docs/build-recommendation.md](docs/build-recommendation.md), [docs/ai-planning.md](docs/ai-planning.md) and [docs/build-diagnosis.md](docs/build-diagnosis.md).
+
+## Licensing
+
+The source code is MIT; see [`LICENSE`](LICENSE).
+
+The shipped sample data is a RigCraft compilation licensed CC BY 4.0, with the
+attribution and the list of changes in [`NOTICE`](NOTICE). Its compatibility
+facts were checked against the manufacturer pages recorded per row on
+2026-10-31; the pages used are listed in [`docs/data-sources.md`](docs/data-sources.md).
+Its quantity and price are operator-entered sample values, not market data.
+
+BuildCores OpenDB is **not** distributed with RigCraft. It is a much larger
+third-party dataset under CC BY-NC-SA 4.0, so its licence and obligations apply
+to whoever fetches it. `scripts/opendb-to-csv.mjs` converts a local checkout into
+the import CSV; the command and the obligations are in
+[`docs/data-sources.md`](docs/data-sources.md). PCPartPicker data is never used.
 
 ## Shared layer
 
@@ -82,6 +98,7 @@ Referencing a kit package never grants the capability it implements.
 - `docs/evidence/byok-planning-browser.md` — BYOK assistant parse → edit → confirm → deterministic result, no-key degradation, provider error, keyboard, responsive, accessibility and secret-handling evidence.
 - `docs/evidence/diagnosis-browser.md` — existing-build matching (ambiguity, miss, duplicate), reuse advice groups, validated/needs-evidence/rejected plan states, keyboard, responsive, accessibility and privacy evidence.
 - `docs/evidence/correctness-audit-browser.md` — corrected unverified advice group, stable `/diagnose` numbering, ISO 8601 UTC timestamps and static/metadata 404 behaviour.
+- `docs/evidence/catalog-seed-browser.md` — corrected sourced sample download, a catalog-column import and the operator-versus-catalog distinction.
 - `docs/evidence/token-contrast.json` — measured WCAG 2.2 AA contrast.
-- `docs/evidence/inventory-lighthouse*/`, `docs/evidence/compatibility-lighthouse*/`, `docs/evidence/recommendation-lighthouse*/`, `docs/evidence/byok-lighthouse*/`, `docs/evidence/diagnosis-lighthouse*/` and `docs/evidence/correctness-diagnose-lighthouse*/` — Lighthouse reports.
+- `docs/evidence/inventory-lighthouse*/`, `docs/evidence/compatibility-lighthouse*/`, `docs/evidence/recommendation-lighthouse*/`, `docs/evidence/byok-lighthouse*/`, `docs/evidence/diagnosis-lighthouse*/`, `docs/evidence/correctness-diagnose-lighthouse*/` and `docs/evidence/catalog-lighthouse*/` — Lighthouse reports.
 - `docs/assets/` — captured UI states.

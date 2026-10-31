@@ -2,6 +2,7 @@ import { useState } from "react";
 import type { RecordChange, RecordItem, Snapshot } from "../types";
 import { correctSnapshot, ApiFailure } from "../api";
 import {
+  factsLabel,
   formatTimestamp,
   formatMoney,
   priceToMinor,
@@ -205,7 +206,8 @@ export function SnapshotPanel({
                   ) : null}
                   <span className="small muted">
                     {" "}
-                    · match {record.match.confidence}
+                    · {factsLabel(record.provenance["model"]?.source)} · match{" "}
+                    {record.match.confidence}
                   </span>
                 </td>
                 <td data-label="Stock">{record.quantity}</td>

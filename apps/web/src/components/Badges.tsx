@@ -20,13 +20,39 @@ export function StatusBadge({ status }: { status: keyof typeof STATUS }) {
   );
 }
 
-export function SpecBadge({ status }: { status: "confirmed" | "unknown" }) {
-  return (
-    <span className={`badge badge--${status}`}>
-      <span className="badge__symbol" aria-hidden="true">
-        {status === "confirmed" ? "✓" : "?"}
+export function SpecBadge({
+  status,
+  source,
+}: {
+  status: "confirmed" | "unknown";
+  source: string;
+}) {
+  if (status === "unknown") {
+    return (
+      <span className="badge badge--unknown">
+        <span className="badge__symbol" aria-hidden="true">
+          ?
+        </span>
+        Unknown
       </span>
-      {status === "confirmed" ? "User-confirmed" : "Unknown"}
+    );
+  }
+  if (source.startsWith("catalog:")) {
+    return (
+      <span className="badge badge--catalog" title={source}>
+        <span className="badge__symbol" aria-hidden="true">
+          ▣
+        </span>
+        Catalog
+      </span>
+    );
+  }
+  return (
+    <span className="badge badge--confirmed">
+      <span className="badge__symbol" aria-hidden="true">
+        ✎
+      </span>
+      Operator-confirmed
     </span>
   );
 }
@@ -76,7 +102,7 @@ export function SpecList({ specs }: { specs: Spec[] }) {
             {spec.number !== undefined ? spec.number : spec.text}
             {spec.unit ? ` ${spec.unit}` : ""}
           </span>
-          <SpecBadge status={spec.status} />
+          <SpecBadge status={spec.status} source={spec.provenance.source} />
         </li>
       ))}
     </ul>

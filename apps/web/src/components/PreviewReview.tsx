@@ -14,6 +14,7 @@ import {
   acceptedRows,
   canCommit,
   continuationSummary,
+  factsLabel,
   formatMoney,
   formatTimestamp,
   overrideValues,
@@ -21,7 +22,7 @@ import {
   rowsNeedingResolution,
 } from "../inventory";
 import type { DecisionMap, OverrideMap, ResolutionMap } from "../inventory";
-import { FieldMessages, StatusBadge } from "./Badges";
+import { FieldMessages, SpecList, StatusBadge } from "./Badges";
 
 interface PreviewReviewProps {
   preview: Preview;
@@ -195,7 +196,11 @@ export function PreviewReview({
                           → {row.normalized.modelNormalized}
                         </span>
                       ) : null}
-                      <span className="small muted"> · match unverified</span>
+                      <span className="small muted">
+                        {" "}
+                        · {factsLabel(row.provenance["model"]?.source)} · match{" "}
+                        {row.match.confidence}
+                      </span>
                     </td>
                     <td data-label="Quantity">{display.quantity || "—"}</td>
                     <td data-label="Price">
@@ -219,23 +224,7 @@ export function PreviewReview({
                       ) : row.specs.length === 0 ? (
                         <span className="small">Unknown — no specs</span>
                       ) : (
-                        <ul className="spec-list">
-                          {row.specs.map((spec) => (
-                            <li key={spec.key}>
-                              <span className="tag">{spec.key}</span>{" "}
-                              {spec.number !== undefined ? spec.number : spec.text}
-                              {spec.unit ? ` ${spec.unit}` : ""}{" "}
-                              {spec.status === "unknown" ? (
-                                <span className="badge badge--unknown">
-                                  <span className="badge__symbol" aria-hidden="true">
-                                    ?
-                                  </span>
-                                  Unknown
-                                </span>
-                              ) : null}
-                            </li>
-                          ))}
-                        </ul>
+                        <SpecList specs={row.specs} />
                       )}
                     </td>
                     <td data-label="Decision">

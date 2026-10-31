@@ -3,9 +3,11 @@ import type { Preview, PreviewRow } from "./types";
 import {
   canCommit,
   defaultDecisions,
+  factsLabel,
   formatMoney,
   formatTimestamp,
   priceToMinor,
+  sourceLabel,
   rowIssues,
   rowsNeedingResolution,
 } from "./inventory";
@@ -139,5 +141,19 @@ describe("inventory decisions", () => {
       }
     }
     expect(formatTimestamp("not-a-date")).toBe("not-a-date");
+  });
+});
+
+describe("provenance labels", () => {
+  it("distinguishes operator facts from a declared catalog", () => {
+    expect(factsLabel(undefined)).toBe("Operator-entered facts");
+    expect(factsLabel("user")).toBe("Operator-entered facts");
+    expect(factsLabel("catalog:buildcores@abc1234")).toBe(
+      "Catalog facts · buildcores@abc1234",
+    );
+    expect(sourceLabel("catalog:buildcores@abc1234")).toBe(
+      "Catalog · buildcores@abc1234",
+    );
+    expect(sourceLabel("user")).toBe("User-provided");
   });
 });

@@ -7,6 +7,7 @@ use axum::body::Body;
 use axum::http::{header, Request, StatusCode};
 use axum::Router;
 use http_body_util::BodyExt;
+use rigcraft::csv_import::SAMPLE_CSV;
 use rigcraft::store::Store;
 use rigcraft::{build_router, AppState};
 use serde_json::{json, Value};
@@ -130,6 +131,45 @@ fn all_skus(snapshot: &Value) -> Value {
             .map(|record| json!({ "sku": record["sku"], "quantity": 1 }))
             .collect(),
     )
+}
+
+#[tokio::test]
+async fn shipped_sample_build_reports_no_conflict() {
+    let harness = Harness::new();
+    let snapshot = harness
+        .import("rigcraft-inventory-sample.csv", SAMPLE_CSV.as_bytes())
+        .await;
+    let (status, report) = harness
+        .check(snapshot["id"].as_str().unwrap(), all_skus(&snapshot))
+        .await;
+    assert_eq!(status, StatusCode::OK, "{report}");
+    assert_eq!(report["completeness"]["status"], "complete");
+    assert_eq!(report["summary"]["incompatible"], 0);
+    // Two facts are genuinely unpublished by the cited pages: BIOS support and
+    // peak/transient power. They stay unknown with a follow-up.
+    assert_eq!(report["summary"]["unknown"], 2);
+    assert_eq!(report["overallStatus"], "unknown");
+    let unknown = report["rules"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .filter(|rule| rule["status"] == "unknown")
+        .map(|rule| rule["ruleId"].as_str().unwrap().to_string())
+        .collect::<Vec<_>>();
+    assert_eq!(unknown, vec!["cpu-bios", "psu-capacity"]);
+    let socket = report["rules"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|rule| rule["ruleId"] == "cpu-socket")
+        .unwrap();
+    assert_eq!(socket["status"], "compatible");
+    assert_eq!(socket["evidence"][0]["value"], "AM5");
+    assert_eq!(socket["evidence"][1]["value"], "AM5");
+    assert_eq!(
+        socket["evidence"][0]["provenance"]["source"],
+        "catalog:manufacturer@2026-10-31"
+    );
 }
 
 #[tokio::test]

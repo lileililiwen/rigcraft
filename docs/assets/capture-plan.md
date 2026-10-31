@@ -84,3 +84,13 @@ Details, commands, keyboard results, measured contrast and privacy review: `docs
 ## Refresh rule
 
 Refresh these captures after any change to `/inventory`, `/builds/check`, `/recommend`, the shared tokens, the import, check, recommendation or AI plan/revision API, the compatibility rules, the scoring version, the interpretation contract or the rendered states. A capture that names an older revision is historical evidence, not current evidence.
+
+### Catalog seed captures (2026-10-31)
+
+| Capture | Route | Viewport | Condition |
+| --- | --- | --- | --- |
+| `catalog-import-empty-desktop.png` | `/inventory` | 1440×900 | Empty state with the sample licence, check date and operator-price note |
+| `catalog-import-review-desktop.png` | `/inventory` | 1440×900 | Shipped sample preview, 10 valid rows, catalog facts per row |
+| `catalog-import-provenance-desktop.png` | `/inventory` | 1440×900 | Committed revision 1; CPU provenance expanded with catalog and operator facts |
+| `catalog-import-provenance-mobile.png` | `/inventory` | 390×844 | The same revision as stacked cards |
+| `catalog-sample-check-desktop.png` | `/builds/check` | 1440×900 | Sample build with 12 compatible, 0 conflicts, 2 unknown |

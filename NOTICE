@@ -1,0 +1,64 @@
+RigCraft notices
+================
+
+RigCraft source code
+--------------------
+
+Copyright the RigCraft contributors. Licensed under the MIT License; see LICENSE.
+
+Shipped sample data
+-------------------
+
+The sample CSV served by `GET /api/imports/sample` and reproduced in
+`src/csv_import.rs` is a compilation of product facts prepared by the RigCraft
+contributors and is licensed under the Creative Commons Attribution 4.0
+International License (CC BY 4.0):
+https://creativecommons.org/licenses/by/4.0/
+
+You may share and adapt it, including commercially, provided you give
+appropriate credit, link to the license, and indicate if changes were made.
+
+Suggested credit:
+
+> Sample hardware data from RigCraft (https://github.com/lileililiwen/rigcraft),
+> licensed under CC BY 4.0. Facts checked against manufacturer product pages on
+> 2026-10-31. Changes: facts were summarized into `key=value` specifications,
+> 1 TB was recorded as 1000 GB, and facts the cited pages did not state were
+> omitted.
+
+The exact pages used for each row are in that row's `sourceUrl` column and are
+listed in `docs/data-sources.md`.
+
+Changes made to the underlying product facts: values were selected for the
+compatibility fields RigCraft reads, converted to the units in
+`docs/inventory-import.md`, and missing values were left out rather than
+inferred. Quantity and unit price are illustrative operator-entered stock
+values, not manufacturer facts or market prices.
+
+Product names, brands and trademarks are the property of their respective
+owners and are used only to identify the parts. This notice does not claim any
+rights in them.
+
+BuildCores OpenDB
+-----------------
+
+RigCraft does not distribute BuildCores OpenDB. The optional converter
+`scripts/opendb-to-csv.mjs` reads a copy that the operator downloads. That data
+is licensed under Creative Commons Attribution-NonCommercial-ShareAlike 4.0
+International (CC BY-NC-SA 4.0) by BuildCores and its contributors:
+
+https://github.com/buildcores/buildcores-open-db
+https://github.com/buildcores/buildcores-open-db/blob/main/NOTICE.md
+
+If you share OpenDB data or an adaptation, credit BuildCores OpenDB, retain the
+required notices, identify your changes, include the license text or link, and
+follow the ShareAlike and database-rights terms. Commercial use requires a
+separate written grant from the rights holders. RigCraft's MIT license does not
+apply to OpenDB.
+
+Other sources
+-------------
+
+PCPartPicker data is not used: its terms prohibit automated collection and
+derivative use. Octopart/Nexar and Open Icecat were assessed and are not seed
+sources. See `docs/data-sources.md` for the assessment and its evidence.

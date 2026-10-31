@@ -109,10 +109,21 @@ export function ImportForm({
         <button type="button" onClick={onSubmit} disabled={busy}>
           {busy ? "Parsing…" : "Preview CSV"}
         </button>
-        <a className="button button--secondary" href={sampleCsvUrl} download>
+        <a
+          className="button button--secondary"
+          href={sampleCsvUrl}
+          download
+          aria-describedby="sample-licence"
+        >
           Download sample CSV
         </a>
       </div>
+      <p className="small muted" id="sample-licence">
+        The sample is one real AM5 build. Its compatibility facts were checked on
+        2026-10-31 against the manufacturer pages recorded in the file's
+        <code> sourceUrl</code> column. Sample data is CC BY 4.0 (see NOTICE);
+        its quantity and price are operator-entered stock values, not market data.
+      </p>
       <p className="privacy-note">
         Files are sent only to this local RigCraft service. CSV contents and
         optional cost fields are not written to logs.

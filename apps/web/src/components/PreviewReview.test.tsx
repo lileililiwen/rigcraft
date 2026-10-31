@@ -92,6 +92,72 @@ describe("PreviewReview", () => {
     expect(screen.getAllByText(/match unverified/i).length).toBe(preview.rows.length);
   });
 
+  it("labels catalog facts apart from operator-entered stock", () => {
+    const catalogPreview: Preview = {
+      ...preview,
+      rows: [
+        row({
+          row: 2,
+          values: {
+            ...row({ row: 2 }).values,
+            source: "catalog:buildcores@abc1234",
+            sourceUrl: "https://example.test/cpu",
+          },
+          specs: [
+            {
+              key: "socket",
+              raw: "socket=AM5",
+              text: "AM5",
+              status: "confirmed",
+              provenance: {
+                source: "catalog:buildcores@abc1234",
+                reference: "https://example.test/cpu",
+                observedAt: "2026-10-31T00:00:00Z",
+              },
+            },
+            {
+              key: "color",
+              raw: "color=black",
+              text: "black",
+              status: "confirmed",
+              provenance: {
+                source: "user",
+                reference: "csv:mixed.csv",
+                observedAt: "2026-10-31T00:00:00Z",
+              },
+            },
+          ],
+          provenance: {
+            sku: {
+              source: "user",
+              reference: "csv:mixed.csv",
+              observedAt: "2026-10-31T00:00:00Z",
+            },
+            model: {
+              source: "catalog:buildcores@abc1234",
+              reference: "https://example.test/cpu",
+              observedAt: "2026-10-31T00:00:00Z",
+            },
+          },
+          match: { basis: "declared catalog facts", confidence: "catalog-declared" },
+        }),
+      ],
+      duplicateGroups: [],
+      summary: { total: 1, valid: 1, errors: 0, duplicateRows: 0 },
+    };
+    const { container } = render(
+      <PreviewReview
+        {...baseProps}
+        preview={catalogPreview}
+        decisions={{ 2: "accept" }}
+      />,
+    );
+    expect(screen.getByText(/Catalog facts · buildcores@abc1234/)).toBeInTheDocument();
+    expect(container.querySelectorAll(".badge--catalog")).toHaveLength(1);
+    expect(screen.getByText("Operator-confirmed")).toBeInTheDocument();
+    expect(screen.getByText(/match catalog-declared/i)).toBeInTheDocument();
+  });
+
   it("asks for an explicit duplicate resolution and enables commit after it", async () => {
     const user = userEvent.setup();
     const onResolution = vi.fn();

@@ -14,10 +14,10 @@ This is delivery order, not active OpenSpec changes. See `requirement.md`. Each 
 
 All five packages are implemented, archived and committed on `main`, in dependency order. A new product change starts a new OpenSpec change with its own package boundary, browser evidence and accessibility check.
 
-1. v0.1 (implemented in `inventory-import-and-provenance`): provenance and local storage verified with user-supplied specs; inventory import and correction UI delivered. A licensed catalog source is still unconfirmed.
+1. v0.1 (implemented in `inventory-import-and-provenance`, corrected in `real-catalog-seed-and-import`): provenance and local storage verified with user-supplied specs; inventory import and correction UI delivered. The data-source position is now recorded: the shipped seed is sourced and CC BY 4.0, and BuildCores OpenDB is operator-fetched under its own licence rather than bundled.
 2. v0.2 (implemented in `evidence-backed-compatibility`): normalize parts and snapshots; three-state compatibility checks and evidence UI delivered.
 3. v0.3 (implemented in `inventory-build-recommendation`): constrained recommendation, no-solution explanation, comparison and export; the complete no-AI browser journey is verified.
 4. P1 (implemented in `byok-natural-language-planning` and `existing-build-diagnosis`): optional BYOK input and modification, existing-build upgrade planning and pasted external-list diagnosis.
 5. Deferred: FPS, merchant margin, live retail pricing, MCP and advanced optimization.
 
-The five implementation packages above exist and are archived. No release or deployment readiness is claimed: deployment remains disabled in `.project.json`, and no licensed hardware catalog, live pricing or performance evidence is bundled.
+The five implementation packages above exist and are archived. No release or deployment readiness is claimed: deployment remains disabled in `.project.json`, and no third-party hardware catalog, live pricing or performance evidence is bundled. The sourced sample and the operator-fetch converter are recorded in `docs/data-sources.md`.

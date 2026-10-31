@@ -20,7 +20,7 @@ pub enum DecisionAction {
     Exclude,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct RowOverrides {
     #[serde(default)]
@@ -197,6 +197,8 @@ pub fn build_records(preview: &Preview, request: &CommitRequest) -> Result<Vec<R
                 &reference
             },
             &observed_at,
+            overrides.and_then(|value| value.model.as_ref()).is_none(),
+            overrides.and_then(|value| value.specs.as_ref()).is_none(),
         );
         let evaluated = PreviewRow {
             duplicate_group_id: row.duplicate_group_id.clone(),
@@ -596,10 +598,82 @@ mod tests {
     fn accepting_all_sample_rows_builds_records() {
         let preview = preview();
         let records = build_records(&preview, &accept_all(&preview)).unwrap();
-        assert_eq!(records.len(), 8);
-        assert_eq!(records[0].sku, "CPU-5800X");
-        assert_eq!(records[0].provenance["sku"].source, "user");
-        assert_eq!(records[0].match_info.confidence, "unverified");
+        assert_eq!(records.len(), 10);
+        let cpu = records
+            .iter()
+            .find(|record| record.sku == "CPU-7800X3D")
+            .expect("the sample has a CPU");
+        assert_eq!(cpu.provenance["sku"].source, "user");
+        assert_eq!(
+            cpu.provenance["model"].source,
+            "catalog:manufacturer@2026-10-31"
+        );
+        assert!(cpu.provenance["specs"].reference.starts_with("https://"));
+        assert_eq!(cpu.match_info.confidence, "catalog-declared");
+    }
+
+    #[test]
+    fn operator_override_replaces_the_catalog_claim() {
+        let preview = preview();
+        let cpu_row = preview
+            .rows
+            .iter()
+            .find(|row| row.normalized.sku.as_deref() == Some("CPU-7800X3D"))
+            .expect("the sample has a CPU");
+        let mut request = accept_all(&preview);
+        request.decisions.iter_mut().for_each(|decision| {
+            if decision.row == cpu_row.row {
+                decision.overrides = Some(RowOverrides {
+                    model: Some("Operator's own CPU name".to_string()),
+                    ..RowOverrides::default()
+                });
+            } else {
+                decision.action = DecisionAction::Exclude;
+            }
+        });
+        let records = build_records(&preview, &request).unwrap();
+        let record = records.first().expect("one accepted row");
+        assert_eq!(record.provenance["model"].source, "user");
+        assert!(record.provenance["model"]
+            .reference
+            .starts_with("correction:"));
+        // The specifications were not edited, so their catalog claim remains.
+        assert_eq!(
+            record.provenance["specs"].source,
+            "catalog:manufacturer@2026-10-31"
+        );
+        assert_eq!(record.match_info.confidence, "catalog-declared");
+    }
+
+    #[test]
+    fn editing_specs_leaves_the_model_catalog_claim() {
+        let preview = preview();
+        let cpu_row = preview
+            .rows
+            .iter()
+            .find(|row| row.normalized.sku.as_deref() == Some("CPU-7800X3D"))
+            .expect("the sample has a CPU");
+        let mut request = accept_all(&preview);
+        request.decisions.iter_mut().for_each(|decision| {
+            if decision.row == cpu_row.row {
+                decision.overrides = Some(RowOverrides {
+                    specs: Some("socket=AM5".to_string()),
+                    ..RowOverrides::default()
+                });
+            } else {
+                decision.action = DecisionAction::Exclude;
+            }
+        });
+        let records = build_records(&preview, &request).unwrap();
+        let record = records.first().expect("one accepted row");
+        assert_eq!(record.provenance["specs"].source, "user");
+        assert!(record.provenance["specs"]
+            .reference
+            .starts_with("correction:"));
+        assert_eq!(
+            record.provenance["model"].source,
+            "catalog:manufacturer@2026-10-31"
+        );
     }
 
     #[test]
@@ -675,7 +749,7 @@ mod tests {
             Some(snapshot.id.as_str())
         );
         assert_eq!(corrected.records[0].quantity, 9);
-        assert_eq!(snapshot.records[0].quantity, 2);
+        assert_eq!(snapshot.records[0].quantity, 1);
         assert!(corrected.records[0].provenance["quantity"]
             .reference
             .starts_with("correction:"));

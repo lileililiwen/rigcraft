@@ -31,18 +31,18 @@ const preview: Preview = {
       row: 2,
       status: "valid",
       values: {
-        sku: "CPU-5800X",
+        sku: "CPU-7800X3D",
         category: "cpu",
-        model: "AMD Ryzen 7 5800X",
+        model: "AMD Ryzen 7 7800X3D",
         quantity: "2",
         price: "189.00",
         currency: "USD",
         specs: "socket=AM5",
       },
       normalized: {
-        sku: "CPU-5800X",
+        sku: "CPU-7800X3D",
         category: "cpu",
-        modelNormalized: "AMD Ryzen 7 5800X",
+        modelNormalized: "AMD Ryzen 7 7800X3D",
         quantity: 2,
         priceMinor: 18900,
         currency: "USD",
@@ -89,10 +89,10 @@ const snapshot: Snapshot = {
     {
       id: "record-1",
       lot: 1,
-      sku: "CPU-5800X",
+      sku: "CPU-7800X3D",
       category: "cpu",
-      modelRaw: "AMD Ryzen 7 5800X",
-      modelNormalized: "AMD Ryzen 7 5800X",
+      modelRaw: "AMD Ryzen 7 7800X3D",
+      modelNormalized: "AMD Ryzen 7 7800X3D",
       quantity: 2,
       priceMinor: 18900,
       currency: "USD",
@@ -143,10 +143,11 @@ describe("inventory page", () => {
     expect(
       screen.getByRole("heading", { level: 1, name: "Inventory" }),
     ).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Download sample CSV" })).toHaveAttribute(
-      "href",
-      "/api/imports/sample",
-    );
+    const sampleLink = screen.getByRole("link", { name: "Download sample CSV" });
+    expect(sampleLink).toHaveAttribute("href", "/api/imports/sample");
+    expect(sampleLink).toHaveAttribute("aria-describedby", "sample-licence");
+    expect(screen.getByText(/CC BY 4\.0/)).toBeInTheDocument();
+    expect(screen.getByText(/2026-10-31/)).toBeInTheDocument();
 
     const file = new File(["sku,category,model,quantity,price\n"], "stock.csv", {
       type: "text/csv",

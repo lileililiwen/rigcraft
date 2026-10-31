@@ -127,6 +127,16 @@
       "pass": true
     },
     {
+      "name": "Catalog badge on muted",
+      "foreground": "--color-primary",
+      "background": "--color-muted",
+      "resolvedForeground": "#93c5fd",
+      "resolvedBackground": "#334155",
+      "ratio": 5.74,
+      "required": 4.5,
+      "pass": true
+    },
+    {
       "name": "Control border on surface",
       "foreground": "--color-border",
       "background": "--color-surface",

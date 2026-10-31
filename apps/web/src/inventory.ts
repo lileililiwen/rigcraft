@@ -216,6 +216,9 @@ export function shortId(id: string): string {
 }
 
 export function sourceLabel(source: string): string {
+  if (source.startsWith("catalog:")) {
+    return `Catalog · ${source.slice("catalog:".length)}`;
+  }
   switch (source) {
     case "user":
       return "User-provided";
@@ -226,6 +229,21 @@ export function sourceLabel(source: string): string {
     default:
       return source;
   }
+}
+
+/**
+ * The one-line distinction the inventory page needs: were this record's part
+ * facts supplied by a catalog, or asserted by the operator? Stock values are
+ * always operator facts.
+ */
+export function factsLabel(source: string | undefined): string {
+  if (!source || source === "user") {
+    return "Operator-entered facts";
+  }
+  if (source.startsWith("catalog:")) {
+    return `Catalog facts · ${source.slice("catalog:".length)}`;
+  }
+  return `Facts · ${source}`;
 }
 
 export function continuationSummary(rows: PreviewRow[]): string {

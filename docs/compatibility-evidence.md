@@ -93,9 +93,11 @@ Power is screening only. A passing nominal estimate without sourced peak draw is
 
 ## Facts and provenance
 
-- Every compared value cites the snapshot spec's `source`, `reference` and `observedAt`. Current imports record `user` with `csv:<filename>`; no licensed hardware catalog is consulted and `match.confidence` remains `unverified`.
+- Every compared value cites the snapshot spec's `source`, `reference` and `observedAt`. An import without a source column records `user` with `csv:<filename>`. An import that declares `source=catalog:<id>` and `sourceUrl` cites those for the model and specifications, while SKU, quantity and price stay `user` (`docs/inventory-import.md`). `match.confidence` is `catalog-declared` for such a row and `unverified` otherwise; neither means RigCraft queried or verified the source.
+- The shipped sample declares `catalog:manufacturer@2026-10-31` and a manufacturer page per row. Its complete build reports 12 compatible and 2 unknown rules, no conflict; the two unknowns are the BIOS support and peak-power facts the cited pages do not publish. `tests/compatibility_api.rs` holds that assertion.
 - Facts with `status: "unknown"` are not used by a rule. Unknown keys and absent specs produce a `followUp`, never a default (for example, storage is not assumed SATA and a cooler is not assumed to fit).
 - Fixtures in `tests/fixtures/compatibility/` are synthetic. Their models are prefixed `Fixture` and they are imported as ordinary user-owned inventory, never presented as licensed catalog data.
+- PCIe values are read from the first number in the recorded value, so the manufacturer's own wording (`PCIe 4.0 x16`, `PCIe5`, `5.0`) yields the generation instead of every digit in the string.
 
 ## Persistence
 

@@ -159,17 +159,97 @@ async fn preview_returns_rows_mapping_and_provenance() {
         .await;
     assert_eq!(status, StatusCode::OK);
     assert_eq!(preview["currency"], "USD");
-    assert_eq!(preview["summary"]["total"], 8);
+    assert_eq!(preview["summary"]["total"], 10);
     assert_eq!(preview["summary"]["errors"], 0);
-    assert_eq!(preview["rows"][0]["normalized"]["priceMinor"], 18900);
+    assert_eq!(preview["rows"][0]["normalized"]["priceMinor"], 44900);
     assert_eq!(preview["rows"][0]["specs"][0]["status"], "confirmed");
     assert_eq!(preview["rows"][0]["provenance"]["sku"]["source"], "user");
+    assert_eq!(
+        preview["rows"][0]["provenance"]["model"]["source"],
+        "catalog:manufacturer@2026-10-31"
+    );
+    assert!(preview["rows"][0]["provenance"]["specs"]["reference"]
+        .as_str()
+        .unwrap()
+        .starts_with("https://"));
     assert_eq!(
         preview["rows"][0]["provenance"]["modelNormalized"]["source"],
         "rigcraft-normalizer"
     );
-    assert_eq!(preview["rows"][0]["match"]["confidence"], "unverified");
+    assert_eq!(
+        preview["rows"][0]["match"]["confidence"],
+        "catalog-declared"
+    );
     assert!(preview["previewId"].as_str().unwrap().len() > 10);
+}
+
+#[tokio::test]
+async fn source_columns_flow_from_preview_to_snapshot_without_touching_stock_provenance() {
+    let harness = Harness::new();
+    let csv = "sku,category,model,quantity,price,currency,specs,source,sourceUrl\n\
+SRC-1,cpu,Catalog CPU,2,10.00,USD,socket=AM5;tdp=120W,catalog:buildcores@abc1234,https://example.test/cpu\n";
+    let (status, preview) = harness.preview("catalog.csv", csv.as_bytes(), "USD").await;
+    assert_eq!(status, StatusCode::OK, "{preview}");
+    assert_eq!(preview["summary"]["errors"], 0);
+    assert_eq!(
+        preview["rows"][0]["provenance"]["model"]["source"],
+        "catalog:buildcores@abc1234"
+    );
+    assert_eq!(
+        preview["rows"][0]["provenance"]["specs"]["reference"],
+        "https://example.test/cpu"
+    );
+    assert_eq!(
+        preview["rows"][0]["provenance"]["quantity"]["source"],
+        "user"
+    );
+    assert_eq!(
+        preview["rows"][0]["match"]["confidence"],
+        "catalog-declared"
+    );
+
+    let preview_id = preview["previewId"].as_str().unwrap();
+    let (status, committed) = harness.commit(preview_id, &all_accept(&preview)).await;
+    assert_eq!(status, StatusCode::OK, "{committed}");
+    let record = &committed["snapshot"]["records"][0];
+    assert_eq!(
+        record["provenance"]["model"]["source"],
+        "catalog:buildcores@abc1234"
+    );
+    assert_eq!(
+        record["specs"][0]["provenance"]["source"],
+        "catalog:buildcores@abc1234"
+    );
+    assert_eq!(record["provenance"]["sku"]["source"], "user");
+    assert_eq!(record["provenance"]["price"]["source"], "user");
+}
+
+#[tokio::test]
+async fn csv_without_source_columns_keeps_user_provenance() {
+    let harness = Harness::new();
+    let csv = "sku,category,model,quantity,price\nPLAIN-1,cpu,Plain CPU,1,10\n";
+    let (status, preview) = harness.preview("plain.csv", csv.as_bytes(), "USD").await;
+    assert_eq!(status, StatusCode::OK, "{preview}");
+    assert_eq!(preview["rows"][0]["provenance"]["model"]["source"], "user");
+    assert_eq!(
+        preview["rows"][0]["provenance"]["model"]["reference"],
+        "csv:plain.csv"
+    );
+    assert_eq!(preview["rows"][0]["match"]["confidence"], "unverified");
+}
+
+#[tokio::test]
+async fn invalid_source_values_are_field_errors() {
+    let harness = Harness::new();
+    let csv = "sku,category,model,quantity,price,source,sourceUrl\n\
+BAD-1,cpu,Bad Source,1,10,shop,https://example.test\n\
+BAD-2,cpu,Bad URL,1,10,catalog:buildcores@abc1234,ftp://example.test\n";
+    let (status, preview) = harness.preview("bad.csv", csv.as_bytes(), "USD").await;
+    assert_eq!(status, StatusCode::OK, "{preview}");
+    assert_eq!(preview["summary"]["errors"], 2);
+    assert_eq!(preview["rows"][0]["errors"][0]["code"], "source_format");
+    assert_eq!(preview["rows"][1]["errors"][0]["code"], "source_url_format");
+    assert_eq!(preview["rows"][1]["errors"][0]["field"], "sourceUrl");
 }
 
 #[tokio::test]
@@ -390,8 +470,11 @@ async fn sample_endpoint_serves_a_valid_download() {
     let (status, body, content_type) = harness.text(request).await;
     assert_eq!(status, StatusCode::OK);
     assert!(content_type.unwrap().starts_with("text/csv"));
-    assert!(body.lines().count() >= 9);
+    assert_eq!(body.lines().count(), 11);
     assert!(body.starts_with("sku,category,model,quantity,price"));
+    assert!(body.contains("source,sourceUrl"));
+    assert!(!body.contains("CPU-5800X"));
+    assert!(!body.contains("socket=AM5;tdp=105W"));
 }
 
 #[tokio::test]

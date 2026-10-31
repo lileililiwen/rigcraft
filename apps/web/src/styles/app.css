@@ -402,6 +402,10 @@ button:disabled,
   color: var(--color-warning);
 }
 
+.badge--catalog {
+  color: var(--color-primary);
+}
+
 .badge__symbol {
   font-weight: 700;
 }

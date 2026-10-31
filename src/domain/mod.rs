@@ -1,8 +1,9 @@
 //! Inventory domain types, validation, and deterministic normalization.
 //!
-//! No third-party hardware catalog is consulted in this package. Normalization
-//! is lexical only, every specification carries its source tag, and a value
-//! that was not supplied stays unknown rather than being guessed.
+//! No third-party hardware catalog is queried. A row may declare a catalog
+//! source, which is recorded as provenance and never verified; normalization is
+//! lexical only, every specification carries its source tag, and a value that
+//! was not supplied stays unknown rather than being guessed.
 
 use std::collections::BTreeMap;
 
@@ -66,6 +67,18 @@ impl Provenance {
             observed_at: observed_at.into(),
         }
     }
+
+    pub fn catalog(
+        source: impl Into<String>,
+        reference: impl Into<String>,
+        observed_at: impl Into<String>,
+    ) -> Self {
+        Self {
+            source: source.into(),
+            reference: reference.into(),
+            observed_at: observed_at.into(),
+        }
+    }
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
@@ -120,6 +133,13 @@ pub struct RowValues {
     pub price: String,
     pub currency: String,
     pub specs: String,
+    /// Declared provenance for the model and specifications: empty, `user`, or
+    /// `catalog:<id>`. Operator stock facts never use it.
+    #[serde(default)]
+    pub source: String,
+    /// Per-row reference for a declared catalog source.
+    #[serde(default)]
+    pub source_url: String,
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, Eq)]
@@ -516,6 +536,8 @@ pub fn parse_money_minor(raw: &str) -> Result<i64, FieldError> {
 mod specs;
 pub use specs::parse_specs;
 
+mod provenance;
+use provenance::{catalog_provenance, match_info_for};
 /// Validate one row's raw values. The result is deterministic for the same
 /// input, batch currency, and timestamp.
 pub fn evaluate_row(
@@ -524,10 +546,38 @@ pub fn evaluate_row(
     reference: &str,
     observed_at: &str,
 ) -> EvaluatedRow {
+    evaluate_row_scoped(values, batch_currency, reference, observed_at, true, true)
+}
+
+/// `model_catalog` and `specs_catalog` say whether each fact still comes from the
+/// row's declared catalog source. The commit path clears one of them when the
+/// operator edits that field, so an edited fact is never labelled as catalog.
+fn evaluate_row_scoped(
+    values: &RowValues,
+    batch_currency: &str,
+    reference: &str,
+    observed_at: &str,
+    model_catalog: bool,
+    specs_catalog: bool,
+) -> EvaluatedRow {
     let mut errors = Vec::new();
     let mut normalized = NormalizedRow::default();
     let mut provenance = BTreeMap::new();
     let user = Provenance::user(reference, observed_at);
+    let (catalog, source_errors) = catalog_provenance(values, reference, observed_at);
+    errors.extend(source_errors);
+    // Catalog facts are the model and the specifications. Stock facts stay the
+    // operator's even when the row declares a catalog source.
+    let model_facts = if model_catalog {
+        catalog.as_ref().unwrap_or(&user)
+    } else {
+        &user
+    };
+    let spec_facts = if specs_catalog {
+        catalog.as_ref().unwrap_or(&user)
+    } else {
+        &user
+    };
 
     match validate_text("sku", &values.sku, 120) {
         Ok(sku) => {
@@ -562,7 +612,7 @@ pub fn evaluate_row(
     match validate_text("model", &values.model, 200) {
         Ok(model) => {
             normalized.model_normalized = Some(normalize_model(&model));
-            provenance.insert("model".to_string(), user.clone());
+            provenance.insert("model".to_string(), model_facts.clone());
             provenance.insert(
                 "modelNormalized".to_string(),
                 Provenance::normalizer("model-lexical-v1", observed_at),
@@ -610,10 +660,10 @@ pub fn evaluate_row(
         }
     }
 
-    let specs = match parse_specs(&values.specs, &user) {
+    let specs = match parse_specs(&values.specs, spec_facts) {
         Ok(specs) => {
             if !values.specs.trim().is_empty() {
-                provenance.insert("specs".to_string(), user.clone());
+                provenance.insert("specs".to_string(), spec_facts.clone());
             }
             specs
         }
@@ -628,7 +678,7 @@ pub fn evaluate_row(
         specs,
         errors,
         provenance,
-        match_info: MatchInfo::default(),
+        match_info: match_info_for(catalog.as_ref().filter(|_| model_catalog || specs_catalog)),
     }
 }
 
@@ -664,8 +714,17 @@ pub fn row_from_values(
     batch_currency: &str,
     reference: &str,
     observed_at: &str,
+    model_catalog: bool,
+    specs_catalog: bool,
 ) -> PreviewRow {
-    let evaluated = evaluate_row(&values, batch_currency, reference, observed_at);
+    let evaluated = evaluate_row_scoped(
+        &values,
+        batch_currency,
+        reference,
+        observed_at,
+        model_catalog,
+        specs_catalog,
+    );
     PreviewRow {
         row,
         status: if evaluated.errors.is_empty() {
@@ -705,162 +764,4 @@ pub fn reject_oversize(len: usize) -> Result<(), ApiError> {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-
-    fn user() -> Provenance {
-        Provenance::user("csv:test.csv", "2026-10-31T00:00:00Z")
-    }
-
-    #[test]
-    fn categories_normalize_aliases_and_reject_unknown() {
-        assert_eq!(normalize_category(" Processor "), Some("cpu"));
-        assert_eq!(normalize_category("mainboard"), Some("motherboard"));
-        assert_eq!(normalize_category("Power Supply"), Some("psu"));
-        assert_eq!(normalize_category("fan"), None);
-    }
-
-    #[test]
-    fn model_normalization_is_lexical_only() {
-        assert_eq!(normalize_model("  ASUS   ROG  "), "ASUS ROG");
-    }
-
-    #[test]
-    fn money_parses_minor_units_and_rejects_precision() {
-        assert_eq!(parse_money_minor("1299").unwrap(), 129900);
-        assert_eq!(parse_money_minor("1299.5").unwrap(), 129950);
-        assert_eq!(parse_money_minor("0.05").unwrap(), 5);
-        assert_eq!(
-            parse_money_minor("1.234").unwrap_err().code,
-            "price_precision"
-        );
-        assert_eq!(parse_money_minor("-1").unwrap_err().code, "price_negative");
-        assert_eq!(parse_money_minor("").unwrap_err().code, "required");
-    }
-
-    #[test]
-    fn quantity_rejects_fraction_and_negative() {
-        assert_eq!(parse_quantity("3").unwrap(), 3);
-        assert_eq!(parse_quantity("2.5").unwrap_err().code, "quantity_format");
-        assert_eq!(parse_quantity("-2").unwrap_err().code, "quantity_negative");
-    }
-
-    #[test]
-    fn currency_requires_iso_shape() {
-        assert_eq!(parse_currency("usd").unwrap(), "USD");
-        assert_eq!(parse_currency("US").unwrap_err().code, "currency_format");
-    }
-
-    #[test]
-    fn specs_are_typed_and_unknown_keys_stay_unknown() {
-        let specs = parse_specs("socket=AM5;tdp=105W;color=black", &user()).unwrap();
-        assert_eq!(specs.len(), 3);
-        assert_eq!(specs[0].key, "socket");
-        assert_eq!(specs[0].status, SpecStatus::Confirmed);
-        assert_eq!(specs[1].number, Some(105.0));
-        assert_eq!(specs[1].unit.as_deref(), Some("W"));
-        assert_eq!(specs[2].status, SpecStatus::Unknown);
-        assert_eq!(specs[2].text.as_deref(), Some("black"));
-    }
-
-    #[test]
-    fn specs_reject_missing_unit_and_duplicates() {
-        assert_eq!(
-            parse_specs("tdp=105", &user()).unwrap_err().code,
-            "spec_unit"
-        );
-        assert_eq!(
-            parse_specs("tdp=105W;tdp=95W", &user()).unwrap_err().code,
-            "spec_duplicate"
-        );
-        assert_eq!(
-            parse_specs("socketAM5", &user()).unwrap_err().code,
-            "spec_format"
-        );
-    }
-
-    #[test]
-    fn evaluated_row_keeps_provenance_and_reports_fields() {
-        let values = RowValues {
-            sku: " CPU-1 ".into(),
-            category: "cpu".into(),
-            model: " Ryzen  7 ".into(),
-            quantity: "2".into(),
-            price: "299.99".into(),
-            currency: "usd".into(),
-            specs: "socket=AM5".into(),
-        };
-        let row = evaluate_row(&values, "USD", "csv:test.csv", "2026-10-31T00:00:00Z");
-        assert!(row.errors.is_empty());
-        assert_eq!(row.normalized.sku.as_deref(), Some("CPU-1"));
-        assert_eq!(row.normalized.model_normalized.as_deref(), Some("Ryzen 7"));
-        assert_eq!(row.normalized.price_minor, Some(29999));
-        assert_eq!(row.provenance["sku"].source, "user");
-        assert_eq!(
-            row.provenance["modelNormalized"].source,
-            "rigcraft-normalizer"
-        );
-        assert_eq!(row.match_info.confidence, "unverified");
-    }
-
-    #[test]
-    fn mixed_currency_is_a_field_error() {
-        let values = RowValues {
-            sku: "A".into(),
-            category: "ram".into(),
-            model: "Kit".into(),
-            quantity: "1".into(),
-            price: "10".into(),
-            currency: "EUR".into(),
-            specs: String::new(),
-        };
-        let row = evaluate_row(&values, "USD", "csv:test.csv", "2026-10-31T00:00:00Z");
-        assert_eq!(row.errors[0].code, "currency_mismatch");
-        assert_eq!(row.errors[0].field, "currency");
-    }
-
-    #[test]
-    fn preview_expiry_is_calculated_from_creation_time() {
-        let created = "2026-10-31T00:00:00Z";
-        let now = OffsetDateTime::parse("2026-11-01T01:00:00Z", &Rfc3339).unwrap();
-        assert!(preview_is_expired(created, now));
-        assert!(!preview_is_expired(created, now - Duration::hours(2)));
-        assert!(preview_is_expired("not-a-timestamp", now));
-    }
-
-    fn total_record(price_minor: i64, quantity: i64) -> Record {
-        Record {
-            id: "record".to_string(),
-            lot: 1,
-            sku: "SKU".to_string(),
-            category: "cpu".to_string(),
-            model_raw: "Part".to_string(),
-            model_normalized: "Part".to_string(),
-            quantity,
-            price_minor,
-            currency: "USD".to_string(),
-            specs: Vec::new(),
-            provenance: BTreeMap::new(),
-            match_info: MatchInfo::default(),
-        }
-    }
-
-    #[test]
-    fn totals_use_checked_arithmetic_and_reject_overflow() {
-        let totals = Snapshot::totals_for(&[total_record(100, 3)]).unwrap();
-        assert_eq!(totals.unit_count, 3);
-        assert_eq!(totals.value_minor, 300);
-
-        let line_overflow = Snapshot::totals_for(&[total_record(i64::MAX, 2)]);
-        assert_eq!(line_overflow, Err(TotalsOverflow));
-
-        let sum_overflow = Snapshot::totals_for(&[
-            total_record(i64::MAX / 2 + 1, 1),
-            total_record(i64::MAX / 2 + 1, 1),
-        ]);
-        assert_eq!(sum_overflow, Err(TotalsOverflow));
-
-        let unit_overflow = Snapshot::totals_for(&[total_record(0, i64::MAX), total_record(0, 1)]);
-        assert_eq!(unit_overflow, Err(TotalsOverflow));
-    }
-}
+mod tests;

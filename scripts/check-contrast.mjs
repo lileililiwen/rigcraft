@@ -68,6 +68,7 @@ const pairs = [
   ["Success text on muted", "color-success", "color-muted", 4.5],
   ["Warning text on muted", "color-warning", "color-muted", 4.5],
   ["Warning text on page", "color-warning", "color-background", 4.5],
+  ["Catalog badge on muted", "color-primary", "color-muted", 4.5],
   ["Control border on surface", "color-border", "color-surface", 3],
   ["Focus ring on page", "focus-ring", "color-background", 3],
   ["Focus ring on surface", "focus-ring", "color-surface", 3],
