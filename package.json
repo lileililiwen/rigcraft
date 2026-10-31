@@ -10,6 +10,10 @@
     "check": "node scripts/check-contrast.mjs && node --test scripts/opendb-to-csv.test.mjs && npm --workspace @rigcraft/web run typecheck",
     "contrast": "node scripts/check-contrast.mjs",
     "test": "npm --workspace @rigcraft/web test",
+    "test:e2e": "node e2e/run.mjs",
     "typecheck": "npm --workspace @rigcraft/web run typecheck"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.64.1"
   }
 }

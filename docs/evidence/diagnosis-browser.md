@@ -159,10 +159,11 @@ page loaded. The sequence below was performed at 390×844.
 - Service logs contain request metadata only; no pasted line, specification or price
   is logged. The captured fixtures are synthetic.
 
-## Not done
+## Coverage
 
-- A checked-in Playwright suite. The browser journeys, responsive checks and
-  accessibility runs were performed through Chrome DevTools MCP against the
-  production build, with Vitest covering component and state behaviour (50 tests).
-  This limitation is the same as the earlier packages and is recorded here rather
-  than implied to be automated.
+- The browser journey is now executable: `e2e/diagnosis.spec.ts` replays the exact,
+  ambiguous and unmatched lines, the blocked review and the unverified group with
+  `Fine as is (0)` on every run; `e2e/regression.spec.ts` holds the 1–5 numbering
+  and `e2e/keyboard-responsive.spec.ts` the 390 px width. The accessibility (Lighthouse) runs above were performed
+  through Chrome DevTools MCP against the production build and remain the accessibility
+  record. See `docs/evidence/browser-suite.md`.

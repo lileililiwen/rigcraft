@@ -111,5 +111,5 @@ After the capture session, the SPA fallback was corrected: `ServeDir::not_found_
 
 ## Reproduction caveats
 
-- The journey was driven with Chrome DevTools MCP, not a checked-in Playwright suite; component and state behaviour is covered by Vitest (`apps/web/src/components/CheckPage.test.tsx`, `apps/web/src/compatibility.test.ts`).
+- The browser checks are now executable: `e2e/compatibility.spec.ts` replays this journey (the full seeded build, the 12/0/2 verdict, the named unknowns) on every run, and `e2e/keyboard-responsive.spec.ts` holds the 390 px width. The captures above were made with Chrome DevTools MCP and remain the visual record. See `docs/evidence/browser-suite.md`.
 - Evidence is bound to the revision named above. Re-run the commands after any change to the UI, tokens, rule set or API before reusing these captures.

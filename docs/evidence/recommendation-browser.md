@@ -122,6 +122,6 @@ After the capture session the final binary and Web bundle were restarted and che
 
 ## Reproduction caveats
 
-- The journey was driven with Chrome DevTools MCP, not a checked-in Playwright suite; component and state behaviour is covered by Vitest (`apps/web/src/components/RecommendPage.test.tsx`, `apps/web/src/recommend.test.ts`) and the HTTP contract by `tests/recommendation_api.rs`.
+- The browser checks are now executable: `e2e/recommendation.spec.ts` replays this journey (a ranked option under budget with an honest `Unknown` label, the budget no-solution with its minimum) and `e2e/keyboard-responsive.spec.ts` completes the request from the keyboard alone at 390 px. The captures above were made with Chrome DevTools MCP and remain the visual record. See `docs/evidence/browser-suite.md`.
 - The search-limit path is proven by `tests/recommendation_api.rs::a_large_inventory_stops_at_the_stated_work_limit`; the browser dataset was small enough to complete, which is the intended experience.
 - Evidence is bound to the revision named above. Re-run the commands after any change to the UI, tokens, scoring version, rule set or API before reusing these captures.

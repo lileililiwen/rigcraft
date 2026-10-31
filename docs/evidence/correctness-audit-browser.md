@@ -90,12 +90,13 @@ above; no fabricated before image is included.
 - The captured build and specifications are synthetic. Service logs contain request
   metadata only; no pasted line, specification or price is logged.
 
-## Not done
+## Coverage and remaining limits
 
-- No checked-in Playwright suite. The browser states, responsive width and
-  Lighthouse runs were performed through Chrome DevTools MCP against the production
-  build, with Vitest covering the unverified group, stable numbering, timestamp
-  invariance and `<time>` rendering. This is the same limitation recorded by the
-  earlier packages.
+- The audit's browser findings are now executable: `e2e/regression.spec.ts` holds the
+  404 paths, the `invalid_json` envelope, the stable 1–5 `/diagnose` numbering and the
+  ISO 8601 UTC timestamp under a `de-DE` locale, and `e2e/diagnosis.spec.ts` holds the
+  unverified group with `Fine as is (0)`. The states captured above were performed
+  through Chrome DevTools MCP against the production build and remain the visual
+  record. See `docs/evidence/browser-suite.md`.
 - The Lighthouse runs do not measure performance; they cover accessibility, best
   practices, SEO and the agentic-browsing audits.

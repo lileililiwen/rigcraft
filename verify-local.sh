@@ -55,6 +55,10 @@ if [ "$has_rust" -eq 1 ]; then
     cargo test --all-targets 2>rust_test.log && pass "cargo test" || { fail "cargo test"; cat rust_test.log; }
   fi
   rm -f rust_test.log
+  # The browser suite starts the real binary, so the bin target must be built as
+  # well as the test harnesses `cargo test` produces.
+  cargo build --quiet 2>rust_build.log && pass "cargo build" || { fail "cargo build"; cat rust_build.log; }
+  rm -f rust_build.log
 fi
 
 if [ "$has_node" -eq 1 ]; then
@@ -64,6 +68,17 @@ if [ "$has_node" -eq 1 ]; then
   has_script check    && ( npm run check    >/dev/null 2>&1 && pass "npm run check"    || fail "npm run check" )
   has_script typecheck && ( npm run typecheck >/dev/null 2>&1 && pass "npm run typecheck" || fail "npm run typecheck" )
   has_script test     && ( npm test >/dev/null 2>&1 && pass "npm test" || fail "npm test" )
+  has_script build    && ( npm run build  >/dev/null 2>&1 && pass "npm run build"  || fail "npm run build" )
+  # The browser suite needs the service binary and the built bundle. Its output is
+  # held in memory and printed only on failure, so a red run says what broke.
+  if has_script test:e2e; then
+    if e2e_output=$(npm run test:e2e 2>&1); then
+      pass "npm run test:e2e"
+    else
+      fail "npm run test:e2e"
+      printf '%s\n' "$e2e_output" | tail -60
+    fi
+  fi
 fi
 
 if [ "$has_dotnet" -eq 1 ]; then

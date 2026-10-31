@@ -105,5 +105,5 @@ The screenshots above were captured immediately before those two corrections; th
 
 ## Reproduction caveats
 
-- The journey was driven with Chrome DevTools MCP, not a checked-in Playwright suite; component and state behaviour is covered by Vitest (`apps/web/src/**/*.test.tsx`). The design's Playwright mention is therefore satisfied by real browser interaction evidence, not by a stored Playwright spec.
+- The browser checks are now executable: `e2e/inventory.spec.ts` replays this journey (download, preview, commit, provenance split) on every run, and `e2e/keyboard-responsive.spec.ts` holds the 390 px width. The captures above were made with Chrome DevTools MCP and remain the visual record. See `docs/evidence/browser-suite.md`.
 - Evidence is bound to the revision named above. Re-run the commands after any change to the UI, tokens or API before reusing these captures.

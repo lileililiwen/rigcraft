@@ -178,12 +178,13 @@ assistant panel adds no animation.
 
 ## Reproduction caveats
 
-- The journey was driven with Chrome DevTools MCP, not a checked-in Playwright suite;
-  component and state behaviour is covered by Vitest
-  (`apps/web/src/components/AssistantPanel.test.tsx`, `apps/web/src/ai.test.ts`,
-  `apps/web/src/components/RecommendPage.test.tsx`) and the HTTP contract by
-  `tests/ai_planning_api.rs`, `tests/ai_provider_transport.rs` and
-  `tests/ai_secret_hygiene.rs`.
+- The deterministic recommendation journey this panel feeds is now asserted on every
+  run (`e2e/recommendation.spec.ts`, `e2e/keyboard-responsive.spec.ts`). The panel
+  itself is not driven by the checked-in suite because it needs a provider key or the
+  loopback stub; `AssistantPanel.test.tsx`, `tests/ai_planning_api.rs`,
+  `tests/ai_provider_transport.rs` and `tests/ai_secret_hygiene.rs` remain its coverage.
+  The captures above were made with Chrome DevTools MCP and remain the visual record.
+  See `docs/evidence/browser-suite.md`.
 - The 20-second timeout path is proven by `tests/ai_planning_api.rs`
   (`provider_failures_are_stable_codes_without_the_response_body`, HTTP 504) and the fixed
   adapter timeout, not by waiting 20 seconds in the browser. The browser capture shows

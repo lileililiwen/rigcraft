@@ -15,11 +15,27 @@ cargo run                      # serves the API and apps/web/dist on 127.0.0.1:8
 RIGCRAFT_ADDR=127.0.0.1:8787 cargo run   # use another port when 8080 is taken
 npm install
 npm run build                  # builds the Web app
-./verify-local.sh              # format, clippy, Cargo tests, Web checks and tests
+./verify-local.sh              # format, clippy, Cargo tests, Web checks and tests, browser suite
 ```
 
 `RIGCRAFT_ADDR` overrides the loopback bind address; use it when port 8080 is
 occupied. `RIGCRAFT_DATA_DIR` moves the SQLite file described below.
+
+Browser regression suite:
+
+```sh
+cargo build                    # prerequisite: the service binary
+npm run build                  # prerequisite: the bundle the service serves
+npm run test:e2e               # real Chrome, 11 browser tests, under a minute
+```
+
+`npm run test:e2e` picks a free loopback port, starts `target/debug/rigcraft`
+with a fresh data directory under the operating system's temp directory, waits
+for `/api/health`, and removes the directory when it finishes. It never uses
+port 8080, never reuses your inventory and needs no network; `RIGCRAFT_E2E_PORT`
+pins a port only when you need one. The Playwright suite lives in `e2e/` and its
+config in `playwright.config.ts`; the JSON report is written to the gitignored
+`test-results/`.
 
 Individual checks:
 
@@ -30,6 +46,7 @@ cargo test
 npm run check                  # measured contrast + converter tests + TypeScript
 npm test
 npm run build
+npm run test:e2e
 ```
 
 Open `http://127.0.0.1:8080/inventory`, `http://127.0.0.1:8080/builds/check`,
@@ -99,6 +116,7 @@ Referencing a kit package never grants the capability it implements.
 - `docs/evidence/diagnosis-browser.md` — existing-build matching (ambiguity, miss, duplicate), reuse advice groups, validated/needs-evidence/rejected plan states, keyboard, responsive, accessibility and privacy evidence.
 - `docs/evidence/correctness-audit-browser.md` — corrected unverified advice group, stable `/diagnose` numbering, ISO 8601 UTC timestamps and static/metadata 404 behaviour.
 - `docs/evidence/catalog-seed-browser.md` — corrected sourced sample download, a catalog-column import and the operator-versus-catalog distinction.
+- `docs/evidence/browser-suite.md` — the checked-in Playwright suite: command, the eleven tests and what each holds, and its explicit non-coverage.
 - `docs/evidence/token-contrast.json` — measured WCAG 2.2 AA contrast.
 - `docs/evidence/inventory-lighthouse*/`, `docs/evidence/compatibility-lighthouse*/`, `docs/evidence/recommendation-lighthouse*/`, `docs/evidence/byok-lighthouse*/`, `docs/evidence/diagnosis-lighthouse*/`, `docs/evidence/correctness-diagnose-lighthouse*/` and `docs/evidence/catalog-lighthouse*/` — Lighthouse reports.
 - `docs/assets/` — captured UI states.

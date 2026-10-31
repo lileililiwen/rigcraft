@@ -4,7 +4,7 @@
   "runtime": "forge",
   "profile": "full",
   "runtime_version": "forge 0.1.1",
-  "revision": "bfab08a8b896c9052d432a53b09dd0763828ab23",
+  "revision": "2903c125afa4a0a1ea00b75a36e4281b90f2f721",
   "manifest_digest": "sha256:88b43c9d70487a99",
   "rule_pack_version": "workspace-governance@1",
   "aggregate": "passed",
@@ -12,7 +12,7 @@
     {
       "id": "build",
       "state": "pass",
-      "note": "diagnostic: Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.04s"
+      "note": "diagnostic: Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.06s"
     },
     {
       "id": "governance-quality",
@@ -46,7 +46,7 @@
     {
       "id": "tests",
       "state": "pass",
-      "note": "diagnostic: running 60 tests\ntest ai::tests::a_missing_key_names_the_deterministic_flow ... ok\ntest ai::tests::an_oversized_or_empty_sentence_is_refused ... ok\ntest ai::tests::a_secret_key_never_prints_its_value ... ok\ntest ai::tests::provider_urls_are_https_or_loopback_http ... ok\ntest ai::tests::a…[truncated]"
+      "note": "diagnostic: running 60 tests\ntest ai::tests::a_missing_key_names_the_deterministic_flow ... ok\ntest ai::tests::a_secret_key_never_prints_its_value ... ok\ntest commit::tests::operator_override_replaces_the_catalog_claim ... ok\ntest commit::tests::editing_specs_leaves_the_model_catalog_claim ... ok\nte…[truncated]"
     },
     {
       "id": "ui-conformance",
@@ -54,6 +54,6 @@
       "note": "diagnostic: note rigcraft: content rules read 21 of 37 UI file(s): only files inside the declared ui.scope.roots are opened\n  note rigcraft: token source declares 17 colour literal(s); the comparison runs through dotnet-platform-libs/ui/scripts/lib/token-model.mjs, not a Python copy\nPASS: rigcraft u…[truncated]"
     }
   ],
-  "observed_at": "2026-10-31T14:18:34Z",
+  "observed_at": "2026-10-31T16:14:53Z",
   "dry_run": false
 }

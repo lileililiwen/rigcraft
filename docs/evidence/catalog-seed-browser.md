@@ -88,6 +88,8 @@ the converter locally.
 
 ## Limitations
 
-There is still no checked-in Playwright suite. The journeys, keyboard path, responsive
-width and Lighthouse runs above were executed through Chrome DevTools MCP; Vitest covers
-the badge, label and download-area behaviour.
+The sample download, a catalog-column import and the operator-versus-catalog
+distinction are now asserted on every run by `e2e/inventory.spec.ts`; the keyboard path
+and the 390 px width are held by `e2e/keyboard-responsive.spec.ts`. The captures and
+Lighthouse runs above were executed through Chrome DevTools MCP and remain the visual
+and accessibility record. See `docs/evidence/browser-suite.md`.
