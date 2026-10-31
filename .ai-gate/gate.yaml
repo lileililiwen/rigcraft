@@ -16,7 +16,7 @@ blocking:
   - FAIL
   - REVIEW_REQUIRED
 notes:
-  - Set `product_quality: true` only after adding a `quality` block to `.project.json`; see docs/product-code-quality.md.
+  - 'The quality block is declared in .project.json; enable product_quality after its check is bound.'
   - The local OpenSpec name preflight remains mandatory.
 
 commands:

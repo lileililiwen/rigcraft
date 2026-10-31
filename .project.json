@@ -59,6 +59,14 @@
     "license_spdx": "MIT",
     "visibility": "public"
   },
+  "publication": {
+    "provider": "github",
+    "owner": "lileililiwen",
+    "repository": "rigcraft",
+    "default_branch": "main",
+    "state": "metadata_verified",
+    "evidence_ref": "HANDOFF.md"
+  },
   "quality": {
     "product_roots": [
       "src"
