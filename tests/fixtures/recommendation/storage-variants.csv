@@ -1,0 +1,11 @@
+sku,category,model,quantity,price,currency,specs
+FIX-S-CPU,cpu,Fixture iGPU CPU,1,400.00,USD,socket=AM5;tdp=65W;peak_power=88W;igpu=yes;perf_score=50pt
+FIX-S-MB,motherboard,Fixture AM5 Board,1,150.00,USD,socket=AM5;chipset=B650;memory_type=DDR5;form_factor=ATX;ram_slots=4;max_memory=192GB;bios_supports=Fixture iGPU CPU;storage_interface=NVMe;pcie_version=PCIe5
+FIX-S-RAM,ram,Fixture DDR5 16GB,1,60.00,USD,memory_type=DDR5;capacity=16GB;modules=2
+FIX-S-GPU,gpu,Fixture Discrete GPU,1,500.00,USD,interface=PCIe4;length=240mm;tdp=115W;peak_power=140W;connector=1x8pin;perf_score=80pt
+FIX-S-PSU,psu,Fixture 650W PSU,1,70.00,USD,wattage=650W;psu_connectors=2x8pin;form_factor=ATX;length=160mm
+FIX-S-CASE,case,Fixture ATX Case,1,60.00,USD,supported_form_factors=ATX;max_gpu_length=360mm;max_cooler_height=170mm;psu_form_factor=ATX;max_psu_length=180mm
+FIX-S-COOLER,cooler,Fixture Air Cooler,1,40.00,USD,cooler_socket=AM5;height=155mm;type=air
+FIX-S-SSD-1,storage,Fixture 1TB SSD,1,50.00,USD,interface=NVMe;capacity=1000GB
+FIX-S-SSD-2,storage,Fixture 2TB SSD,1,100.00,USD,interface=NVMe;capacity=2000GB
+FIX-S-SSD-4,storage,Fixture 4TB SSD,1,200.00,USD,interface=NVMe;capacity=4000GB

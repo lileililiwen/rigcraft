@@ -134,6 +134,17 @@ pub struct AlternativePart {
     pub detail: String,
 }
 
+/// The completeness rule the request's use case imposed. It travels with the
+/// report so a reader never has to infer why a graphics card was required.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct UseCaseRule {
+    pub use_case: String,
+    pub requires_discrete_gpu: bool,
+    pub accepts_igpu: bool,
+    pub explanation: String,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct Candidate {
@@ -141,6 +152,9 @@ pub struct Candidate {
     /// `best_overall`, `lowest_cost`, `highest_performance` or `alternative`.
     pub objective: String,
     pub label: String,
+    /// Chosen parts without storage, so two options that differ only by drive
+    /// capacity share a signature and are collapsed.
+    pub material_signature: String,
     pub parts: Vec<CandidatePart>,
     pub total_minor: i64,
     pub budget_delta_minor: i64,
@@ -224,6 +238,7 @@ pub struct RecommendationReport {
     pub scoring_version: String,
     pub status: RecommendStatus,
     pub request: RecommendationRequestEcho,
+    pub use_case_rule: UseCaseRule,
     pub currency: String,
     pub budget_minor: i64,
     pub candidates: Vec<Candidate>,
@@ -408,6 +423,30 @@ fn validate(snapshot: &Snapshot, request: &RecommendRequest) -> Result<Settings,
     })
 }
 
+/// The use-case completeness rule, kept in the report and used by the search.
+pub(crate) fn use_case_rule(use_case: &str) -> UseCaseRule {
+    match use_case {
+        "gaming" => UseCaseRule {
+            use_case: use_case.to_string(),
+            requires_discrete_gpu: true,
+            accepts_igpu: false,
+            explanation: "Gaming requires a discrete graphics card in every option. A CPU with sourced `igpu=yes` does not complete a gaming build.".to_string(),
+        },
+        "office" => UseCaseRule {
+            use_case: use_case.to_string(),
+            requires_discrete_gpu: false,
+            accepts_igpu: true,
+            explanation: "Office and general use accept a CPU with sourced `igpu=yes`; a discrete graphics card is optional.".to_string(),
+        },
+        _ => UseCaseRule {
+            use_case: use_case.to_string(),
+            requires_discrete_gpu: false,
+            accepts_igpu: true,
+            explanation: "A discrete graphics card was not required for creation. A CPU with sourced `igpu=yes` can complete the build; a card may still be chosen for performance.".to_string(),
+        },
+    }
+}
+
 /// Run the search and assemble a persisted-shape report. The caller persists it
 /// and its candidate check reports; nothing here mutates the snapshot or stock.
 pub fn recommend(
@@ -417,6 +456,7 @@ pub fn recommend(
     let settings = validate(snapshot, request)?;
     let SearchInput { pools, exclusions } = build_input(snapshot, &settings)?;
     let outcome = search_builds(snapshot, &settings, &pools, exclusions);
+    let use_case_rule = use_case_rule(&settings.use_case);
     let status = if outcome.search.limited {
         RecommendStatus::SearchLimited
     } else if outcome.candidates.is_empty() {
@@ -440,6 +480,7 @@ pub fn recommend(
             locked_skus: settings.locked_skus.clone(),
             excluded_skus: settings.excluded_skus.clone(),
         },
+        use_case_rule,
         currency: snapshot.currency.clone(),
         budget_minor: settings.budget_minor,
         candidates: outcome.candidates,

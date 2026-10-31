@@ -793,3 +793,226 @@ async fn a_large_inventory_stops_at_the_stated_work_limit() {
     assert_eq!(report["search"]["limit"], 100_000);
     assert!(report["search"]["nodesExamined"].as_u64().unwrap() >= 100_000);
 }
+
+#[tokio::test]
+async fn gaming_requires_a_discrete_graphics_card() {
+    let harness = Harness::new();
+    let snapshot = harness.fixture("gpu-use-case.csv").await;
+    let snapshot_id = snapshot["id"].as_str().unwrap();
+
+    let (status, report) = harness
+        .post(
+            "/api/recommendations",
+            &json!({
+                "snapshotId": snapshot_id,
+                "budgetMinor": 150_000,
+                "currency": "USD",
+                "useCase": "gaming",
+                "inventoryOnly": true,
+            }),
+        )
+        .await;
+    assert_eq!(status, StatusCode::OK, "{report}");
+    assert_eq!(report["status"], "ok");
+    assert_eq!(report["useCaseRule"]["requiresDiscreteGpu"], true);
+    assert_eq!(report["useCaseRule"]["acceptsIgpu"], false);
+    assert!(report["useCaseRule"]["explanation"]
+        .as_str()
+        .unwrap()
+        .contains("discrete graphics card"));
+    let candidates = report["candidates"].as_array().unwrap();
+    assert!(!candidates.is_empty());
+    for candidate in candidates {
+        assert!(
+            candidate["parts"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .any(|part| part["category"] == "gpu"),
+            "a gaming build includes a graphics card"
+        );
+        assert!(candidate["reasons"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|reason| reason
+                .as_str()
+                .unwrap()
+                .contains("requires a discrete graphics card")));
+    }
+
+    // 830.00 is enough for the iGPU-only machine but not for the gaming build.
+    let (status, report) = harness
+        .post(
+            "/api/recommendations",
+            &json!({
+                "snapshotId": snapshot_id,
+                "budgetMinor": 100_000,
+                "currency": "USD",
+                "useCase": "gaming",
+                "inventoryOnly": true,
+            }),
+        )
+        .await;
+    assert_eq!(status, StatusCode::OK, "{report}");
+    assert_eq!(report["status"], "no_solution");
+    assert_eq!(report["candidates"].as_array().unwrap().len(), 0);
+    let no_solution = &report["noSolution"];
+    assert_eq!(no_solution["binding"], "budget");
+    assert_eq!(no_solution["minimumBuildMinor"], 133_000);
+    assert_eq!(no_solution["budgetShortfallMinor"], 33_000);
+    assert!(no_solution["headline"]
+        .as_str()
+        .unwrap()
+        .contains("discrete graphics card"));
+    assert!(no_solution["explanation"]
+        .as_str()
+        .unwrap()
+        .contains("1,330.00 USD"));
+    assert!(no_solution["explanation"]
+        .as_str()
+        .unwrap()
+        .contains("requires a discrete graphics card"));
+    assert!(no_solution["blockers"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .any(|blocker| blocker["code"] == "use_case_requirement"
+            && blocker["category"] == "gpu"
+            && blocker["sku"] == "FIX-G-GPU"));
+}
+
+#[tokio::test]
+async fn office_accepts_sourced_igpu_but_creation_says_no_card_is_required() {
+    let harness = Harness::new();
+    let snapshot = harness.fixture("gpu-use-case.csv").await;
+    let snapshot_id = snapshot["id"].as_str().unwrap();
+
+    for (use_case, rule_text) in [
+        ("office", "accept a CPU with sourced"),
+        ("creation", "not required for creation"),
+    ] {
+        let (status, report) = harness
+            .post(
+                "/api/recommendations",
+                &json!({
+                    "snapshotId": snapshot_id,
+                    "budgetMinor": 100_000,
+                    "currency": "USD",
+                    "useCase": use_case,
+                    "inventoryOnly": true,
+                }),
+            )
+            .await;
+        assert_eq!(status, StatusCode::OK, "{report}");
+        assert_eq!(report["status"], "ok", "{use_case}");
+        assert_eq!(report["useCaseRule"]["requiresDiscreteGpu"], false);
+        assert_eq!(report["useCaseRule"]["acceptsIgpu"], true);
+        assert!(report["useCaseRule"]["explanation"]
+            .as_str()
+            .unwrap()
+            .contains(rule_text));
+        let candidate = &report["candidates"][0];
+        assert_eq!(candidate["totalMinor"], 83_000);
+        assert!(
+            !candidate["parts"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .any(|part| part["category"] == "gpu"),
+            "{use_case} completes with sourced integrated graphics"
+        );
+    }
+}
+
+#[tokio::test]
+async fn storage_only_variants_collapse_to_one_material_option() {
+    let harness = Harness::new();
+    let snapshot = harness.fixture("storage-variants.csv").await;
+    let (status, report) = harness
+        .recommend(snapshot["id"].as_str().unwrap(), 200_000)
+        .await;
+    assert_eq!(status, StatusCode::OK, "{report}");
+    assert_eq!(report["status"], "ok");
+    // All three drives are valid complete gaming builds; only one is an option.
+    assert_eq!(report["search"]["validBuilds"], 3);
+    let candidates = report["candidates"].as_array().unwrap();
+    assert_eq!(
+        candidates.len(),
+        1,
+        "storage capacity is not a different option"
+    );
+    assert_eq!(candidates[0]["totalMinor"], 133_000);
+    assert_eq!(candidates[0]["objective"], "best_overall");
+    assert!(candidates[0]["materialSignature"]
+        .as_str()
+        .unwrap()
+        .contains("gpu:FIX-S-GPU"));
+    assert!(
+        !candidates[0]["materialSignature"]
+            .as_str()
+            .unwrap()
+            .contains("storage:"),
+        "storage is excluded from the material signature"
+    );
+    let storage = candidates[0]["parts"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|part| part["category"] == "storage")
+        .unwrap();
+    assert_eq!(storage["sku"], "FIX-S-SSD-1");
+}
+
+#[tokio::test]
+async fn three_materially_different_builds_are_still_offered() {
+    let harness = Harness::new();
+    let snapshot = harness.fixture("feasible.csv").await;
+    let (status, report) = harness
+        .recommend(snapshot["id"].as_str().unwrap(), 200_000)
+        .await;
+    assert_eq!(status, StatusCode::OK, "{report}");
+    let candidates = report["candidates"].as_array().unwrap();
+    assert_eq!(candidates.len(), 3);
+    let mut signatures = std::collections::BTreeSet::new();
+    let mut objectives = std::collections::BTreeSet::new();
+    for candidate in candidates {
+        assert!(signatures.insert(candidate["materialSignature"].as_str().unwrap().to_string()));
+        assert!(objectives.insert(candidate["objective"].as_str().unwrap().to_string()));
+    }
+}
+
+#[tokio::test]
+async fn gaming_does_not_accept_an_igpu_only_build() {
+    let harness = Harness::new();
+    let csv = "sku,category,model,quantity,price,currency,specs\n\
+FIX-I-CPU,cpu,Fixture iGPU CPU,1,400.00,USD,socket=AM5;tdp=65W;peak_power=88W;igpu=yes;perf_score=50pt\n\
+FIX-I-MB,motherboard,Fixture AM5 Board,1,150.00,USD,socket=AM5;chipset=B650;memory_type=DDR5;form_factor=ATX;ram_slots=4;max_memory=192GB;bios_supports=Fixture iGPU CPU;storage_interface=NVMe;pcie_version=PCIe5\n\
+FIX-I-RAM,ram,Fixture DDR5 16GB,1,60.00,USD,memory_type=DDR5;capacity=16GB;modules=2\n\
+FIX-I-PSU,psu,Fixture 650W PSU,1,70.00,USD,wattage=650W;psu_connectors=2x8pin;form_factor=ATX;length=160mm\n\
+FIX-I-CASE,case,Fixture ATX Case,1,60.00,USD,supported_form_factors=ATX;max_gpu_length=360mm;max_cooler_height=170mm;psu_form_factor=ATX;max_psu_length=180mm\n\
+FIX-I-COOLER,cooler,Fixture Air Cooler,1,40.00,USD,cooler_socket=AM5;height=155mm;type=air\n\
+FIX-I-SSD,storage,Fixture 1TB SSD,1,50.00,USD,interface=NVMe;capacity=1000GB\n";
+    let snapshot = harness.import("igpu-only.csv", csv.as_bytes()).await;
+    let (status, report) = harness
+        .recommend(snapshot["id"].as_str().unwrap(), 200_000)
+        .await;
+    assert_eq!(status, StatusCode::OK, "{report}");
+    assert_eq!(report["status"], "no_solution");
+    assert_eq!(report["candidates"].as_array().unwrap().len(), 0);
+    let no_solution = &report["noSolution"];
+    assert_eq!(no_solution["binding"], "stock");
+    assert!(no_solution["headline"]
+        .as_str()
+        .unwrap()
+        .contains("without a discrete graphics card"));
+    assert!(no_solution["blockers"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .any(|blocker| blocker["category"] == "gpu"
+            && blocker["detail"]
+                .as_str()
+                .unwrap()
+                .contains("requires a discrete graphics card")));
+}

@@ -261,7 +261,7 @@ export function RecommendPage() {
         );
       } else {
         setLive(
-          `Recommendation complete: ${result.candidates.length} option${
+          `Recommendation complete: ${result.candidates.length} materially different option${
             result.candidates.length === 1 ? "" : "s"
           } within ${formatMoney(result.budgetMinor, result.currency)}.`,
         );
@@ -526,8 +526,9 @@ export function RecommendPage() {
                       ))}
                     </select>
                     <p className="field__hint">
-                      Weights: gaming favours performance, office favours cost, creation
-                      balances performance and upgrade room.
+                      Gaming requires a discrete graphics card in every option.
+                      Office accepts a CPU with sourced integrated graphics.
+                      Creation does not require a discrete card.
                     </p>
                   </div>
                 </div>
@@ -668,6 +669,33 @@ export function RecommendPage() {
               {report.scoringVersion} · rules {report.ruleSetVersion} ·{" "}
               {searchSummary(report.search)}
             </p>
+
+            <div
+              className={
+                report.useCaseRule.requiresDiscreteGpu
+                  ? "diagnostic-block diagnostic-block--unknown"
+                  : "diagnostic-block"
+              }
+              role="note"
+              data-use-case-rule={report.useCaseRule.useCase}
+            >
+              <h3>
+                {report.useCaseRule.requiresDiscreteGpu
+                  ? "Gaming requires a discrete graphics card"
+                  : "Use-case completeness rule"}
+              </h3>
+              <p>{report.useCaseRule.explanation}</p>
+            </div>
+
+            {report.candidates.length > 0 ? (
+              <p className="small muted" data-option-count={report.candidates.length}>
+                {report.candidates.length < 3
+                  ? `${report.candidates.length} materially different build${
+                      report.candidates.length === 1 ? "" : "s"
+                    } found; no option was padded to reach three.`
+                  : "Three materially different builds; each option has a different objective."}
+              </p>
+            ) : null}
 
             {report.search.limited ? (
               <div className="diagnostic-block diagnostic-block--unknown" role="status">

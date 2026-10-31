@@ -116,6 +116,7 @@ function candidate(rank: number, label: string, totalMinor: number): Candidate {
     rank,
     objective: rank === 1 ? "best_overall" : "lowest_cost",
     label,
+    materialSignature: `cpu:FIX-CPU-${rank}:1`,
     parts: [
       {
         recordId: "r-cpu",
@@ -229,6 +230,13 @@ function report(): RecommendationReport {
       lockedSkus: [],
       excludedSkus: [],
     },
+    useCaseRule: {
+      useCase: "gaming",
+      requiresDiscreteGpu: true,
+      acceptsIgpu: false,
+      explanation:
+        "Gaming requires a discrete graphics card in every option. A CPU with sourced `igpu=yes` does not complete a gaming build.",
+    },
     currency: "USD",
     budgetMinor: 200000,
     candidates: [candidate(1, "Best overall", 27800), candidate(2, "Lowest cost", 25800)],
@@ -332,16 +340,46 @@ describe("recommendation page", () => {
     await waitFor(() => expect(heading).toHaveFocus());
     expect(
       screen.getAllByRole("status").some((node) =>
-        /Recommendation complete: 2 options/.test(node.textContent ?? ""),
+        /Recommendation complete: 2 materially different options/.test(
+          node.textContent ?? "",
+        ),
       ),
     ).toBe(true);
     expect(screen.getByRole("heading", { name: /1\. Best overall/ })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: /2\. Lowest cost/ })).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Gaming requires a discrete graphics card" }),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/2 materially different builds found/)).toBeInTheDocument();
     expect(screen.getByText("Compare options")).toBeInTheDocument();
     expect(screen.getAllByText(/Highest weighted score for gaming/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/check-1/).length).toBeGreaterThan(0);
     expect(screen.getByRole("button", { name: "Download JSON export" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Download Markdown plan" })).toBeInTheDocument();
+  });
+
+  it("states the real option count when only one material build exists", async () => {
+    installFetch(
+      handlerWith(() =>
+        jsonResponse({ ...report(), candidates: [candidate(1, "Best overall", 27800)] }),
+      ),
+    );
+    const user = userEvent.setup();
+    render(<RecommendPage />);
+
+    await screen.findByLabelText("Total budget (USD)");
+    await user.type(screen.getByLabelText("Total budget (USD)"), "2000");
+    await user.click(screen.getByRole("button", { name: "Generate recommendations" }));
+
+    await screen.findByRole("heading", { name: "Recommended builds" });
+    expect(screen.getByText(/1 materially different build found/)).toBeInTheDocument();
+    expect(screen.getByText(/no option was padded to reach three/)).toBeInTheDocument();
+    expect(document.querySelectorAll("article.candidate")).toHaveLength(1);
+    expect(
+      screen.getAllByRole("status").some((node) =>
+        /Recommendation complete: 1 materially different option/.test(node.textContent ?? ""),
+      ),
+    ).toBe(true);
   });
 
   it("explains a no-solution budget constraint instead of showing a build", async () => {

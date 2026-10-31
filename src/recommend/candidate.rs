@@ -106,6 +106,26 @@ pub(crate) fn make_candidate(
         )),
         _ => reasons.push("Next best distinct build by weighted score.".to_string()),
     }
+    match settings.use_case.as_str() {
+        "gaming" => {
+            let gpu = parts.iter().find(|part| part.category == "gpu");
+            reasons.push(match gpu {
+                Some(gpu) => format!(
+                    "Gaming requires a discrete graphics card; this build includes the {}.",
+                    gpu.model
+                ),
+                None => "Gaming requires a discrete graphics card.".to_string(),
+            });
+        }
+        "office" => reasons.push(
+            "Office accepts a CPU with sourced `igpu=yes`; a discrete graphics card is optional."
+                .to_string(),
+        ),
+        _ => reasons.push(
+            "A discrete graphics card was not required for creation; completeness does not depend on one."
+                .to_string(),
+        ),
+    }
     reasons.push(format!(
         "Total {} leaves {} {}, and {} unit(s) come from snapshot stock.",
         format_money(total, &settings.currency),
@@ -198,6 +218,7 @@ pub(crate) fn make_candidate(
         rank,
         objective: objective.to_string(),
         label: label.to_string(),
+        material_signature: evaluated.material_signature.clone(),
         parts,
         total_minor: total,
         budget_delta_minor: budget_delta,

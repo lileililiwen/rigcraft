@@ -108,6 +108,8 @@ for catalog mode is reported as `catalog_unavailable` and never produces a reque
 the part lists are resolved. It is a valid `RecommendRequest`; `POST /api/recommendations`
 re-validates every field, so the AI layer cannot bypass validation or invent inventory.
 That contract normalizes currency case-insensitively to three uppercase ASCII letters.
+A confirmed proposal is still subject to the use-case rules: a `gaming` request requires
+a discrete graphics card in every candidate, exactly as a form-entered request does.
 
 ### `POST /api/ai/revise`
 

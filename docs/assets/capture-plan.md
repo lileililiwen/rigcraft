@@ -81,6 +81,19 @@ Captured against a loopback OpenAI-compatible stub (`scripts/mock-openai-provide
 
 Details, commands, keyboard results, measured contrast and privacy review: `docs/evidence/inventory-import-browser.md`, `docs/evidence/compatibility-browser.md`, `docs/evidence/recommendation-browser.md` and `docs/evidence/byok-planning-browser.md`. Measured token contrast: `docs/evidence/token-contrast.json`. Lighthouse reports: `docs/evidence/inventory-lighthouse*/`, `docs/evidence/compatibility-lighthouse*/`, `docs/evidence/recommendation-lighthouse*/` and `docs/evidence/byok-lighthouse*/`.
 
+### Use-case integrity captures (2026-11-01)
+
+| Capture | Route | Viewport | Condition |
+| --- | --- | --- | --- |
+| `use-case-gaming-gpu-desktop.png` | `/recommend` | 1440×900 | Gaming 1,800.00: one GPU-inclusive build, rule stated, RTX 4070 present |
+| `use-case-gpu-bound-desktop.png` | `/recommend` | 1440×900 | Gaming 1,500.00: budget binding names the card, 1,672.90 minimum and 172.90 shortfall |
+| `use-case-no-padding-desktop.png` | `/recommend` | 1440×900 | Gaming 1,900.00: three valid storage variants collapse to one shown option |
+| `use-case-gaming-gpu-mobile.png` | `/recommend` | 390×844 | GPU-inclusive result stacked, no overflow |
+| `use-case-gpu-bound-mobile.png` | `/recommend` | 390×844 | Named GPU no-solution stacked, no overflow |
+| `use-case-no-padding-mobile.png` | `/recommend` | 390×844 | One-option statement stacked, no overflow |
+
+Details: `docs/evidence/use-case-diversity-browser.md`. Lighthouse reports: `docs/evidence/use-case-lighthouse/` and `docs/evidence/use-case-lighthouse-mobile/`.
+
 ## Refresh rule
 
 Refresh these captures after any change to `/inventory`, `/builds/check`, `/recommend`, the shared tokens, the import, check, recommendation or AI plan/revision API, the compatibility rules, the scoring version, the interpretation contract or the rendered states. A capture that names an older revision is historical evidence, not current evidence.

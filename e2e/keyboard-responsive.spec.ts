@@ -39,6 +39,12 @@ test("a recommendation is generated from the keyboard alone", async ({ page, req
 
   await expect(page.getByRole("heading", { name: "Recommended builds" })).toBeVisible();
   await expect(page.locator("article.candidate").first()).toContainText("Best overall");
+  await expect(
+    page.getByRole("heading", { name: "Gaming requires a discrete graphics card" }),
+  ).toBeVisible();
+  await expect(page.locator("article.candidate").first()).toContainText(
+    "NVIDIA GeForce RTX 4070 Founders Edition",
+  );
   await expectNoHorizontalOverflow(page);
 });
 

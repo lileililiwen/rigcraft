@@ -12,7 +12,7 @@ use crate::error::ApiError;
 
 use super::candidate::make_candidate;
 use super::explain::{
-    compatibility_solution, minimum_complete_cost, required_cheapest_blockers,
+    cheapest_in, compatibility_solution, minimum_complete_cost, required_cheapest_blockers,
     search_limit_solution,
 };
 use super::score::score_build;
@@ -134,27 +134,30 @@ fn empty_category_detail(snapshot: &Snapshot, settings: &Settings, category: &st
         .iter()
         .filter(|record| record.category == category)
         .collect();
-    if records.is_empty() {
-        return format!("No {category} is recorded in this snapshot.");
-    }
-    if records.iter().all(|record| record.quantity <= 0) {
-        return format!("Every {category} in this snapshot has zero available quantity.");
-    }
-    if records
+    let base = if records.is_empty() {
+        format!("No {category} is recorded in this snapshot.")
+    } else if records.iter().all(|record| record.quantity <= 0) {
+        format!("Every {category} in this snapshot has zero available quantity.")
+    } else if records
         .iter()
         .all(|record| settings.excluded_skus.contains(&record.sku))
     {
-        return format!("Every {category} in this snapshot is excluded by this request.");
-    }
-    if records
+        format!("Every {category} in this snapshot is excluded by this request.")
+    } else if records
         .iter()
         .all(|record| record.price_minor > settings.budget_minor)
     {
-        return format!("Every {category} costs more than the whole budget.");
+        format!("Every {category} costs more than the whole budget.")
+    } else {
+        format!(
+            "No usable {category} remains after stock, price, currency, duplicate and exclusion checks."
+        )
+    };
+    if category == "gpu" && settings.use_case == "gaming" {
+        format!("{base} Gaming requires a discrete graphics card.")
+    } else {
+        base
     }
-    format!(
-        "No usable {category} remains after stock, price, currency, duplicate and exclusion checks."
-    )
 }
 
 /// Build the fixed category pools after every hard filter. The result is fully
@@ -177,7 +180,10 @@ pub(crate) fn build_input(
         .collect();
 
     for category in CATEGORY_ORDER {
-        let required = is_required(category);
+        // Gaming is only served by a discrete graphics card; office and creation
+        // keep the optional-graphics behaviour the compatibility engine models.
+        let required =
+            is_required(category) || (category == "gpu" && settings.use_case == "gaming");
         if let Some(locked) = locked_by_category.get(category) {
             if locked.quantity <= 0 {
                 return Err(ApiError::unprocessable(
@@ -322,6 +328,7 @@ pub(crate) struct PartCopy {
 #[derive(Clone)]
 pub(crate) struct Evaluated {
     pub(crate) signature: String,
+    pub(crate) material_signature: String,
     pub(crate) total: i64,
     pub(crate) scores: ScoreBreakdown,
     pub(crate) performance: Option<f64>,
@@ -341,6 +348,41 @@ fn signature(parts: &[&Piece]) -> String {
         .collect();
     entries.sort();
     entries.join("|")
+}
+
+/// The parts that make two machines different choices. Storage is excluded on
+/// purpose: completeness requires one drive, and a larger capacity is not a
+/// different build under REQ-R02.
+fn material_signature(parts: &[&Piece]) -> String {
+    let mut entries: Vec<String> = parts
+        .iter()
+        .filter(|piece| piece.record.category != "storage")
+        .map(|piece| {
+            format!(
+                "{}:{}:{}",
+                piece.record.category, piece.record.sku, piece.quantity
+            )
+        })
+        .collect();
+    entries.sort();
+    entries.join("|")
+}
+
+/// Within one material signature the cheapest variant is the representative:
+/// the cost dimension falls as the total rises, so it is also the best-scoring
+/// variant. Score and the full signature make the order total and stable.
+fn better_representative(
+    total: i64,
+    score: f64,
+    signature: &str,
+    other_total: i64,
+    other_score: f64,
+    other_signature: &str,
+) -> Ordering {
+    total
+        .cmp(&other_total)
+        .then(other_score.total_cmp(&score))
+        .then(signature.cmp(other_signature))
 }
 
 fn better_by_score(
@@ -522,10 +564,15 @@ impl<'a> Walker<'a> {
             .find(|dimension| dimension.key == "performance")
             .and_then(|dimension| dimension.value);
         let signature = signature(&self.chosen);
+        let material_signature = material_signature(&self.chosen);
         let keep_top = match self.top.last() {
             None => true,
             Some(worst) => {
                 self.top.len() < TOP_POOL
+                    || self
+                        .top
+                        .iter()
+                        .any(|entry| entry.material_signature == material_signature)
                     || better_by_score(
                         scores.total,
                         cost,
@@ -578,8 +625,10 @@ impl<'a> Walker<'a> {
                 line_total_minor: piece.line_total_minor,
             })
             .collect();
+        let top_key = material_signature.clone();
         let evaluated = Rc::new(Evaluated {
             signature,
+            material_signature,
             total: cost,
             scores,
             performance,
@@ -593,7 +642,26 @@ impl<'a> Walker<'a> {
             self.cheapest = Some(Rc::clone(&evaluated));
         }
         if keep_top {
-            self.top.push(evaluated);
+            if let Some(index) = self
+                .top
+                .iter()
+                .position(|entry| entry.material_signature == top_key)
+            {
+                let current = &self.top[index];
+                if better_representative(
+                    cost,
+                    evaluated.scores.total,
+                    &evaluated.signature,
+                    current.total,
+                    current.scores.total,
+                    &current.signature,
+                ) == Ordering::Less
+                {
+                    self.top[index] = Rc::clone(&evaluated);
+                }
+            } else {
+                self.top.push(Rc::clone(&evaluated));
+            }
             self.top.sort_by(|left, right| {
                 better_by_score(
                     left.scores.total,
@@ -637,6 +705,7 @@ pub(crate) fn search_builds(
         ..SearchStats::default()
     };
     let currency = settings.currency.as_str();
+    let gpu_required = settings.use_case == "gaming";
 
     let missing_required: Vec<&str> = pools
         .iter()
@@ -644,6 +713,7 @@ pub(crate) fn search_builds(
         .map(|pool| pool.category)
         .collect();
     if !missing_required.is_empty() {
+        let gpu_missing_for_gaming = gpu_required && missing_required.contains(&"gpu");
         let blockers = missing_required
             .iter()
             .map(|category| Blocker {
@@ -657,12 +727,24 @@ pub(crate) fn search_builds(
             candidates: Vec::new(),
             no_solution: Some(NoSolution {
                 binding: "stock".to_string(),
-                headline: "No complete build can be assembled from this snapshot.".to_string(),
-                explanation: format!(
-                    "A complete build needs {}. This snapshot cannot supply: {}.",
-                    REQUIRED.join(", "),
-                    missing_required.join(", ")
-                ),
+                headline: if gpu_missing_for_gaming {
+                    "No gaming build can be assembled without a discrete graphics card."
+                        .to_string()
+                } else {
+                    "No complete build can be assembled from this snapshot.".to_string()
+                },
+                explanation: if gpu_missing_for_gaming {
+                    format!(
+                        "A gaming build requires a discrete graphics card, and this snapshot cannot supply one. It also cannot supply: {}.",
+                        missing_required.join(", ")
+                    )
+                } else {
+                    format!(
+                        "A complete build needs {}. This snapshot cannot supply: {}.",
+                        REQUIRED.join(", "),
+                        missing_required.join(", ")
+                    )
+                },
                 blockers,
                 adjustable: vec![
                     "Import or restock the missing categories, then run the recommendation again."
@@ -733,29 +815,64 @@ pub(crate) fn search_builds(
         };
     }
 
-    let minimum = minimum_complete_cost(pools);
+    let minimum = minimum_complete_cost(pools, gpu_required);
     if let Some(minimum) = minimum {
         if minimum > settings.budget_minor {
             let shortfall = minimum - settings.budget_minor;
+            let mut blockers = Vec::new();
+            if gpu_required {
+                if let Some(gpu) = cheapest_in(pools, "gpu") {
+                    blockers.push(Blocker {
+                        code: "use_case_requirement".to_string(),
+                        category: Some("gpu".to_string()),
+                        sku: Some(gpu.record.sku.clone()),
+                        detail: format!(
+                            "Gaming requires a discrete graphics card; the cheapest here is {} at {}.",
+                            gpu.record.model_normalized,
+                            format_money(gpu.line_total_minor, currency)
+                        ),
+                    });
+                }
+            }
+            blockers.extend(required_cheapest_blockers(pools, currency));
             return SearchOutcome {
                 candidates: Vec::new(),
                 no_solution: Some(NoSolution {
                     binding: "budget".to_string(),
-                    headline: "The budget is below the cheapest complete build.".to_string(),
-                    explanation: format!(
-                        "The cheapest parts recorded in this snapshot that can form a complete build add up to at least {}, which is {} over the {} budget.",
-                        format_money(minimum, currency),
-                        format_money(shortfall, currency),
-                        format_money(settings.budget_minor, currency)
-                    ),
-                    blockers: required_cheapest_blockers(pools, currency),
+                    headline: if gpu_required {
+                        "The budget is below the cheapest gaming build with a discrete graphics card."
+                            .to_string()
+                    } else {
+                        "The budget is below the cheapest complete build.".to_string()
+                    },
+                    explanation: if gpu_required {
+                        format!(
+                            "Gaming requires a discrete graphics card, so a CPU with sourced `igpu=yes` alone is not eligible. The cheapest parts recorded in this snapshot that can form a complete gaming build with a card add up to at least {}, which is {} over the {} budget.",
+                            format_money(minimum, currency),
+                            format_money(shortfall, currency),
+                            format_money(settings.budget_minor, currency)
+                        )
+                    } else {
+                        format!(
+                            "The cheapest parts recorded in this snapshot that can form a complete build add up to at least {}, which is {} over the {} budget.",
+                            format_money(minimum, currency),
+                            format_money(shortfall, currency),
+                            format_money(settings.budget_minor, currency)
+                        )
+                    },
+                    blockers,
                     adjustable: vec![
                         format!(
                             "Raise the budget to at least {}.",
                             format_money(minimum, currency)
                         ),
-                        "Lower the cost by excluding expensive parts or importing cheaper stock."
-                            .to_string(),
+                        if gpu_required {
+                            "Add a cheaper discrete graphics card, or exclude the parts that make the card unaffordable."
+                                .to_string()
+                        } else {
+                            "Lower the cost by excluding expensive parts or importing cheaper stock."
+                                .to_string()
+                        },
                     ],
                     minimum_build_minor: Some(minimum),
                     budget_shortfall_minor: Some(shortfall),
@@ -795,7 +912,10 @@ pub(crate) fn search_builds(
         .into_iter()
         .flatten()
     {
-        if !pool.iter().any(|entry| entry.signature == extra.signature) {
+        if !pool
+            .iter()
+            .any(|entry| entry.material_signature == extra.material_signature)
+        {
             pool.push(extra);
         }
     }
@@ -813,7 +933,7 @@ pub(crate) fn search_builds(
     let mut ordered: Vec<(Rc<Evaluated>, &'static str, &'static str)> = Vec::new();
     let mut used: BTreeSet<String> = BTreeSet::new();
     if let Some(first) = pool.first() {
-        used.insert(first.signature.clone());
+        used.insert(first.material_signature.clone());
         ordered.push((Rc::clone(first), "best_overall", "Best overall"));
     }
     for (candidate, objective, label) in [
@@ -827,20 +947,20 @@ pub(crate) fn search_builds(
         let Some(candidate) = candidate else {
             continue;
         };
-        if used.contains(&candidate.signature) {
+        if used.contains(&candidate.material_signature) {
             continue;
         }
-        used.insert(candidate.signature.clone());
+        used.insert(candidate.material_signature.clone());
         ordered.push((Rc::clone(candidate), objective, label));
     }
     for entry in &pool {
         if ordered.len() >= MAX_CANDIDATES {
             break;
         }
-        if used.contains(&entry.signature) {
+        if used.contains(&entry.material_signature) {
             continue;
         }
-        used.insert(entry.signature.clone());
+        used.insert(entry.material_signature.clone());
         ordered.push((Rc::clone(entry), "alternative", "Alternative build"));
     }
 

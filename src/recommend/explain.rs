@@ -2,10 +2,14 @@
 
 use std::collections::BTreeMap;
 
-use super::search::{category_min, fact_is_yes, Pool};
+use super::search::{category_min, fact_is_yes, Piece, Pool};
 use super::{format_money, Blocker, NoSolution, Settings, SEARCH_WORK_LIMIT};
 
-pub(crate) fn minimum_complete_cost(pools: &[Pool]) -> Option<i64> {
+/// Cheapest structurally complete build ignoring compatibility. A GPU required
+/// by the use case is added to every CPU, and optional graphics and cooling are
+/// priced per CPU from its sourced substitute facts.
+pub(crate) fn minimum_complete_cost(pools: &[Pool], gpu_required: bool) -> Option<i64> {
+    let gpu_min = category_min(pools, "gpu");
     let cpu_min = pools
         .iter()
         .find(|pool| pool.category == "cpu")
@@ -13,10 +17,10 @@ pub(crate) fn minimum_complete_cost(pools: &[Pool]) -> Option<i64> {
             pool.options
                 .iter()
                 .filter_map(|cpu| {
-                    let gpu = if fact_is_yes(&cpu.record, "igpu") {
-                        Some(0)
+                    let gpu = if gpu_required || !fact_is_yes(&cpu.record, "igpu") {
+                        gpu_min
                     } else {
-                        category_min(pools, "gpu")
+                        Some(0)
                     };
                     let cooler = if fact_is_yes(&cpu.record, "bundled_cooler") {
                         Some(0)
@@ -33,7 +37,7 @@ pub(crate) fn minimum_complete_cost(pools: &[Pool]) -> Option<i64> {
         })?;
     let rest: i64 = pools
         .iter()
-        .filter(|pool| pool.required && pool.category != "cpu")
+        .filter(|pool| pool.required && !matches!(pool.category, "cpu" | "gpu" | "cooler"))
         .map(|pool| {
             pool.options
                 .iter()
@@ -43,6 +47,21 @@ pub(crate) fn minimum_complete_cost(pools: &[Pool]) -> Option<i64> {
         })
         .sum();
     Some(cpu_min.saturating_add(rest))
+}
+
+/// The cheapest part in one category, used to name the graphics card when a
+/// use-case requirement binds.
+pub(crate) fn cheapest_in<'a>(pools: &'a [Pool], category: &str) -> Option<&'a Piece> {
+    pools
+        .iter()
+        .find(|pool| pool.category == category)
+        .and_then(|pool| {
+            pool.options.iter().min_by(|left, right| {
+                left.line_total_minor
+                    .cmp(&right.line_total_minor)
+                    .then(left.record.sku.cmp(&right.record.sku))
+            })
+        })
 }
 
 pub(crate) fn required_cheapest_blockers(pools: &[Pool], currency: &str) -> Vec<Blocker> {

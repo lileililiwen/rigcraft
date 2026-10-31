@@ -355,6 +355,7 @@ export interface Candidate {
   rank: number;
   objective: string;
   label: string;
+  materialSignature: string;
   parts: CandidatePart[];
   totalMinor: number;
   budgetDeltaMinor: number;
@@ -406,6 +407,13 @@ export interface SearchStats {
   method: string;
 }
 
+export interface UseCaseRule {
+  useCase: string;
+  requiresDiscreteGpu: boolean;
+  acceptsIgpu: boolean;
+  explanation: string;
+}
+
 export interface RecommendationReport {
   id: string;
   createdAt: string;
@@ -415,6 +423,7 @@ export interface RecommendationReport {
   scoringVersion: string;
   status: RecommendStatus;
   request: RecommendationRequestEcho;
+  useCaseRule: UseCaseRule;
   currency: string;
   budgetMinor: number;
   candidates: Candidate[];
