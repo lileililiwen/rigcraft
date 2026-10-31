@@ -178,6 +178,89 @@ export interface CorrectionRequest {
   changes: RecordChange[];
 }
 
+export type Verdict = "compatible" | "incompatible" | "unknown";
+export type CompletenessStatus = "complete" | "incomplete";
+
+export interface SelectionItem {
+  sku: string;
+  quantity: number;
+}
+
+export interface CheckRequest {
+  snapshotId: string;
+  selection: SelectionItem[];
+}
+
+export interface PartRef {
+  recordId: string;
+  sku: string;
+  category: string;
+  model: string;
+}
+
+export interface RuleEvidence {
+  part: PartRef;
+  field: string;
+  value: string | null;
+  provenance: Provenance | null;
+}
+
+export interface RuleResult {
+  ruleId: string;
+  ruleVersion: string;
+  title: string;
+  category: string;
+  status: Verdict;
+  parts: PartRef[];
+  evidence: RuleEvidence[];
+  explanation: string;
+  followUp: string | null;
+  method: string;
+}
+
+export interface MissingPart {
+  category: string;
+  reason: string;
+  followUp: string;
+}
+
+export interface Completeness {
+  status: CompletenessStatus;
+  missing: MissingPart[];
+}
+
+export interface SelectedPart {
+  recordId: string;
+  sku: string;
+  category: string;
+  model: string;
+  quantity: number;
+  lots: number;
+  available: number;
+}
+
+export interface CheckSummary {
+  compatible: number;
+  incompatible: number;
+  unknown: number;
+}
+
+export interface CheckReport {
+  id: string;
+  snapshotId: string;
+  snapshotRevision: number;
+  ruleSetVersion: string;
+  checkedAt: string;
+  selection: SelectedPart[];
+  completeness: Completeness;
+  overallStatus: Verdict;
+  rules: RuleResult[];
+  summary: CheckSummary;
+  stale: boolean;
+  currentSnapshotRevision?: number | null;
+  staleReason?: string | null;
+}
+
 export interface ApiErrorBody {
   code: string;
   message: string;
@@ -187,5 +270,10 @@ export interface ApiErrorBody {
     rows?: Array<{ row: number; errors: FieldError[] }>;
     groups?: string[];
     sku?: string;
+    category?: string;
+    skus?: string[];
+    requested?: number;
+    available?: number;
+    lots?: number;
   };
 }

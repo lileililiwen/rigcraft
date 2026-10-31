@@ -7,9 +7,10 @@ use std::sync::Mutex;
 use rusqlite::{params, Connection, OptionalExtension};
 use serde_json;
 
+use crate::compatibility::CheckReport;
 use crate::domain::{Preview, Record, Snapshot, SnapshotSource, SnapshotSummary, SnapshotTotals};
 
-const SCHEMA_VERSION: i64 = 1;
+const SCHEMA_VERSION: i64 = 2;
 
 #[derive(Debug)]
 pub enum StoreError {
@@ -293,6 +294,65 @@ impl Store {
         })
     }
 
+    pub fn insert_check_report(&self, report: &CheckReport) -> StoreResult<()> {
+        let json = serde_json::to_string(report)?;
+        self.lock().execute(
+            "INSERT INTO check_reports
+             (id, snapshot_id, snapshot_revision, rule_set_version, selection_json,
+              overall_status, completeness, checked_at, report_json)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)",
+            params![
+                report.id,
+                report.snapshot_id,
+                report.snapshot_revision,
+                report.rule_set_version,
+                serde_json::to_string(&report.selection)?,
+                serde_json::to_string(&report.overall_status)?,
+                serde_json::to_string(&report.completeness.status)?,
+                report.checked_at,
+                json,
+            ],
+        )?;
+        Ok(())
+    }
+
+    /// Highest revision in the correction chain rooted at `snapshot_id`.
+    /// A snapshot row is immutable, so staleness is found by following child
+    /// revisions rather than by re-reading the same row.
+    pub fn latest_chain_revision(&self, snapshot_id: &str) -> StoreResult<Option<i64>> {
+        let connection = self.lock();
+        let revision = connection
+            .query_row(
+                "WITH RECURSIVE chain(id, revision) AS (
+                    SELECT id, revision FROM snapshots WHERE id = ?1
+                    UNION ALL
+                    SELECT s.id, s.revision FROM snapshots s
+                    JOIN chain c ON s.parent_snapshot_id = c.id
+                 )
+                 SELECT MAX(revision) FROM chain",
+                params![snapshot_id],
+                |row| row.get::<_, Option<i64>>(0),
+            )
+            .optional()?
+            .flatten();
+        Ok(revision)
+    }
+
+    pub fn get_check_report(&self, check_id: &str) -> StoreResult<CheckReport> {
+        let connection = self.lock();
+        let json = connection
+            .query_row(
+                "SELECT report_json FROM check_reports WHERE id = ?1",
+                params![check_id],
+                |row| row.get::<_, String>(0),
+            )
+            .optional()?;
+        match json {
+            Some(json) => Ok(serde_json::from_str(&json)?),
+            None => Err(StoreError::NotFound),
+        }
+    }
+
     pub fn list_snapshots(&self) -> StoreResult<Vec<SnapshotSummary>> {
         let connection = self.lock();
         let mut statement = connection.prepare(
@@ -414,6 +474,28 @@ fn migrate(connection: &Connection) -> StoreResult<()> {
                 snapshot_id TEXT REFERENCES snapshots(id)
              );",
         )?;
+    }
+    if version < 2 {
+        // Compatibility checks are derived data. They reference the immutable
+        // snapshot revision and rule-set version they were computed against so
+        // an older verdict is detectable rather than silently reused.
+        connection.execute_batch(
+            "CREATE TABLE IF NOT EXISTS check_reports (
+                id TEXT PRIMARY KEY,
+                snapshot_id TEXT NOT NULL REFERENCES snapshots(id),
+                snapshot_revision INTEGER NOT NULL,
+                rule_set_version TEXT NOT NULL,
+                selection_json TEXT NOT NULL,
+                overall_status TEXT NOT NULL,
+                completeness TEXT NOT NULL,
+                checked_at TEXT NOT NULL,
+                report_json TEXT NOT NULL
+             );
+             CREATE INDEX IF NOT EXISTS check_reports_snapshot
+                ON check_reports(snapshot_id, snapshot_revision, checked_at);",
+        )?;
+    }
+    if version < SCHEMA_VERSION {
         connection.pragma_update(None, "user_version", SCHEMA_VERSION)?;
     }
     Ok(())
@@ -504,5 +586,51 @@ mod tests {
             store.get_snapshot("nope"),
             Err(StoreError::NotFound)
         ));
+    }
+
+    #[test]
+    fn check_reports_round_trip_with_their_revision() {
+        use crate::compatibility::{check_build, CheckRequest, SelectionItem};
+        let (_dir, store) = temp_store();
+        let snapshot = snapshot("s1");
+        store.insert_correction(&snapshot).unwrap();
+        let report = check_build(
+            &snapshot,
+            &CheckRequest {
+                snapshot_id: "s1".to_string(),
+                selection: vec![SelectionItem {
+                    sku: "A".to_string(),
+                    quantity: 1,
+                }],
+            },
+        )
+        .unwrap();
+        store.insert_check_report(&report).unwrap();
+        let loaded = store.get_check_report(&report.id).unwrap();
+        assert_eq!(loaded.snapshot_id, "s1");
+        assert_eq!(loaded.snapshot_revision, 1);
+        assert_eq!(
+            loaded.rule_set_version,
+            crate::compatibility::RULE_SET_VERSION
+        );
+        assert!(matches!(
+            store.get_check_report("missing"),
+            Err(StoreError::NotFound)
+        ));
+    }
+
+    #[test]
+    fn latest_chain_revision_follows_corrections() {
+        let (_dir, store) = temp_store();
+        let first = snapshot("s1");
+        store.insert_correction(&first).unwrap();
+        assert_eq!(store.latest_chain_revision("s1").unwrap(), Some(1));
+        let mut second = snapshot("s2");
+        second.revision = 2;
+        second.parent_snapshot_id = Some("s1".to_string());
+        store.insert_correction(&second).unwrap();
+        assert_eq!(store.latest_chain_revision("s1").unwrap(), Some(2));
+        assert_eq!(store.latest_chain_revision("s2").unwrap(), Some(2));
+        assert_eq!(store.latest_chain_revision("missing").unwrap(), None);
     }
 }

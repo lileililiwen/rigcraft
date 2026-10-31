@@ -20,7 +20,7 @@ Inventory data lives outside the repository:
 2. `$XDG_DATA_HOME/rigcraft`.
 3. `$HOME/.local/share/rigcraft`.
 
-The SQLite file is `inventory.sqlite3`. Schema version is tracked in `PRAGMA user_version` (currently `1`). CSV contents and cost values are not logged; `tower-http` request tracing records method/URI only at debug level.
+The SQLite file is `inventory.sqlite3`. Schema version is tracked in `PRAGMA user_version` (currently `2`; version 2 adds derived compatibility `check_reports`, see `docs/compatibility-evidence.md`). CSV contents and cost values are not logged; `tower-http` request tracing records method/URI only at debug level.
 
 ## HTTP contract
 

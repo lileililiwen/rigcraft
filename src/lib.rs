@@ -1,7 +1,9 @@
-//! RigCraft inventory service: versioned private inventory with provenance.
+//! RigCraft inventory service: versioned private inventory with provenance and
+//! sourced, three-state compatibility verdicts.
 
 pub mod api;
 pub mod commit;
+pub mod compatibility;
 pub mod csv_import;
 pub mod domain;
 pub mod error;

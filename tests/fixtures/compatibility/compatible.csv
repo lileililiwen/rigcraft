@@ -1,0 +1,9 @@
+sku,category,model,quantity,price,currency,specs
+FIX-CPU-AM5,cpu,Fixture AM5 CPU,2,199.00,USD,socket=AM5;tdp=105W;peak_power=142W;igpu=no
+FIX-MB-B650,motherboard,Fixture B650 Board,1,159.00,USD,socket=AM5;chipset=B650;memory_type=DDR5;form_factor=ATX;ram_slots=4;max_memory=192GB;bios_supports=Fixture AM5 CPU;storage_interface=NVMe;pcie_version=PCIe5
+FIX-RAM-DDR5,ram,Fixture DDR5 32GB Kit,2,109.00,USD,memory_type=DDR5;capacity=32GB;modules=2
+FIX-GPU-PCIE4,gpu,Fixture PCIe4 GPU,1,349.00,USD,interface=PCIe4;length=300mm;tdp=220W;peak_power=260W;connector=2x8pin
+FIX-PSU-850,psu,Fixture 850W PSU,1,119.00,USD,wattage=850W;psu_connectors=2x8pin;form_factor=ATX;length=160mm
+FIX-CASE-ATX,case,Fixture ATX Case,1,89.00,USD,supported_form_factors=ATX;max_gpu_length=360mm;max_cooler_height=170mm;psu_form_factor=ATX;max_psu_length=180mm
+FIX-COOLER-AM5,cooler,Fixture AM5 Air Cooler,1,49.00,USD,cooler_socket=AM5;height=155mm;type=air
+FIX-SSD-NVME,storage,Fixture NVMe SSD,2,79.00,USD,interface=NVMe;capacity=1000GB

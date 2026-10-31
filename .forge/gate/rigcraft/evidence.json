@@ -4,7 +4,7 @@
   "runtime": "forge",
   "profile": "full",
   "runtime_version": "forge 0.1.1",
-  "revision": "f6ebf7d1daa014a2b1920e0ec81aab94c1691345",
+  "revision": "0418f7a0872787de71e8c114f65a61e05238148e",
   "manifest_digest": "sha256:88b43c9d70487a99",
   "rule_pack_version": "workspace-governance@1",
   "aggregate": "passed",
@@ -41,19 +41,19 @@
     {
       "id": "source-file-size",
       "state": "pass",
-      "note": "diagnostic: evaluated 8 of 8 candidate file(s); maximum 1000 physical line(s)"
+      "note": "diagnostic: evaluated 11 of 11 candidate file(s); maximum 1000 physical line(s)"
     },
     {
       "id": "tests",
       "state": "pass",
-      "note": "diagnostic: running 26 tests\ntest csv_import::tests::invalid_utf8_is_rejected ... ok\ntest csv_import::tests::duplicate_header_aliases_require_explicit_mapping ... ok\ntest csv_import::tests::missing_required_columns_are_reported_without_parsing ... ok\ntest csv_import::tests::explicit_mapping_selects_…[truncated]"
+      "note": "diagnostic: running 38 tests\ntest compatibility::tests::conflict_beats_a_separate_unknown ... ok\ntest commit::tests::every_duplicate_group_needs_a_resolution ... ok\ntest commit::tests::keep_separate_preserves_each_lot_and_replace_takes_the_last ... ok\ntest compatibility::tests::incomplete_build_is_u…[truncated]"
     },
     {
       "id": "ui-conformance",
       "state": "pass",
-      "note": "diagnostic: note rigcraft: content rules read 9 of 13 UI file(s): only files inside the declared ui.scope.roots are opened\n  note rigcraft: token source declares 17 colour literal(s); the comparison runs through dotnet-platform-libs/ui/scripts/lib/token-model.mjs, not a Python copy\nPASS: rigcraft ui…[truncated]"
+      "note": "diagnostic: note rigcraft: content rules read 13 of 19 UI file(s): only files inside the declared ui.scope.roots are opened\n  note rigcraft: token source declares 17 colour literal(s); the comparison runs through dotnet-platform-libs/ui/scripts/lib/token-model.mjs, not a Python copy\nPASS: rigcraft u…[truncated]"
     }
   ],
-  "observed_at": "2026-10-31T08:30:14Z",
+  "observed_at": "2026-10-31T09:01:26Z",
   "dry_run": false
 }

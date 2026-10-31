@@ -87,6 +87,16 @@
       "pass": true
     },
     {
+      "name": "Error text on muted",
+      "foreground": "--color-danger",
+      "background": "--color-muted",
+      "resolvedForeground": "#fca5a5",
+      "resolvedBackground": "#334155",
+      "ratio": 5.46,
+      "required": 4.5,
+      "pass": true
+    },
+    {
       "name": "Success text on muted",
       "foreground": "--color-success",
       "background": "--color-muted",
@@ -103,6 +113,16 @@
       "resolvedForeground": "#fcd34d",
       "resolvedBackground": "#334155",
       "ratio": 7.18,
+      "required": 4.5,
+      "pass": true
+    },
+    {
+      "name": "Warning text on page",
+      "foreground": "--color-warning",
+      "background": "--color-background",
+      "resolvedForeground": "#fcd34d",
+      "resolvedBackground": "#0f172a",
+      "ratio": 12.38,
       "required": 4.5,
       "pass": true
     },

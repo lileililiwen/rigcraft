@@ -6,11 +6,11 @@ use std::sync::Arc;
 
 use axum::extract::{DefaultBodyLimit, Multipart, Path as AxumPath, State};
 use axum::http::{header, StatusCode};
-use axum::response::{IntoResponse, Response};
+use axum::response::{Html, IntoResponse, Response};
 use axum::routing::{any, get, post};
 use axum::{Json, Router};
 use time::OffsetDateTime;
-use tower_http::services::{ServeDir, ServeFile};
+use tower_http::services::ServeDir;
 use tower_http::trace::TraceLayer;
 use uuid::Uuid;
 
@@ -18,6 +18,7 @@ use crate::commit::{
     build_correction, build_records, decision_hash, snapshot_from_preview, CommitRequest,
     CommitResponse, CorrectionRequest,
 };
+use crate::compatibility::{check_build, CheckReport, CheckRequest};
 use crate::csv_import::{preview_csv, SAMPLE_CSV};
 use crate::domain::{preview_is_expired, Preview, Snapshot, SnapshotSummary};
 use crate::error::ApiError;
@@ -255,6 +256,72 @@ async fn correct_snapshot(
     Ok(Json(corrected))
 }
 
+async fn check_compatibility(
+    State(state): State<AppState>,
+    Json(request): Json<CheckRequest>,
+) -> Result<Json<CheckReport>, ApiError> {
+    if request.snapshot_id.trim().is_empty() {
+        return Err(ApiError::bad_request(
+            "snapshot_required",
+            "Choose an inventory snapshot first.",
+        )
+        .with_field("snapshotId"));
+    }
+    let snapshot = state
+        .store
+        .get_snapshot(&request.snapshot_id)
+        .map_err(|error| match error {
+            StoreError::NotFound => {
+                ApiError::not_found("snapshot_not_found", "No inventory snapshot has this ID.")
+            }
+            other => storage_failure(other),
+        })?;
+    let report = check_build(&snapshot, &request)?;
+    state
+        .store
+        .insert_check_report(&report)
+        .map_err(storage_failure)?;
+    Ok(Json(report))
+}
+
+async fn get_check_report(
+    State(state): State<AppState>,
+    AxumPath(check_id): AxumPath<String>,
+) -> Result<Json<CheckReport>, ApiError> {
+    let mut report = state
+        .store
+        .get_check_report(&check_id)
+        .map_err(|error| match error {
+            StoreError::NotFound => {
+                ApiError::not_found("check_not_found", "No compatibility check has this ID.")
+            }
+            other => storage_failure(other),
+        })?;
+    match state
+        .store
+        .latest_chain_revision(&report.snapshot_id)
+        .map_err(storage_failure)?
+    {
+        Some(revision) => {
+            report.current_snapshot_revision = Some(revision);
+            if revision != report.snapshot_revision {
+                report.stale = true;
+                report.stale_reason = Some(format!(
+                    "The snapshot chain is now at revision {revision}; this report was checked against revision {}.",
+                    report.snapshot_revision
+                ));
+            }
+        }
+        None => {
+            report.stale = true;
+            report.current_snapshot_revision = None;
+            report.stale_reason =
+                Some("The snapshot this report referenced no longer exists.".to_string());
+        }
+    }
+    Ok(Json(report))
+}
+
 async fn api_not_found() -> Response {
     ApiError::not_found("route_not_found", "This API route does not exist.").into_response()
 }
@@ -280,14 +347,25 @@ pub fn build_router(state: AppState) -> Router {
             "/api/inventory/snapshots/{snapshot_id}/corrections",
             post(correct_snapshot),
         )
+        .route("/api/builds/check", post(check_compatibility))
+        .route("/api/builds/checks/{check_id}", get(get_check_report))
         .route("/api/{*rest}", any(api_not_found))
         .layer(DefaultBodyLimit::max(11 * 1024 * 1024))
         .layer(TraceLayer::new_for_http())
         .with_state(state);
     let index = web_dir.join("index.html");
-    if index.is_file() {
-        router.fallback_service(ServeDir::new(web_dir).not_found_service(ServeFile::new(index)))
-    } else {
-        router.fallback(web_not_built)
+    match std::fs::read_to_string(&index) {
+        Ok(index_body) => {
+            // A client-side route such as `/builds/check` is not a file on
+            // disk. Serve the SPA shell with 200 rather than the 404 status a
+            // bare file fallback would attach to an existing index file.
+            let spa = move || {
+                let index_body = index_body.clone();
+                async move { Html(index_body) }
+            };
+            let spa_service = Router::new().fallback(spa);
+            router.fallback_service(ServeDir::new(web_dir).fallback(spa_service))
+        }
+        Err(_) => router.fallback(web_not_built),
     }
 }

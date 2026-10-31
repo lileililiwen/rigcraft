@@ -1,5 +1,7 @@
 import type {
   ApiErrorBody,
+  CheckReport,
+  CheckRequest,
   CommitRequest,
   CommitResponse,
   CorrectionRequest,
@@ -101,6 +103,20 @@ export async function correctSnapshot(
     },
   );
   return readResponse<Snapshot>(response);
+}
+
+export async function checkBuild(request: CheckRequest): Promise<CheckReport> {
+  const response = await fetch("/api/builds/check", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(request),
+  });
+  return readResponse<CheckReport>(response);
+}
+
+export async function getCheckReport(checkId: string): Promise<CheckReport> {
+  const response = await fetch(`/api/builds/checks/${encodeURIComponent(checkId)}`);
+  return readResponse<CheckReport>(response);
 }
 
 export const sampleCsvUrl = "/api/imports/sample";
