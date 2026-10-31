@@ -20,7 +20,7 @@ Inventory data lives outside the repository:
 2. `$XDG_DATA_HOME/rigcraft`.
 3. `$HOME/.local/share/rigcraft`.
 
-The SQLite file is `inventory.sqlite3`. Schema version is tracked in `PRAGMA user_version` (currently `4`; forward migrations add compatibility `check_reports`, recommendation reports and diagnosis reports, see the respective contracts). This change adds no table and no migration: provenance stays in the existing record JSON. CSV contents and cost values are not logged; `tower-http` request tracing records method/URI only at debug level.
+The SQLite file is `inventory.sqlite3`. Schema version is tracked in `PRAGMA user_version` (currently `5`; forward migrations add compatibility `check_reports`, recommendation reports, diagnosis reports and the operator-supplied catalog registry and parts described in [catalog-ingestion.md](catalog-ingestion.md)). Provenance stays in the existing record JSON; the catalog tables never reference inventory. CSV contents and cost values are not logged; `tower-http` request tracing records method/URI only at debug level.
 
 ## HTTP contract
 
@@ -58,10 +58,23 @@ Stable 400 codes include `file_too_large`, `not_utf8`, `empty_file`, `no_data_ro
 
 ```json
 {
-  "decisions": [{ "row": 4, "action": "accept|exclude", "overrides": { "quantity": "3" } }],
+  "decisions": [{
+    "row": 4,
+    "action": "accept|exclude",
+    "overrides": { "quantity": "3" },
+    "catalog": { "partId": "stored-part-id" }
+  }],
   "duplicateResolutions": [{ "groupId": "dup-1", "action": "merge|replace|keep_separate" }]
 }
 ```
+
+The optional `catalog` opt-in applies that part's proposals to the fields this row
+leaves empty, as described in [catalog-ingestion.md](catalog-ingestion.md). Only
+missing fields are filled; a conflict is reported by the match endpoint and never
+overwrites the operator's value. An applied field cites
+`catalog:<dataset-name>@<version>` with the part's source URL, while SKU, quantity
+and price stay `user` facts. A part ID that no longer exists returns `422
+catalog_part_not_found` and writes no snapshot.
 
 Every preview row needs a decision. Commit is atomic and returns `{snapshotId, snapshot}`. Replaying the same decision set returns the same snapshot; a different set returns `409 preview_already_committed`. Invalid accepted rows return `422 invalid_row` with `details.rows[]`; unresolved duplicates return `422 duplicate_unresolved`; an expired preview returns `410 preview_expired`.
 
@@ -107,6 +120,7 @@ Creates a new snapshot with `revision + 1`, `parentSnapshotId` set to the old ID
 - `GET /api/health` — service health.
 - `GET /api/backup`, `POST /api/backup/inspect`, `POST /api/backup/restore` — whole-database backup and guarded restore, documented in [docs/data-portability.md](data-portability.md).
 - `GET /inventory` — Web flow; the Rust process serves the built SPA for extensionless client routes.
+- `GET /catalog`, `POST /api/catalog/datasets`, `GET /api/catalog/datasets`, `PATCH|DELETE /api/catalog/datasets/{id}`, `GET /api/catalog/search`, `GET /api/catalog/parts/{id}`, `POST /api/catalog/match` — operator-supplied catalog ingestion and enrichment, documented in [catalog-ingestion.md](catalog-ingestion.md).
 - An unknown static or metadata path (for example `/assets/nope.js`, `/robots.txt`, `/llms.txt` or `/ai-catalog.json`) returns 404 rather than the SPA shell, because the build does not ship that file.
 - Unknown `/api/*` routes return JSON `route_not_found`.
 
@@ -118,7 +132,8 @@ Creates a new snapshot with `revision + 1`, `parentSnapshotId` set to the old ID
 - A declared catalog source applies to the `model` and every parsed specification. `sku`, `quantity`, `price` and `currency` stay `user` facts, because a catalog supplies part facts, not an operator's stock key or price.
 - Correcting a row's model or specifications replaces that field's catalog claim with `source: "user"` and `reference: "correction:<snapshotId>"`. An unedited field keeps its catalog claim.
 - Lexical normalization cites `source: "rigcraft-normalizer"` (`category-alias-v1` or `model-lexical-v1`).
-- `match.confidence` is `catalog-declared` when a row declares a catalog source and `unverified` otherwise. Neither value means RigCraft queried or verified the source; the basis says so.
+- `match.confidence` is `catalog-declared` when a row declares a catalog source or an operator applies stored catalog proposals, and `unverified` otherwise. Neither value means RigCraft queried or verified the source; the basis says so.
+- Stored catalog proposals add only missing fields with `catalog:<dataset-name>@<version>` provenance and the stored part's source URL. The row's SKU, quantity, price and currency never change, and an operator-supplied specification wins over a conflicting catalog value.
 - Known numeric spec keys require units (`tdp`, `power_draw`, `wattage` in W; `length`, `height`, `width`, `depth` in mm; `capacity`, `vram` in GB; `rpm` in RPM). Unknown spec keys are retained with `status: "unknown"`; absent specs are shown as unknown.
 
 ## Shipped sample
@@ -132,6 +147,8 @@ The sample rows are CC BY 4.0 with attribution in `NOTICE`. The wider data-sourc
 `/inventory` covers empty, selecting, parsing, review, row correction, validation error, duplicate resolution, commit pending, committed, retry and earlier-revision states. The flow uses labelled controls, a live status region, `role="alert"` errors, visible focus, non-color-only badges with symbols, stacked mobile table cards and reduced-motion-safe CSS. Focus moves to the review heading, the snapshot heading, or the error alert after async transitions.
 
 Each specification is labelled `Operator-confirmed` (✎), `Catalog` (▣) or `Unknown` (?) from its recorded provenance, and every preview and snapshot row names whether its facts are catalog facts or operator-entered. The download area states the sample's CC BY 4.0 licence, the 2026-10-31 verification date and that prices are operator-entered.
+
+Each preview row also shows its catalog status: matched (with the proposals that would be added and a per-row opt-in), ambiguous (candidates and no default) or unmatched. After commit, an applied field shows the `Catalog` badge and the catalog provenance entry. The catalog contract, format and matching order are in [catalog-ingestion.md](catalog-ingestion.md).
 
 The `/inventory` page also has an **Export and backup** panel: CSV and JSON export of the selected snapshot, a whole-database SQLite download, and a restore that must be inspected and then confirmed by typing `RESTORE`, with a pre-restore safety copy named on success. See [docs/data-portability.md](data-portability.md).
 

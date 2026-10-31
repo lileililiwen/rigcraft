@@ -8,7 +8,7 @@ use axum::extract::multipart::MultipartRejection;
 use axum::extract::{DefaultBodyLimit, Multipart, Path as AxumPath, Query, State};
 use axum::http::{header, HeaderValue, StatusCode};
 use axum::response::{Html, IntoResponse, Response};
-use axum::routing::{any, get, post};
+use axum::routing::{any, get, patch, post};
 use axum::{Json, Router};
 use time::OffsetDateTime;
 use tower_http::services::ServeDir;
@@ -21,6 +21,10 @@ use crate::ai::{
     ProviderAdapter, ProviderIdentity, ReviseRequest,
 };
 use crate::backup_api::{download_backup, export_snapshot, inspect_backup, restore_backup};
+use crate::catalog_api::{
+    catalog_applications, delete_dataset, get_part, list_datasets, match_import_rows,
+    patch_dataset, search_catalog, upload_catalog,
+};
 use crate::commit::{
     build_correction, build_records, decision_hash, snapshot_from_preview, CommitRequest,
     CommitResponse, CorrectionRequest,
@@ -215,7 +219,8 @@ async fn commit_import(
             "This import preview is older than 24 hours. Upload the file again.",
         ));
     }
-    let records = build_records(&stored.preview, &request)?;
+    let catalog_applications = catalog_applications(&state, &request)?;
+    let records = build_records(&stored.preview, &request, &catalog_applications)?;
     let candidate = snapshot_from_preview(&stored.preview, records, &stored.sha256)?;
     match state.store.commit_preview(&preview_id, &hash, &candidate) {
         Ok(CommitOutcome::Created) => Ok(Json(CommitResponse {
@@ -746,6 +751,17 @@ pub fn build_router(state: AppState) -> Router {
         .route("/api/imports/sample", get(sample_csv))
         .route("/api/imports", post(preview_import))
         .route("/api/imports/{preview_id}/commit", post(commit_import))
+        .route(
+            "/api/catalog/datasets",
+            get(list_datasets).post(upload_catalog),
+        )
+        .route(
+            "/api/catalog/datasets/{dataset_id}",
+            patch(patch_dataset).delete(delete_dataset),
+        )
+        .route("/api/catalog/search", get(search_catalog))
+        .route("/api/catalog/parts/{part_id}", get(get_part))
+        .route("/api/catalog/match", post(match_import_rows))
         .route("/api/inventory/snapshots", get(list_snapshots))
         .route("/api/inventory/snapshots/{snapshot_id}", get(get_snapshot))
         .route(

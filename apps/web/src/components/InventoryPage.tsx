@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import type {
+  CatalogMatch,
   CommitRequest,
   DuplicateAction,
   FieldError,
@@ -13,6 +14,7 @@ import {
   commitImport,
   getSnapshot,
   listSnapshots,
+  matchCatalogRows,
   previewImport,
 } from "../api";
 import {
@@ -45,7 +47,9 @@ function describeFailure(error: unknown): Problem {
       title: error.status === 422 ? "Input needs correction" : "Request failed",
       message: error.message,
       code: error.code,
-      rows: error.details?.rows,
+      rows: (error.details?.rows ?? []).filter(
+        (row): row is { row: number; errors: FieldError[] } => "errors" in row,
+      ),
     };
   }
   return {
@@ -61,7 +65,9 @@ function describeFailure(error: unknown): Problem {
 function issueMap(problem: Problem): Record<number, FieldError[]> {
   const map: Record<number, FieldError[]> = {};
   for (const entry of problem.rows ?? []) {
-    map[entry.row] = entry.errors;
+    if ("errors" in entry) {
+      map[entry.row] = entry.errors;
+    }
   }
   return map;
 }
@@ -81,6 +87,9 @@ export function InventoryPage() {
   const [resolutions, setResolutions] = useState<ResolutionMap>({});
   const [overrides, setOverrides] = useState<OverrideMap>({});
   const [serverIssues, setServerIssues] = useState<Record<number, FieldError[]>>({});
+  const [catalogMatches, setCatalogMatches] = useState<Record<number, CatalogMatch>>({});
+  const [catalogOptIn, setCatalogOptIn] = useState<Record<number, string>>({});
+  const [catalogNotice, setCatalogNotice] = useState<string | null>(null);
   const [live, setLive] = useState("No CSV selected.");
   const errorRef = useRef<HTMLDivElement>(null);
   const statusRef = useRef<HTMLDivElement>(null);
@@ -119,6 +128,37 @@ export function InventoryPage() {
     }
   }, [problem]);
 
+  async function loadCatalogMatches(next: Preview) {
+    const rows = next.rows
+      .filter((row) => (row.normalized.category ?? row.values.category).trim() !== "")
+      .map((row) => ({
+        row: row.row,
+        sku: row.values.sku,
+        category: row.normalized.category ?? row.values.category,
+        model: row.values.model,
+        specs: row.values.specs,
+      }));
+    if (rows.length === 0) {
+      return;
+    }
+    try {
+      const { matches } = await matchCatalogRows(rows);
+      const map: Record<number, CatalogMatch> = {};
+      for (const match of matches) {
+        map[match.row] = match;
+      }
+      setCatalogMatches(map);
+      setCatalogNotice(null);
+    } catch (error) {
+      setCatalogMatches({});
+      setCatalogNotice(
+        error instanceof ApiFailure
+          ? `Catalog matching is unavailable: ${error.message}`
+          : "Catalog matching is unavailable. Your rows and values are unaffected.",
+      );
+    }
+  }
+
   async function runPreview(nextMapping: Record<string, string> = mapping) {
     if (!file) {
       setProblem({
@@ -138,6 +178,9 @@ export function InventoryPage() {
     setProblem(null);
     setRetry(null);
     setServerIssues({});
+    setCatalogMatches({});
+    setCatalogOptIn({});
+    setCatalogNotice(null);
     setLive("Parsing CSV and validating every row…");
     try {
       const result = await previewImport(file, currency.trim(), nextMapping);
@@ -149,6 +192,7 @@ export function InventoryPage() {
       setMapping(result.mapping);
       setPhase("review");
       setLive(`Preview ready: ${continuationSummary(result.rows)}.`);
+      void loadCatalogMatches(result);
     } catch (error) {
       const next = describeFailure(error);
       setProblem(next);
@@ -184,6 +228,9 @@ export function InventoryPage() {
         row: row.row,
         action: decisions[row.row] ?? "exclude",
         overrides: overrides[row.row],
+        catalog: catalogOptIn[row.row]
+          ? { partId: catalogOptIn[row.row] }
+          : undefined,
       })),
       duplicateResolutions: Object.entries(resolutions)
         .filter((entry): entry is [string, DuplicateAction] => Boolean(entry[1]))
@@ -253,6 +300,9 @@ export function InventoryPage() {
     setResolutions({});
     setOverrides({});
     setServerIssues({});
+    setCatalogMatches({});
+    setCatalogOptIn({});
+    setCatalogNotice(null);
     setLive("Ready for a new CSV import.");
     window.setTimeout(() => document.getElementById("inventory-file")?.focus(), 0);
   }
@@ -368,9 +418,24 @@ export function InventoryPage() {
           />
         ) : null}
 
+        {catalogNotice ? <p className="small muted">{catalogNotice}</p> : null}
+
         {showPreview && preview ? (
           <PreviewReview
             preview={preview}
+            catalogMatches={catalogMatches}
+            catalogOptIn={catalogOptIn}
+            onCatalogOptIn={(row, partId) =>
+              setCatalogOptIn((current) => {
+                const next = { ...current };
+                if (partId) {
+                  next[row] = partId;
+                } else {
+                  delete next[row];
+                }
+                return next;
+              })
+            }
             decisions={decisions}
             resolutions={resolutions}
             overrides={overrides}

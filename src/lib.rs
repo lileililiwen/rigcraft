@@ -4,6 +4,9 @@
 pub mod ai;
 pub mod api;
 mod backup_api;
+pub mod catalog;
+mod catalog_api;
+mod catalog_store;
 pub mod commit;
 pub mod compatibility;
 pub mod csv_import;

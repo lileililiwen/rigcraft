@@ -10,7 +10,7 @@ document is the authoritative statement those documents link to.
 ```sh
 cargo build          # the service binary the suite starts
 npm run build        # the bundle the service serves
-npm run test:e2e     # 14 tests, real Chrome, under a minute
+npm run test:e2e     # 17 tests, real Chrome, under a minute
 ```
 
 `npm run test:e2e` selects a free loopback port, starts `target/debug/rigcraft` with a
@@ -31,11 +31,14 @@ one worker, no retries, list and JSON reporters, and a trace only on retry.
 | `e2e/diagnosis.spec.ts` | One exact, one ambiguous and one unmatched pasted line; no preselected candidate on the ambiguous line; "Resolve the match review first" before resolution; then `Not verified — no rule evaluated (2)`, `Fine as is (0)`, two unverified badges, no compatible badge in the unverified group and no `keep` card at all. |
 | `e2e/regression.spec.ts` | `/assets/nope.js`, `/robots.txt` and `/llms.txt` return 404 without the shell while `/diagnose` returns 200 HTML; a malformed JSON POST is `application/json` with `error.code` `invalid_json`; `/diagnose` renders sections 1–5 in order before any match; a `<time>` renders ISO 8601 UTC under `locale: 'de-DE'`. |
 | `e2e/keyboard-responsive.spec.ts` | The first Tab lands on the skip link, Tab reaches the budget field, Enter generates a recommendation with no pointer input, and `document.documentElement.scrollWidth === clientWidth` at 390 px on `/inventory`, `/builds/check`, `/recommend` and `/diagnose`. |
+| `e2e/catalog.spec.ts` | Upload of a small synthetic `rigcraft-catalog` document through `/catalog`, the accepted report and `catalog:synthetic-fixture@fixture-1` provenance, the registry row with `CC0-1.0`/`fixture-1`/3 parts/`Active`, ranked search with the exact SKU first and a stored part opening with its source URL; a refused document naming `Row 1 · model` while its dataset name is absent; and an import enriched from the catalog with the per-row opt-in, three `Catalog` badges and `specs` provenance `Catalog · synthetic-fixture@fixture-1` plus the part URL, while SKU, quantity and price stay `User-provided`. Also asserts no horizontal overflow at 1440 px and 390 px on `/catalog`. |
 | `e2e/portability.spec.ts` | CSV and JSON export filenames and bodies (10 lots, revision, authoritative JSON with per-field provenance), re-import of the exported CSV with catalog facts intact, a backup whose first bytes are the SQLite header, a non-SQLite upload rejected as `backup_not_sqlite` with the committed snapshot still visible, an inspected backup showing integrity/schema/counts, the replace button disabled until `RESTORE` is typed exactly, and success naming `inventory.sqlite3.pre-restore-`. |
 
 Each test seeds its own snapshot (the inventory journey through the page, the rest
 through the documented API) and selects that snapshot by id, so the order does not
-matter and one test never reads another's rows.
+matter and one test never reads another's rows. The catalog journeys use a small
+synthetic document written to the test output directory; no third-party dataset is
+read, uploaded or committed.
 
 ## What it does not cover
 

@@ -51,6 +51,29 @@ names and marks remain their owners'.
 Quantity and unit price in the sample are **operator-entered stock values**. They are
 not manufacturer facts, market data, or a price feed.
 
+## Operator-supplied catalogs
+
+RigCraft ships no catalog. An operator who is licensed to use one can upload it
+through `/catalog` as a `rigcraft-catalog` version 1 document. The document, its
+licence and its obligations remain the operator's: RigCraft stores it in that
+instance's SQLite database, shows the licence verbatim, and uses it only for
+search and for filling fields an import row leaves empty. It never commits the
+catalog to the repository, writes it into a fixture or export template, or sends it
+to another instance. The format, validation rules and matching order are in
+[catalog-ingestion.md](catalog-ingestion.md).
+
+The companion converter turns a local OpenDB checkout into that document:
+
+```sh
+node scripts/opendb-to-catalog.mjs /tmp/opencode/buildcores-open-db \
+  --name buildcores-opendb --license "CC BY-NC-SA 4.0" \
+  --out /tmp/opencode/catalog.json
+```
+
+It requires the dataset name and licence, resolves the checkout commit, refuses a
+shared SKU rather than writing a document the server would reject, and adds no
+price or quantity.
+
 ## Importing a local BuildCores OpenDB checkout
 
 OpenDB is not distributed with RigCraft. Download it yourself and keep its licence
@@ -112,5 +135,9 @@ from the rights holders. RigCraft's MIT licence does not extend to that data.
 
 - It does not commit OpenDB or any other third-party dataset.
 - It does not scrape PCPartPicker or use a PCPartPicker-derived dataset.
-- It does not fetch a catalog at runtime; the operator runs the converter locally.
-- It does not fill a missing specification from a similar model name.
+- It does not fetch a catalog at runtime; the operator runs the converter locally
+  and uploads a catalog they are licensed to use.
+- It does not redistribute, re-export or share an uploaded catalog with another
+  instance.
+- It does not fill a missing specification from a similar model name, and it never
+  guesses a unit or overwrites an operator value with a catalog claim.

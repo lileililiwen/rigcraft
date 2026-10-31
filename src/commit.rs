@@ -6,10 +6,11 @@ use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use uuid::Uuid;
 
+use crate::catalog::CatalogApplication;
 use crate::domain::{
     make_record, normalize_category, normalize_model, normalize_sku, now_rfc3339, parse_specs,
-    row_from_values, totals_overflow_error, FieldError, Preview, PreviewRow, Provenance, Record,
-    RowValues, Snapshot, SnapshotSource,
+    row_from_values, totals_overflow_error, FieldError, MatchInfo, Preview, PreviewRow, Provenance,
+    Record, RowValues, Snapshot, SnapshotSource,
 };
 use crate::error::ApiError;
 
@@ -39,11 +40,21 @@ pub struct RowOverrides {
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
+pub struct CatalogSelection {
+    pub part_id: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
 pub struct RowDecision {
     pub row: usize,
     pub action: DecisionAction,
     #[serde(default)]
     pub overrides: Option<RowOverrides>,
+    /// Per-row opt-in for catalog proposals. Only fields the row leaves empty
+    /// are applied; operator values are never replaced.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub catalog: Option<CatalogSelection>,
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
@@ -127,9 +138,22 @@ fn apply_overrides(values: &RowValues, overrides: Option<&RowOverrides>) -> RowV
     next
 }
 
+fn supplied_spec_keys(raw: &str) -> BTreeSet<String> {
+    raw.split(';')
+        .filter_map(|part| part.split_once('='))
+        .map(|(key, _)| crate::domain::normalize_spec_key(key))
+        .filter(|key| !key.is_empty())
+        .collect()
+}
+
 /// Re-evaluate committed rows and apply duplicate decisions. Returns records
-/// with new record IDs; nothing is persisted here.
-pub fn build_records(preview: &Preview, request: &CommitRequest) -> Result<Vec<Record>, ApiError> {
+/// with new record IDs; nothing is persisted here. `catalog` holds the parts the
+/// operator opted into, keyed by part ID.
+pub fn build_records(
+    preview: &Preview,
+    request: &CommitRequest,
+    catalog: &BTreeMap<String, CatalogApplication>,
+) -> Result<Vec<Record>, ApiError> {
     let mut by_row: BTreeMap<usize, &RowDecision> = BTreeMap::new();
     for decision in &request.decisions {
         if by_row.insert(decision.row, decision).is_some() {
@@ -181,7 +205,35 @@ pub fn build_records(preview: &Preview, request: &CommitRequest) -> Result<Vec<R
             continue;
         }
         let overrides = decision.overrides.as_ref();
-        let values = apply_overrides(&row.values, overrides);
+        let mut values = apply_overrides(&row.values, overrides);
+        let application = decision
+            .catalog
+            .as_ref()
+            .and_then(|selection| catalog.get(&selection.part_id));
+        let mut applied_model = false;
+        let mut applied_specs: BTreeSet<String> = BTreeSet::new();
+        let mut had_specs = true;
+        if let Some(application) = application {
+            if values.model.trim().is_empty() {
+                values.model = application.model.clone();
+                applied_model = true;
+            }
+            let mut supplied = supplied_spec_keys(&values.specs);
+            had_specs = !supplied.is_empty();
+            let mut merged = values.specs.trim().to_string();
+            for (key, value) in &application.specs {
+                if supplied.contains(key) {
+                    continue;
+                }
+                if !merged.is_empty() {
+                    merged.push(';');
+                }
+                merged.push_str(&format!("{key}={value}"));
+                supplied.insert(key.clone());
+                applied_specs.insert(key.clone());
+            }
+            values.specs = merged;
+        }
         let observed_at = if overrides.is_some() {
             now_rfc3339()
         } else {
@@ -200,10 +252,39 @@ pub fn build_records(preview: &Preview, request: &CommitRequest) -> Result<Vec<R
             overrides.and_then(|value| value.model.as_ref()).is_none(),
             overrides.and_then(|value| value.specs.as_ref()).is_none(),
         );
-        let evaluated = PreviewRow {
+        let mut evaluated = PreviewRow {
             duplicate_group_id: row.duplicate_group_id.clone(),
             ..evaluated
         };
+        if let Some(application) = application {
+            if applied_model {
+                evaluated
+                    .provenance
+                    .insert("model".to_string(), application.provenance.clone());
+            }
+            if !applied_specs.is_empty() {
+                for spec in &mut evaluated.specs {
+                    if applied_specs.contains(&spec.key) {
+                        spec.provenance = application.provenance.clone();
+                    }
+                }
+                if !evaluated.provenance.contains_key("specs") || !had_specs {
+                    // A row that supplied no specifications gets field-level
+                    // catalog provenance. A mixed field keeps the operator's and
+                    // the added specs carry their own catalog provenance.
+                    evaluated
+                        .provenance
+                        .insert("specs".to_string(), application.provenance.clone());
+                }
+                evaluated.match_info = MatchInfo {
+                    basis: format!(
+                        "catalog match from {} applied to fields you left empty; RigCraft did not verify the source",
+                        application.provenance.source
+                    ),
+                    confidence: "catalog-declared".to_string(),
+                };
+            }
+        }
         if !evaluated.errors.is_empty() {
             invalid.push(serde_json::json!({
                 "row": row.row,
@@ -588,6 +669,7 @@ mod tests {
                     row: row.row,
                     action: DecisionAction::Accept,
                     overrides: None,
+                    catalog: None,
                 })
                 .collect(),
             duplicate_resolutions: Vec::new(),
@@ -597,7 +679,7 @@ mod tests {
     #[test]
     fn accepting_all_sample_rows_builds_records() {
         let preview = preview();
-        let records = build_records(&preview, &accept_all(&preview)).unwrap();
+        let records = build_records(&preview, &accept_all(&preview), &BTreeMap::new()).unwrap();
         assert_eq!(records.len(), 10);
         let cpu = records
             .iter()
@@ -631,7 +713,7 @@ mod tests {
                 decision.action = DecisionAction::Exclude;
             }
         });
-        let records = build_records(&preview, &request).unwrap();
+        let records = build_records(&preview, &request, &BTreeMap::new()).unwrap();
         let record = records.first().expect("one accepted row");
         assert_eq!(record.provenance["model"].source, "user");
         assert!(record.provenance["model"]
@@ -664,7 +746,7 @@ mod tests {
                 decision.action = DecisionAction::Exclude;
             }
         });
-        let records = build_records(&preview, &request).unwrap();
+        let records = build_records(&preview, &request, &BTreeMap::new()).unwrap();
         let record = records.first().expect("one accepted row");
         assert_eq!(record.provenance["specs"].source, "user");
         assert!(record.provenance["specs"]
@@ -680,7 +762,7 @@ mod tests {
     fn missing_decisions_are_rejected() {
         let mut request = accept_all(&preview());
         request.decisions.pop();
-        let error = build_records(&preview(), &request).unwrap_err();
+        let error = build_records(&preview(), &request, &BTreeMap::new()).unwrap_err();
         assert_eq!(error.code, "row_decision_missing");
     }
 
@@ -690,7 +772,7 @@ mod tests {
         let preview = preview_csv(csv.as_bytes(), "d.csv", "USD", &BTreeMap::new(), "p".into())
             .unwrap()
             .preview;
-        let error = build_records(&preview, &accept_all(&preview)).unwrap_err();
+        let error = build_records(&preview, &accept_all(&preview), &BTreeMap::new()).unwrap_err();
         assert_eq!(error.code, "duplicate_unresolved");
 
         let mut request = accept_all(&preview);
@@ -698,7 +780,7 @@ mod tests {
             group_id: "dup-1".to_string(),
             action: DuplicateAction::Merge,
         }];
-        let records = build_records(&preview, &request).unwrap();
+        let records = build_records(&preview, &request, &BTreeMap::new()).unwrap();
         assert_eq!(records.len(), 1);
         assert_eq!(records[0].quantity, 3);
     }
@@ -714,13 +796,13 @@ mod tests {
             group_id: "dup-1".to_string(),
             action: DuplicateAction::KeepSeparate,
         }];
-        let records = build_records(&preview, &request).unwrap();
+        let records = build_records(&preview, &request, &BTreeMap::new()).unwrap();
         assert_eq!(records.len(), 2);
         assert_eq!(records[0].lot, 1);
         assert_eq!(records[1].lot, 2);
 
         request.duplicate_resolutions[0].action = DuplicateAction::Replace;
-        let records = build_records(&preview, &request).unwrap();
+        let records = build_records(&preview, &request, &BTreeMap::new()).unwrap();
         assert_eq!(records.len(), 1);
         assert_eq!(records[0].quantity, 2);
     }
@@ -728,7 +810,7 @@ mod tests {
     #[test]
     fn corrections_version_the_old_snapshot() {
         let preview = preview();
-        let records = build_records(&preview, &accept_all(&preview)).unwrap();
+        let records = build_records(&preview, &accept_all(&preview), &BTreeMap::new()).unwrap();
         let snapshot = snapshot_from_preview(&preview, records, "sha").unwrap();
         let request = CorrectionRequest {
             note: Some("Stock recount".to_string()),

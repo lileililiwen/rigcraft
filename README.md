@@ -1,10 +1,10 @@
 # RigCraft
 
-Open-source PC build planning from owned inventory, with traceable compatibility checks. See [requirements](requirement.md), [roadmap](ROADMAP.md), the [inventory import contract](docs/inventory-import.md), the [data portability contract](docs/data-portability.md), the [compatibility contract](docs/compatibility-evidence.md), the [recommendation contract](docs/build-recommendation.md), the [BYOK planning contract](docs/ai-planning.md), the [build diagnosis contract](docs/build-diagnosis.md) and the [data-source assessment](docs/data-sources.md).
+Open-source PC build planning from owned inventory, with traceable compatibility checks. See [requirements](requirement.md), [roadmap](ROADMAP.md), the [inventory import contract](docs/inventory-import.md), the [data portability contract](docs/data-portability.md), the [compatibility contract](docs/compatibility-evidence.md), the [recommendation contract](docs/build-recommendation.md), the [BYOK planning contract](docs/ai-planning.md), the [build diagnosis contract](docs/build-diagnosis.md), the [catalog ingestion contract](docs/catalog-ingestion.md) and the [data-source assessment](docs/data-sources.md).
 
 ## Status
 
-Inventory import and correction is implemented: `/inventory` previews a UTF-8 CSV, reports every row and field error, requires explicit duplicate decisions, commits an immutable SQLite snapshot with provenance, and creates a new revision for later corrections. The same page exports a snapshot as the importer's CSV or the authoritative JSON, downloads the whole catalog as a standard SQLite backup, and restores a backup only after an inspection and a typed confirmation; a pre-restore copy protects the previous catalog. `/builds/check` checks a selected build against one snapshot and reports compatible, incompatible or unknown for every rule, with the compared values, provenance and a specific follow-up for each unknown. `/recommend` searches only the selected snapshot for up to three complete, budget- and stock-valid builds, labels each with its reason, score and excluded alternatives, explains the binding budget, stock or compatibility constraint when there is none, and exports versioned JSON or a Markdown plan. Its optional assistant panel uses the operator's own provider key to turn one sentence into a proposed request with a source for every field; nothing runs until the operator confirms, the deterministic engine still re-validates every constraint, and the page is fully usable without a key. `/diagnose` takes a build the operator already owns — pasted lines matched to the snapshot, or parts entered by hand — and reports what must be replaced, what should be verified first, what is fine as is and what no rule could evaluate, with the rule evidence and cost of each; an ambiguous or unmatched line is never coerced to a nearby SKU, and a replacement plan is labelled validated only when the same compatibility engine accepts the whole upgraded build. Deployment remains disabled.
+Inventory import and correction is implemented: `/inventory` previews a UTF-8 CSV, reports every row and field error, requires explicit duplicate decisions, commits an immutable SQLite snapshot with provenance, and creates a new revision for later corrections. The same page exports a snapshot as the importer's CSV or the authoritative JSON, downloads the whole catalog as a standard SQLite backup, and restores a backup only after an inspection and a typed confirmation; a pre-restore copy protects the previous catalog. `/builds/check` checks a selected build against one snapshot and reports compatible, incompatible or unknown for every rule, with the compared values, provenance and a specific follow-up for each unknown. `/recommend` searches only the selected snapshot for up to three complete, budget- and stock-valid builds, labels each with its reason, score and excluded alternatives, explains the binding budget, stock or compatibility constraint when there is none, and exports versioned JSON or a Markdown plan. Its optional assistant panel uses the operator's own provider key to turn one sentence into a proposed request with a source for every field; nothing runs until the operator confirms, the deterministic engine still re-validates every constraint, and the page is fully usable without a key. `/diagnose` takes a build the operator already owns — pasted lines matched to the snapshot, or parts entered by hand — and reports what must be replaced, what should be verified first, what is fine as is and what no rule could evaluate, with the rule evidence and cost of each; an ambiguous or unmatched line is never coerced to a nearby SKU, and a replacement plan is labelled validated only when the same compatibility engine accepts the whole upgraded build. `/catalog` loads a hardware catalog the operator is licensed to use, validates the whole document before storing it, shows the registry with its licence and counts, activates or removes a dataset, and searches it; the import review uses only active datasets to propose fields the operator's row leaves empty, with `catalog:<dataset>@<version>` provenance and no overwrite. No catalog data is bundled. Deployment remains disabled.
 
 ## Runtime
 
@@ -26,7 +26,7 @@ Browser regression suite:
 ```sh
 cargo build                    # prerequisite: the service binary
 npm run build                  # prerequisite: the bundle the service serves
-npm run test:e2e               # real Chrome, 14 browser tests, under a minute
+npm run test:e2e               # real Chrome, 17 browser tests, under a minute
 ```
 
 `npm run test:e2e` picks a free loopback port, starts `target/debug/rigcraft`
@@ -49,9 +49,9 @@ npm run build
 npm run test:e2e
 ```
 
-Open `http://127.0.0.1:8080/inventory`, `http://127.0.0.1:8080/builds/check`,
-`http://127.0.0.1:8080/recommend` or `http://127.0.0.1:8080/diagnose` after
-building the Web app.
+Open `http://127.0.0.1:8080/inventory`, `http://127.0.0.1:8080/catalog`,
+`http://127.0.0.1:8080/builds/check`, `http://127.0.0.1:8080/recommend` or
+`http://127.0.0.1:8080/diagnose` after building the Web app.
 
 ## Data and privacy
 
@@ -72,6 +72,14 @@ A provider key is optional and belongs to the operator. It is held in browser me
 - `GET /api/backup` — consistent whole-database copy as a standard SQLite file.
 - `POST /api/backup/inspect` — validate an uploaded backup and return its counts without writing.
 - `POST /api/backup/restore` — validate, write a pre-restore copy and replace the live catalog with the upload.
+- `GET /catalog` — upload and validate an operator-supplied catalog, manage the registry and search it.
+- `POST /api/catalog/datasets` — validate and store a `rigcraft-catalog` version 1 document with an acknowledgement.
+- `GET /api/catalog/datasets` — registry with licence, version, counts and active flag.
+- `PATCH /api/catalog/datasets/{id}` — activate or deactivate a dataset for matching.
+- `DELETE /api/catalog/datasets/{id}?confirm=remove` — remove a dataset and its parts only.
+- `GET /api/catalog/search?q=&category=&limit=` — deterministic catalog search.
+- `GET /api/catalog/parts/{id}` — one stored part with its specifications and provenance.
+- `POST /api/catalog/match` — three-state matching and enrichment proposals for import rows.
 - `GET /api/imports/sample` — sourced sample CSV (see Licensing).
 - `GET /builds/check` — select parts from a snapshot and read sourced verdicts.
 - `POST /api/builds/check` — run and persist a compatibility report.
@@ -87,7 +95,7 @@ A provider key is optional and belongs to the operator. It is held in browser me
 - `POST /api/diagnoses` — diagnose the confirmed build and persist the advice and validated plan.
 - `GET /api/diagnoses/{id}` — read a stored diagnosis and its staleness.
 
-Contract shapes, error codes and provenance rules: [docs/inventory-import.md](docs/inventory-import.md), [docs/data-portability.md](docs/data-portability.md), [docs/compatibility-evidence.md](docs/compatibility-evidence.md), [docs/build-recommendation.md](docs/build-recommendation.md), [docs/ai-planning.md](docs/ai-planning.md) and [docs/build-diagnosis.md](docs/build-diagnosis.md).
+Contract shapes, error codes and provenance rules: [docs/inventory-import.md](docs/inventory-import.md), [docs/catalog-ingestion.md](docs/catalog-ingestion.md), [docs/data-portability.md](docs/data-portability.md), [docs/compatibility-evidence.md](docs/compatibility-evidence.md), [docs/build-recommendation.md](docs/build-recommendation.md), [docs/ai-planning.md](docs/ai-planning.md) and [docs/build-diagnosis.md](docs/build-diagnosis.md).
 
 ## Licensing
 
@@ -102,8 +110,12 @@ Its quantity and price are operator-entered sample values, not market data.
 BuildCores OpenDB is **not** distributed with RigCraft. It is a much larger
 third-party dataset under CC BY-NC-SA 4.0, so its licence and obligations apply
 to whoever fetches it. `scripts/opendb-to-csv.mjs` converts a local checkout into
-the import CSV; the command and the obligations are in
+the import CSV and `scripts/opendb-to-catalog.mjs` converts it into the
+operator-uploaded catalog document; both are local steps and neither result is
+redistributed. The commands and obligations are in
 [`docs/data-sources.md`](docs/data-sources.md). PCPartPicker data is never used.
+An operator may also upload a catalog they are licensed to use through `/catalog`;
+it is stored only in that instance and is never committed or shared.
 
 ## Shared layer
 
@@ -124,6 +136,7 @@ Referencing a kit package never grants the capability it implements.
 - `docs/evidence/catalog-seed-browser.md` — corrected sourced sample download, a catalog-column import and the operator-versus-catalog distinction.
 - `docs/evidence/browser-suite.md` — the checked-in Playwright suite: command, the fourteen tests and what each holds, and its explicit non-coverage.
 - `docs/evidence/data-portability-browser.md` — snapshot export, backup download, inspected restore, the typed confirmation guard and a rejected restore.
+- `docs/evidence/catalog-ingestion-browser.md` — catalog upload and refusal, the registry with a licence, search and a catalog-enriched import with committed provenance.
 - `docs/evidence/token-contrast.json` — measured WCAG 2.2 AA contrast.
-- `docs/evidence/inventory-lighthouse*/`, `docs/evidence/compatibility-lighthouse*/`, `docs/evidence/recommendation-lighthouse*/`, `docs/evidence/byok-lighthouse*/`, `docs/evidence/diagnosis-lighthouse*/`, `docs/evidence/correctness-diagnose-lighthouse*/`, `docs/evidence/catalog-lighthouse*/` and `docs/evidence/data-portability-lighthouse*/` — Lighthouse reports.
+- `docs/evidence/inventory-lighthouse*/`, `docs/evidence/compatibility-lighthouse*/`, `docs/evidence/recommendation-lighthouse*/`, `docs/evidence/byok-lighthouse*/`, `docs/evidence/diagnosis-lighthouse*/`, `docs/evidence/correctness-diagnose-lighthouse*/`, `docs/evidence/catalog-lighthouse*/`, `docs/evidence/data-portability-lighthouse*/` and `docs/evidence/catalog-ingestion-lighthouse*/` — Lighthouse reports.
 - `docs/assets/` — captured UI states.

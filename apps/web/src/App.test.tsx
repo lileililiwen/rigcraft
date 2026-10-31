@@ -118,6 +118,9 @@ describe("inventory page", () => {
       if (url === "/api/imports/preview-1/commit") {
         return response({ snapshotId: snapshot.id, snapshot });
       }
+      if (url === "/api/catalog/match") {
+        return response({ matches: [] });
+      }
       if (url === "/api/inventory/snapshots") {
         return response([
           {
@@ -192,6 +195,9 @@ describe("inventory page", () => {
         }
         return response(preview);
       }
+      if (url === "/api/catalog/match") {
+        return response({ matches: [] });
+      }
       if (url === "/api/inventory/snapshots") {
         return response([]);
       }
@@ -240,5 +246,29 @@ describe("diagnosis route", () => {
       "page",
     );
     await waitFor(() => expect(document.title).toBe("RigCraft build diagnosis"));
+  });
+});
+
+describe("catalog route", () => {
+  it("renders the catalog page for /catalog and marks the nav item", async () => {
+    window.history.pushState({}, "", "/catalog");
+    vi.stubGlobal(
+      "fetch",
+      vi.fn((input: RequestInfo | URL) => {
+        if (String(input) === "/api/catalog/datasets") {
+          return response([]);
+        }
+        return response({ error: { code: "unexpected", message: String(input) } }, 500);
+      }),
+    );
+    render(<App />);
+    expect(
+      await screen.findByRole("heading", { level: 1, name: "Catalog" }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Catalog" })).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
+    await waitFor(() => expect(document.title).toBe("RigCraft catalog"));
   });
 });

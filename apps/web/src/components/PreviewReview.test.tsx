@@ -69,6 +69,9 @@ const preview: Preview = {
 
 const baseProps = {
   preview,
+  catalogMatches: {},
+  catalogOptIn: {},
+  onCatalogOptIn: vi.fn(),
   decisions: { 2: "accept" as const, 3: "accept" as const, 4: "exclude" as const },
   resolutions: {},
   overrides: {},
@@ -191,6 +194,124 @@ describe("PreviewReview", () => {
     await user.type(quantity, "5");
     await user.click(screen.getByRole("button", { name: "Apply correction" }));
     expect(onOverride).toHaveBeenCalledWith(4, { quantity: "5" });
+  });
+
+  it("shows a matched catalog row, its conflict and the per-row opt-in", async () => {
+    const user = userEvent.setup();
+    const onCatalogOptIn = vi.fn();
+    const catalogMatches = {
+      2: {
+        row: 2,
+        status: "matched" as const,
+        basis: "sku" as const,
+        candidates: [
+          {
+            part: {
+              id: "part-1",
+              datasetId: "dataset-1",
+              externalId: "MPN-1",
+              sku: "SKU-2",
+              category: "cpu",
+              model: "Example",
+              modelNormalized: "Example",
+              manufacturer: null,
+              specs: [],
+              sourceUrl: null,
+              verifiedAt: null,
+            },
+            dataset: {
+              id: "dataset-1",
+              name: "fixture",
+              sourceUrl: null,
+              commit: "fixture-1",
+              license: "CC0-1.0",
+              retrievedAt: null,
+              importedAt: "2026-11-01T00:00:00Z",
+              version: "fixture-1",
+              rowCount: 1,
+              categoryCounts: { cpu: 1 },
+              active: true,
+            },
+            provenance: {
+              source: "catalog:fixture@fixture-1",
+              reference: "catalog:fixture",
+              observedAt: "2026-11-01T00:00:00Z",
+            },
+          },
+        ],
+        proposals: { specs: { tdp: "120W" } },
+        conflicts: [
+          { field: "specs.socket", operatorValue: "AM4", catalogValue: "AM5" },
+        ],
+      },
+    };
+    render(
+      <PreviewReview
+        {...baseProps}
+        catalogMatches={catalogMatches}
+        onCatalogOptIn={onCatalogOptIn}
+      />,
+    );
+    expect(screen.getByText(/Will add from the catalog/)).toBeInTheDocument();
+    expect(screen.getByText("specs.tdp")).toBeInTheDocument();
+    expect(screen.getByText(/Conflict on/)).toBeInTheDocument();
+    expect(screen.getByText(/supplied AM4/)).toBeInTheDocument();
+    expect(screen.getByText(/catalog says AM5/)).toBeInTheDocument();
+    await user.click(screen.getByLabelText("Apply catalog proposals"));
+    expect(onCatalogOptIn).toHaveBeenCalledWith(2, "part-1");
+  });
+
+  it("shows an ambiguous match with candidates and no default", () => {
+    const candidate = {
+      part: {
+        id: "part-a",
+        datasetId: "dataset-1",
+        externalId: null,
+        sku: "SKU-A",
+        category: "cpu",
+        model: "Example",
+        modelNormalized: "Example",
+        manufacturer: null,
+        specs: [],
+        sourceUrl: null,
+        verifiedAt: null,
+      },
+      dataset: {
+        id: "dataset-1",
+        name: "fixture",
+        sourceUrl: null,
+        commit: null,
+        license: "CC0-1.0",
+        retrievedAt: null,
+        importedAt: "2026-11-01T00:00:00Z",
+        version: "2026-11-01",
+        rowCount: 1,
+        categoryCounts: { cpu: 1 },
+        active: true,
+      },
+      provenance: {
+        source: "catalog:fixture@2026-11-01",
+        reference: "catalog:fixture",
+        observedAt: "2026-11-01T00:00:00Z",
+      },
+    };
+    render(
+      <PreviewReview
+        {...baseProps}
+        catalogMatches={{
+          2: {
+            row: 2,
+            status: "ambiguous",
+            basis: "model",
+            candidates: [candidate, { ...candidate, part: { ...candidate.part, id: "part-b", sku: "SKU-B" } }],
+            proposals: { specs: {} },
+            conflicts: [],
+          },
+        }}
+      />,
+    );
+    expect(screen.getByText(/Ambiguous — 2 candidates/)).toBeInTheDocument();
+    expect(screen.queryByLabelText("Apply catalog proposals")).not.toBeInTheDocument();
   });
 
   it("re-parses only when every required column is mapped", async () => {

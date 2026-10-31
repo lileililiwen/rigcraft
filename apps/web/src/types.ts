@@ -102,6 +102,7 @@ export interface RowDecision {
   row: number;
   action: DecisionAction;
   overrides?: RowOverrides;
+  catalog?: { partId: string };
 }
 
 export interface DuplicateResolution {
@@ -269,7 +270,8 @@ export interface ApiErrorBody {
   field?: string;
   row?: number;
   details?: {
-    rows?: Array<{ row: number; errors: FieldError[] }>;
+    rows?: DetailRow[];
+    specKeys?: string[];
     groups?: string[];
     sku?: string;
     category?: string;
@@ -733,4 +735,101 @@ export interface RestoreSummary {
 export interface DownloadedFile {
   filename: string;
   note: string | null;
+}
+
+export type DetailRow =
+  | { row: number; errors: FieldError[] }
+  | { row: number; field: string; code: string; message: string; suggestion?: string };
+
+export interface CatalogDataset {
+  id: string;
+  name: string;
+  sourceUrl: string | null;
+  commit: string | null;
+  license: string;
+  retrievedAt: string | null;
+  importedAt: string;
+  version: string;
+  rowCount: number;
+  categoryCounts: Record<string, number>;
+  active: boolean;
+}
+
+export interface CatalogPart {
+  id: string;
+  datasetId: string;
+  externalId: string | null;
+  sku: string;
+  category: string;
+  model: string;
+  modelNormalized: string;
+  manufacturer: string | null;
+  specs: Spec[];
+  sourceUrl: string | null;
+  verifiedAt: string | null;
+}
+
+export interface StoredCatalogPart {
+  part: CatalogPart;
+  dataset: CatalogDataset;
+}
+
+export interface CatalogPartDetail extends StoredCatalogPart {
+  provenance: Record<string, Provenance>;
+}
+
+export interface CatalogReport {
+  accepted: boolean;
+  replaced: boolean;
+  dataset: CatalogDataset;
+  partCount: number;
+  categoryCounts: Record<string, number>;
+  specKeys: string[];
+}
+
+export interface CatalogSearchResult {
+  query: string;
+  category: string | null;
+  limit: number;
+  offset: number;
+  total: number;
+  hits: StoredCatalogPart[];
+}
+
+export interface CatalogProposals {
+  model?: string;
+  specs: Record<string, string>;
+}
+
+export interface CatalogConflict {
+  field: string;
+  operatorValue: string;
+  catalogValue: string;
+}
+
+export interface CatalogCandidate {
+  part: CatalogPart;
+  dataset: CatalogDataset;
+  provenance: Provenance;
+}
+
+export interface CatalogMatch {
+  row: number;
+  status: "matched" | "ambiguous" | "unmatched";
+  basis: "sku" | "mpn" | "model" | "none";
+  candidates: CatalogCandidate[];
+  proposals: CatalogProposals;
+  conflicts: CatalogConflict[];
+}
+
+export interface CatalogMatchRow {
+  row: number;
+  sku: string;
+  category: string;
+  model: string;
+  specs: string;
+}
+
+export interface CatalogMatchResponse {
+  matches: CatalogMatch[];
 }

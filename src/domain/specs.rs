@@ -124,8 +124,19 @@ const TEXT_SPEC_KEYS: &[&str] = &[
     "type",
 ];
 
-fn normalize_spec_key(raw: &str) -> String {
+pub fn normalize_spec_key(raw: &str) -> String {
     raw.trim().to_lowercase().replace([' ', '-'], "_")
+}
+
+/// Every key the engine understands, in rule order. A catalog may only claim
+/// these keys; an unknown key is refused rather than stored as an unverifiable
+/// claim.
+pub fn supported_spec_keys() -> Vec<&'static str> {
+    NUMERIC_SPEC_RULES
+        .iter()
+        .map(|rule| rule.key)
+        .chain(TEXT_SPEC_KEYS.iter().copied())
+        .collect()
 }
 
 fn split_number_and_unit(value: &str) -> Option<(f64, Option<String>)> {

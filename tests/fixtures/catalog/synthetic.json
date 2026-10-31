@@ -1,0 +1,40 @@
+{
+  "format": "rigcraft-catalog",
+  "version": 1,
+  "dataset": {
+    "name": "synthetic-fixture",
+    "sourceUrl": "https://example.invalid/catalog",
+    "commit": "fixture-1",
+    "license": "CC0-1.0",
+    "retrievedAt": "2026-11-01T00:00:00Z"
+  },
+  "parts": [
+    {
+      "externalId": "MPN-CPU-1",
+      "sku": "SYN-CPU-1",
+      "category": "cpu",
+      "model": "Synthetic CPU One",
+      "manufacturer": "Synthetic Labs",
+      "specs": { "socket": "AM5", "tdp": "120W", "igpu": "yes" },
+      "sourceUrl": "https://example.invalid/cpu-one",
+      "verifiedAt": "2026-11-01T00:00:00Z"
+    },
+    {
+      "externalId": "MPN-CPU-2",
+      "sku": "SYN-CPU-2",
+      "category": "cpu",
+      "model": "Synthetic CPU One",
+      "manufacturer": "Synthetic Labs",
+      "specs": { "socket": "AM5", "tdp": "105W" },
+      "sourceUrl": "https://example.invalid/cpu-two"
+    },
+    {
+      "externalId": "MPN-GPU-1",
+      "sku": "SYN-GPU-1",
+      "category": "gpu",
+      "model": "Synthetic GPU One",
+      "manufacturer": "Synthetic Labs",
+      "specs": { "length": "250mm", "tdp": "200W", "vram": "12GB" }
+    }
+  ]
+}

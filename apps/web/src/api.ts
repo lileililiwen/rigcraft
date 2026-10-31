@@ -7,6 +7,12 @@ import type {
   CheckReport,
   CheckRequest,
   CommitRequest,
+  CatalogDataset,
+  CatalogMatchResponse,
+  CatalogMatchRow,
+  CatalogPartDetail,
+  CatalogReport,
+  CatalogSearchResult,
   CommitResponse,
   CorrectionRequest,
   DiagnoseRequest,
@@ -326,4 +332,90 @@ export async function reviseWithAssistant(
     body: JSON.stringify(request),
   });
   return readResponse<AiProposalResponse>(response);
+}
+
+export const catalogCategories = [
+  "cpu",
+  "motherboard",
+  "ram",
+  "gpu",
+  "psu",
+  "case",
+  "cooler",
+  "storage",
+] as const;
+
+/** Upload the operator's own catalog document. Nothing is fetched or bundled. */
+export async function uploadCatalog(
+  document: unknown,
+  acknowledged: boolean,
+): Promise<CatalogReport> {
+  const response = await fetch("/api/catalog/datasets", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ acknowledged, catalog: document }),
+  });
+  return readResponse<CatalogReport>(response);
+}
+
+export async function listCatalogDatasets(): Promise<CatalogDataset[]> {
+  const response = await fetch("/api/catalog/datasets");
+  return readResponse<CatalogDataset[]>(response);
+}
+
+export async function setCatalogDatasetActive(
+  id: string,
+  active: boolean,
+): Promise<CatalogDataset> {
+  const response = await fetch(
+    `/api/catalog/datasets/${encodeURIComponent(id)}`,
+    {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ active }),
+    },
+  );
+  return readResponse<CatalogDataset>(response);
+}
+
+export async function removeCatalogDataset(id: string): Promise<void> {
+  const response = await fetch(
+    `/api/catalog/datasets/${encodeURIComponent(id)}?confirm=remove`,
+    { method: "DELETE" },
+  );
+  await readResponse<{ removed: boolean }>(response);
+}
+
+export async function searchCatalog(
+  query: string,
+  category: string,
+  limit = 20,
+  offset = 0,
+): Promise<CatalogSearchResult> {
+  const params = new URLSearchParams({
+    q: query,
+    limit: String(limit),
+    offset: String(offset),
+  });
+  if (category) {
+    params.set("category", category);
+  }
+  const response = await fetch(`/api/catalog/search?${params.toString()}`);
+  return readResponse<CatalogSearchResult>(response);
+}
+
+export async function getCatalogPart(id: string): Promise<CatalogPartDetail> {
+  const response = await fetch(`/api/catalog/parts/${encodeURIComponent(id)}`);
+  return readResponse<CatalogPartDetail>(response);
+}
+
+export async function matchCatalogRows(
+  rows: CatalogMatchRow[],
+): Promise<CatalogMatchResponse> {
+  const response = await fetch("/api/catalog/match", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ rows }),
+  });
+  return readResponse<CatalogMatchResponse>(response);
 }

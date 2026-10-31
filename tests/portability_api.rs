@@ -392,7 +392,7 @@ async fn backup_is_a_valid_sqlite_file_with_the_same_counts() {
     let version: i64 = connection
         .query_row("PRAGMA user_version", [], |row| row.get(0))
         .unwrap();
-    assert_eq!(version, 4);
+    assert_eq!(version, 5);
     let snapshots: i64 = connection
         .query_row("SELECT COUNT(*) FROM snapshots", [], |row| row.get(0))
         .unwrap();
@@ -436,7 +436,7 @@ async fn restore_reproduces_counts_and_writes_a_pre_restore_copy() {
         .await;
     assert_eq!(status, StatusCode::OK, "{inspection}");
     assert_eq!(inspection["integrity"], "ok");
-    assert_eq!(inspection["counts"]["schemaVersion"], 4);
+    assert_eq!(inspection["counts"]["schemaVersion"], 5);
     assert_eq!(inspection["counts"]["snapshotCount"], 1);
     assert_eq!(inspection["counts"]["latestRevision"], 1);
     assert_eq!(inspection["counts"]["recordCount"], 10);
@@ -452,8 +452,8 @@ async fn restore_reproduces_counts_and_writes_a_pre_restore_copy() {
         .await;
     assert_eq!(status, StatusCode::OK, "{summary}");
     assert_eq!(summary["restored"], true);
-    assert_eq!(summary["sourceSchemaVersion"], 4);
-    assert_eq!(summary["counts"]["schemaVersion"], 4);
+    assert_eq!(summary["sourceSchemaVersion"], 5);
+    assert_eq!(summary["counts"]["schemaVersion"], 5);
     assert_eq!(summary["counts"]["snapshotCount"], 1);
     assert_eq!(summary["counts"]["recordCount"], 10);
     assert_eq!(summary["counts"]["lotCount"], 10);
@@ -645,7 +645,7 @@ async fn an_older_schema_migrates_forward_on_restore() {
         .await;
     assert_eq!(status, StatusCode::OK, "{summary}");
     assert_eq!(summary["sourceSchemaVersion"], 1);
-    assert_eq!(summary["counts"]["schemaVersion"], 4);
+    assert_eq!(summary["counts"]["schemaVersion"], 5);
     assert_eq!(summary["counts"]["snapshotCount"], 1);
     assert_eq!(summary["counts"]["recordCount"], 1);
 

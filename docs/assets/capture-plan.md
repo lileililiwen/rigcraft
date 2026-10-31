@@ -121,3 +121,10 @@ Refresh these captures after any change to `/inventory`, `/builds/check`, `/reco
 | `data-portability-rejected-mobile.png` | `/inventory` | 390×844 | The rejected state stacked, no overflow |
 
 Details: `docs/evidence/data-portability-browser.md`. Lighthouse reports: `docs/evidence/data-portability-lighthouse/` and `docs/evidence/data-portability-lighthouse-mobile/`.
+
+| `catalog-ingestion-upload-desktop.png` | `/catalog` | 1440×900 | Synthetic catalog uploaded: accepted report, provenance form and registry with licence |
+| `catalog-ingestion-refused-desktop.png` | `/catalog` | 1440×900 | Refused document: row index, field and reason; no dataset added |
+| `catalog-ingestion-search-desktop.png` | `/catalog` | 1440×900 | Ranked search results and an opened stored part with its source URL |
+| `catalog-ingestion-enriched-desktop.png` | `/inventory` | 1440×900 | Import row matched to the catalog, proposals listed, opt-in checked |
+| `catalog-ingestion-provenance-desktop.png` | `/inventory` | 1440×900 | Committed snapshot with catalog-sourced specifications and `catalog:<name>@<version>` provenance |
+| `catalog-ingestion-mobile.png` | `/catalog` | 390×844 | Stacked registry and search with no horizontal overflow |

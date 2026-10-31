@@ -534,7 +534,7 @@ pub fn parse_money_minor(raw: &str) -> Result<i64, FieldError> {
 }
 
 mod specs;
-pub use specs::parse_specs;
+pub use specs::{normalize_spec_key, parse_specs, supported_spec_keys};
 
 mod provenance;
 use provenance::{catalog_provenance, match_info_for};

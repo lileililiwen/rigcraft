@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import type {
+  CatalogMatch,
   DuplicateAction,
   FieldError,
   Preview,
@@ -26,6 +27,9 @@ import { FieldMessages, SpecList, StatusBadge } from "./Badges";
 
 interface PreviewReviewProps {
   preview: Preview;
+  catalogMatches: Record<number, CatalogMatch>;
+  catalogOptIn: Record<number, string>;
+  onCatalogOptIn: (row: number, partId: string | null) => void;
   decisions: DecisionMap;
   resolutions: ResolutionMap;
   overrides: OverrideMap;
@@ -48,8 +52,90 @@ const EDITABLE: Array<keyof RowOverrides> = [
   "specs",
 ];
 
+function CatalogCell({
+  row,
+  match,
+  optIn,
+  onOptIn,
+}: {
+  row: number;
+  match: CatalogMatch | undefined;
+  optIn: string | undefined;
+  onOptIn: (row: number, partId: string | null) => void;
+}) {
+  if (!match) {
+    return <span className="small muted">Catalog status unavailable.</span>;
+  }
+  if (match.status === "unmatched") {
+    return <span className="small muted">No catalog match. Your values stay.</span>;
+  }
+  if (match.status === "ambiguous") {
+    return (
+      <div className="small">
+        <strong>Ambiguous — {match.candidates.length} candidates.</strong> No default is
+        chosen; your values stay.
+        <ul>
+          {match.candidates.map((candidate) => (
+            <li key={candidate.part.id}>
+              {candidate.part.model} ({candidate.part.sku}) · {candidate.dataset.name}
+            </li>
+          ))}
+        </ul>
+      </div>
+    );
+  }
+  const candidate = match.candidates[0];
+  const proposalFields = [
+    ...(match.proposals.model ? ["model"] : []),
+    ...Object.keys(match.proposals.specs).map((key) => `specs.${key}`),
+  ];
+  const canApply = proposalFields.length > 0;
+  return (
+    <div className="small">
+      <p>
+        <strong>Matched</strong> by {match.basis} to {candidate.dataset.name} (v
+        {candidate.dataset.version}).
+      </p>
+      {canApply ? (
+        <>
+          <p>
+            Will add from the catalog: <strong>{proposalFields.join(", ")}</strong>.
+          </p>
+          <label className="choice" htmlFor={`catalog-opt-in-${row}`}>
+            <input
+              id={`catalog-opt-in-${row}`}
+              type="checkbox"
+              checked={optIn === candidate.part.id}
+              onChange={(event) =>
+                onOptIn(row, event.target.checked ? candidate.part.id : null)
+              }
+            />
+            <span>Apply catalog proposals</span>
+          </label>
+        </>
+      ) : (
+        <p className="muted">Nothing missing; your values stay as entered.</p>
+      )}
+      {match.conflicts.length > 0 ? (
+        <ul className="error-list">
+          {match.conflicts.map((conflict) => (
+            <li key={conflict.field}>
+              <strong>Conflict on {conflict.field}</strong>: you supplied{" "}
+              {conflict.operatorValue}; the catalog says {conflict.catalogValue}. Your
+              value is kept.
+            </li>
+          ))}
+        </ul>
+      ) : null}
+    </div>
+  );
+}
+
 export function PreviewReview({
   preview,
+  catalogMatches,
+  catalogOptIn,
+  onCatalogOptIn,
   decisions,
   resolutions,
   overrides,
@@ -145,6 +231,7 @@ export function PreviewReview({
                 <th scope="col">SKU</th>
                 <th scope="col">Category</th>
                 <th scope="col">Model</th>
+                <th scope="col">Catalog</th>
                 <th scope="col">Qty</th>
                 <th scope="col">Price ({preview.currency})</th>
                 <th scope="col">Specifications</th>
@@ -201,6 +288,14 @@ export function PreviewReview({
                         · {factsLabel(row.provenance["model"]?.source)} · match{" "}
                         {row.match.confidence}
                       </span>
+                    </td>
+                    <td data-label="Catalog">
+                      <CatalogCell
+                        row={row.row}
+                        match={catalogMatches[row.row]}
+                        optIn={catalogOptIn[row.row]}
+                        onOptIn={onCatalogOptIn}
+                      />
                     </td>
                     <td data-label="Quantity">{display.quantity || "—"}</td>
                     <td data-label="Price">

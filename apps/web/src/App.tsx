@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { CatalogPage } from "./components/CatalogPage";
 import { CheckPage } from "./components/CheckPage";
 import { DiagnosePage } from "./components/DiagnosePage";
 import { InventoryPage } from "./components/InventoryPage";
@@ -10,18 +11,24 @@ import { RecommendPage } from "./components/RecommendPage";
  */
 export default function App() {
   const path = typeof window === "undefined" ? "/" : window.location.pathname;
+  const catalog = path.startsWith("/catalog");
   const compatibility = path.startsWith("/builds/check");
   const recommendation = path.startsWith("/recommend");
   const diagnosis = path.startsWith("/diagnose");
   useEffect(() => {
-    document.title = compatibility
-      ? "RigCraft compatibility check"
-      : recommendation
-        ? "RigCraft build recommendation"
-        : diagnosis
-          ? "RigCraft build diagnosis"
-          : "RigCraft inventory";
-  }, [compatibility, recommendation, diagnosis]);
+    document.title = catalog
+      ? "RigCraft catalog"
+      : compatibility
+        ? "RigCraft compatibility check"
+        : recommendation
+          ? "RigCraft build recommendation"
+          : diagnosis
+            ? "RigCraft build diagnosis"
+            : "RigCraft inventory";
+  }, [catalog, compatibility, recommendation, diagnosis]);
+  if (catalog) {
+    return <CatalogPage />;
+  }
   if (compatibility) {
     return <CheckPage />;
   }

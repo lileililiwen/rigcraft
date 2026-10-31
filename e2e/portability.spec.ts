@@ -150,7 +150,7 @@ test("a backup restores only after inspection and a typed confirmation, and a re
   const field = (name: string) =>
     preview.locator(".summary-grid div").filter({ hasText: name }).locator("dd");
   await expect(field("Integrity")).toHaveText("ok");
-  await expect(field("Schema version")).toHaveText("4");
+  await expect(field("Schema version")).toHaveText("5");
   await expect(field("Snapshots")).toHaveText(String(expectedSnapshots));
   await expect(field("Latest revision")).toHaveText(
     String(liveSummaries[0].revision),

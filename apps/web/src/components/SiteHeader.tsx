@@ -1,16 +1,18 @@
-export type CurrentPage = "inventory" | "compatibility" | "recommend" | "diagnose";
+export type CurrentPage = "inventory" | "catalog" | "compatibility" | "recommend" | "diagnose";
 
 export function SiteHeader({ current }: { current: CurrentPage }) {
   return (
     <>
       <a className="skip-link" href="#main">
-        {current === "compatibility"
-          ? "Skip to compatibility check"
-          : current === "recommend"
-            ? "Skip to recommendation"
-            : current === "diagnose"
-              ? "Skip to build diagnosis"
-              : "Skip to inventory"}
+        {current === "catalog"
+          ? "Skip to catalog"
+          : current === "compatibility"
+            ? "Skip to compatibility check"
+            : current === "recommend"
+              ? "Skip to recommendation"
+              : current === "diagnose"
+                ? "Skip to build diagnosis"
+                : "Skip to inventory"}
       </a>
       <header className="site-header">
         <div className="site-header__inner">
@@ -20,6 +22,9 @@ export function SiteHeader({ current }: { current: CurrentPage }) {
           <nav className="primary-nav" aria-label="Primary">
             <a href="/inventory" aria-current={current === "inventory" ? "page" : undefined}>
               Inventory
+            </a>
+            <a href="/catalog" aria-current={current === "catalog" ? "page" : undefined}>
+              Catalog
             </a>
             <a
               href="/builds/check"
