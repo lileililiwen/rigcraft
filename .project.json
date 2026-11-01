@@ -9,7 +9,7 @@
     "evidence_status": "verified"
   },
   "deployment": {
-    "deployable": false,
+    "deployable": true,
     "jenkins_job": null,
     "compose_file": "compose.yaml"
   },
