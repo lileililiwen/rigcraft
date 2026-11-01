@@ -7,3 +7,4 @@ forge-registry.db
 /test-results/
 /playwright-report/
 /.forge/release/
+/.forge/deploy/
