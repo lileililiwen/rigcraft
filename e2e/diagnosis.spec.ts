@@ -84,3 +84,48 @@ test("an exact, an ambiguous and an unmatched line are never coerced, and unveri
 
   await expectNoHorizontalOverflow(page);
 });
+
+/**
+ * When every described part is covered by an evaluated rule the coverage fact is
+ * stated once, and an incomplete described build still names its gaps.
+ */
+test("an all-evaluated diagnosis states coverage once and names its gaps", async ({
+  page,
+  request,
+}) => {
+  const snapshot = await seedSample(request);
+
+  await page.goto("/diagnose");
+  await chooseSnapshot(page, "#diagnose-snapshot", snapshot);
+  await page
+    .locator("#diagnose-text")
+    .fill(
+      [
+        "cpu: AMD Ryzen 7 7800X3D",
+        "motherboard: ASUS ROG STRIX B650E-F GAMING WIFI",
+      ].join("\n"),
+    );
+  await page.getByRole("button", { name: "Match this list" }).click();
+
+  await expect(page.locator(".review-line")).toHaveCount(2);
+  await page.getByRole("button", { name: "Diagnose this build" }).click();
+
+  await expect(page.getByRole("heading", { name: "Build diagnosis" })).toBeVisible();
+  await expect(
+    page.getByText("Every described part was checked by at least one rule.", {
+      exact: true,
+    }),
+  ).toHaveCount(1);
+  await expect(
+    page.getByText(/of 2 described parts were checked by at least one rule/),
+  ).toHaveCount(0);
+
+  const gaps = page
+    .locator(".diagnostic-block")
+    .filter({ has: page.getByRole("heading", { name: "Build gaps" }) });
+  await expect(gaps).toContainText("A power supply is required.");
+  await expect(gaps).toContainText("Select a power supply from this snapshot.");
+  await expect(gaps).not.toContainText("is required from this snapshot");
+
+  await expectNoHorizontalOverflow(page);
+});

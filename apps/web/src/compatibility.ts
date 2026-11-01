@@ -5,6 +5,7 @@ import type {
   Snapshot,
   Verdict,
 } from "./types";
+import { plural } from "./plural";
 
 export interface CategorySpec {
   key: string;
@@ -110,7 +111,7 @@ export function selectionErrors(
   for (const [sku, entry] of perSku) {
     if (entry.quantity > entry.available) {
       errors.push(
-        `${sku} needs ${entry.quantity} unit(s) but this snapshot has ${entry.available}.`,
+        `${sku} needs ${plural(entry.quantity, "unit")} but this snapshot has ${entry.available}.`,
       );
     }
   }

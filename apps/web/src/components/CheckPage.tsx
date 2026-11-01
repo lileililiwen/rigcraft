@@ -22,6 +22,7 @@ import {
 } from "../compatibility";
 import type { SelectionState } from "../compatibility";
 import { formatTimestamp, formatMoney, shortId, sourceLabel } from "../inventory";
+import { plural } from "../plural";
 import { ProvenanceList, SpecList } from "./Badges";
 import { SiteHeader } from "./SiteHeader";
 
@@ -75,14 +76,10 @@ function RuleBadge({ rule }: { rule: RuleResult }) {
   );
 }
 
-function RuleEvidence({ rule }: { rule: RuleResult }) {
+function RuleValues({ rule }: { rule: RuleResult }) {
   return (
-    <details className="details-block rule-evidence">
-      <summary>Rule, inputs and provenance</summary>
-      <p className="small muted">{rule.method}</p>
-      <p className="small mono">
-        {rule.ruleId} · {rule.ruleVersion}
-      </p>
+    <>
+      <p className="rule-matrix__finding">{rule.explanation}</p>
       <dl className="evidence-list">
         {rule.evidence.map((entry, index) => (
           <div key={`${entry.part.recordId}-${entry.field}-${index}`}>
@@ -116,7 +113,14 @@ function RuleEvidence({ rule }: { rule: RuleResult }) {
           </div>
         ))}
       </dl>
-    </details>
+      <details className="details-block rule-evidence">
+        <summary>Rule method and version</summary>
+        <p className="small muted">{rule.method}</p>
+        <p className="small mono">
+          {rule.ruleId} · {rule.ruleVersion}
+        </p>
+      </details>
+    </>
   );
 }
 
@@ -149,7 +153,7 @@ export function CheckPage() {
         if (list.length > 0) {
           setSnapshotId(list[0].id);
           setLive(
-            `Ready. ${list.length} snapshot${list.length === 1 ? "" : "s"} available; the newest is revision ${list[0].revision}.`,
+            `Ready. ${plural(list.length, "snapshot")} available; the newest is revision ${list[0].revision}.`,
           );
         } else {
           setLive("No inventory snapshot is available. Import a CSV first.");
@@ -190,7 +194,7 @@ export function CheckPage() {
         setSelection(emptySelection());
         setSnapshotBusy(false);
         setLive(
-          `Snapshot revision ${next.revision} loaded: ${next.records.length} record${next.records.length === 1 ? "" : "s"}.`,
+          `Snapshot revision ${next.revision} loaded: ${plural(next.records.length, "record")}.`,
         );
       })
       .catch((error) => {
@@ -322,6 +326,12 @@ export function CheckPage() {
   const selectedCount = snapshot
     ? currentSelection.reduce((total, item) => total + item.quantity, 0)
     : 0;
+  const evaluatedRecordIds = new Set(
+    report ? report.rules.flatMap((rule) => rule.parts.map((part) => part.recordId)) : [],
+  );
+  const notEvaluated = report
+    ? report.selection.filter((part) => !evaluatedRecordIds.has(part.recordId)).length
+    : 0;
 
   return (
     <>
@@ -434,8 +444,8 @@ export function CheckPage() {
                   {snapshots.map((entry) => (
                     <option key={entry.id} value={entry.id}>
                       Revision {entry.revision} · {entry.sourceFilename} ·{" "}
-                      {formatTimestamp(entry.createdAt)} · {entry.recordCount} records ·{" "}
-                      {shortId(entry.id)}
+                      {formatTimestamp(entry.createdAt)} ·{" "}
+                      {plural(entry.recordCount, "record")} · {shortId(entry.id)}
                     </option>
                   ))}
                 </select>
@@ -589,7 +599,7 @@ export function CheckPage() {
                   {busy ? "Checking…" : "Check compatibility"}
                 </button>
                 <span className="small muted" aria-live="off">
-                  {selectedCount} unit{selectedCount === 1 ? "" : "s"} selected
+                  {plural(selectedCount, "unit")} selected
                 </span>
               </div>
             </section>
@@ -612,39 +622,45 @@ export function CheckPage() {
                 Run the check again before treating it as current.
               </div>
             ) : null}
-            <div className="verdict-line">
-              <VerdictBadge report={report} />
-              <span className="verdict-completeness">
-                {completionLabel(report)}
-              </span>
-              <span className="small muted">
-                Checked{" "}
-                <time dateTime={report.checkedAt}>
-                  {formatTimestamp(report.checkedAt)}
-                </time>{" "}
-                · snapshot revision {report.snapshotRevision}
-                {stale &&
-                report.currentSnapshotRevision != null &&
-                report.currentSnapshotRevision !== report.snapshotRevision
-                  ? ` (now revision ${report.currentSnapshotRevision})`
-                  : ""}{" "}
-                · rule set {report.ruleSetVersion}
-              </span>
+            <div className="console-summary">
+              <div className="verdict-line">
+                <VerdictBadge report={report} />
+                <span className="verdict-completeness">
+                  {completionLabel(report)}
+                </span>
+                <span className="small muted">
+                  Checked{" "}
+                  <time dateTime={report.checkedAt}>
+                    {formatTimestamp(report.checkedAt)}
+                  </time>{" "}
+                  · snapshot revision {report.snapshotRevision}
+                  {stale &&
+                  report.currentSnapshotRevision != null &&
+                  report.currentSnapshotRevision !== report.snapshotRevision
+                    ? ` (now revision ${report.currentSnapshotRevision})`
+                    : ""}{" "}
+                  · rule set {report.ruleSetVersion}
+                </span>
+              </div>
+              <dl className="summary-grid result-summary">
+                <div>
+                  <dt>Rules passed</dt>
+                  <dd>{report.summary.compatible}</dd>
+                </div>
+                <div>
+                  <dt>Conflicts</dt>
+                  <dd>{report.summary.incompatible}</dd>
+                </div>
+                <div>
+                  <dt>Unknown</dt>
+                  <dd>{report.summary.unknown}</dd>
+                </div>
+                <div>
+                  <dt>Parts not evaluated</dt>
+                  <dd>{notEvaluated}</dd>
+                </div>
+              </dl>
             </div>
-            <dl className="summary-grid result-summary">
-              <div>
-                <dt>Rules passed</dt>
-                <dd>{report.summary.compatible}</dd>
-              </div>
-              <div>
-                <dt>Conflicts</dt>
-                <dd>{report.summary.incompatible}</dd>
-              </div>
-              <div>
-                <dt>Unknown</dt>
-                <dd>{report.summary.unknown}</dd>
-              </div>
-            </dl>
 
             {report.completeness.status === "incomplete" ? (
               <div className="diagnostic-block diagnostic-block--unknown">
@@ -652,7 +668,7 @@ export function CheckPage() {
                 <ul className="missing-list">
                   {report.completeness.missing.map((entry) => (
                     <li key={entry.category}>
-                      <strong>{categoryLabel(entry.category)}</strong>: {entry.reason}.{" "}
+                      <strong>{categoryLabel(entry.category)}</strong>: {entry.reason}{" "}
                       <span>{entry.followUp}</span>
                     </li>
                   ))}
@@ -699,38 +715,47 @@ export function CheckPage() {
               )}
             </div>
 
-            <h3 className="evidence-title">Rule evidence</h3>
+            <h3 className="evidence-title">Rule matrix</h3>
+            <p className="small muted">
+              {plural(report.rules.length, "rule")} in {report.ruleSetVersion}, ordered
+              by category then rule identifier.
+            </p>
             <div className="table-wrap">
-              <table className="responsive-table">
+              <table className="responsive-table rule-matrix">
                 <caption>
-                  Every rule, its verdict, explanation and the inputs with provenance
+                  Every rule, its verdict, the compared values with provenance, and its
+                  follow-up
                 </caption>
                 <thead>
                   <tr>
                     <th scope="col">Rule</th>
                     <th scope="col">Verdict</th>
-                    <th scope="col">Explanation</th>
-                    <th scope="col">Evidence</th>
+                    <th scope="col">Compared values</th>
+                    <th scope="col">Follow-up</th>
                   </tr>
                 </thead>
                 <tbody>
                   {report.rules.map((rule) => (
                     <tr key={rule.ruleId}>
                       <td data-label="Rule">
-                        {rule.title}
+                        <span className="rule-matrix__title">{rule.title}</span>
                         <span className="small muted mono"> · {rule.ruleId}</span>
+                        <span className="small muted mono"> · {rule.category}</span>
                       </td>
                       <td data-label="Verdict">
                         <RuleBadge rule={rule} />
                       </td>
-                      <td data-label="Explanation">
-                        {rule.explanation}
-                        {rule.followUp ? (
-                          <span className="follow-up"> Confirm: {rule.followUp}</span>
-                        ) : null}
+                      <td data-label="Compared values">
+                        <RuleValues rule={rule} />
                       </td>
-                      <td data-label="Evidence">
-                        <RuleEvidence rule={rule} />
+                      <td data-label="Follow-up">
+                        {rule.followUp ? (
+                          <span className="follow-up">{rule.followUp}</span>
+                        ) : (
+                          <span className="small muted">
+                            No follow-up; the rule reached a verdict.
+                          </span>
+                        )}
                       </td>
                     </tr>
                   ))}

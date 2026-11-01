@@ -466,27 +466,44 @@ fn unknown_follow_up(evidence: &[RuleEvidence], question: &str) -> String {
 fn completeness(parts: &BuildParts) -> Completeness {
     let mut missing = Vec::new();
     let required = [
-        ("cpu", parts.cpu.is_some(), "a CPU is required"),
+        ("cpu", parts.cpu.is_some(), "A CPU is required.", "a CPU"),
         (
             "motherboard",
             parts.motherboard.is_some(),
-            "a motherboard is required",
+            "A motherboard is required.",
+            "a motherboard",
         ),
-        ("ram", !parts.ram.is_empty(), "memory is required"),
-        ("psu", parts.psu.is_some(), "a power supply is required"),
-        ("case", parts.case_part.is_some(), "a case is required"),
+        (
+            "ram",
+            !parts.ram.is_empty(),
+            "Memory is required.",
+            "memory",
+        ),
+        (
+            "psu",
+            parts.psu.is_some(),
+            "A power supply is required.",
+            "a power supply",
+        ),
+        (
+            "case",
+            parts.case_part.is_some(),
+            "A case is required.",
+            "a case",
+        ),
         (
             "storage",
             !parts.storage.is_empty(),
-            "startup storage is required",
+            "Startup storage is required.",
+            "startup storage",
         ),
     ];
-    for (category, present, reason) in required {
+    for (category, present, reason, selection_noun) in required {
         if !present {
             missing.push(MissingPart {
                 category: category.to_string(),
                 reason: reason.to_string(),
-                follow_up: format!("Select {reason} from this snapshot."),
+                follow_up: format!("Select {selection_noun} from this snapshot."),
             });
         }
     }
@@ -498,7 +515,7 @@ fn completeness(parts: &BuildParts) -> Completeness {
         if igpu != Some(true) {
             missing.push(MissingPart {
                 category: "gpu".to_string(),
-                reason: "no graphics card is selected and sourced integrated-graphics evidence is absent"
+                reason: "No graphics card is selected and sourced integrated-graphics evidence is absent."
                     .to_string(),
                 follow_up: "Select a graphics card, or record `igpu=yes` on the CPU with its source."
                     .to_string(),
@@ -513,7 +530,7 @@ fn completeness(parts: &BuildParts) -> Completeness {
         if bundled != Some(true) {
             missing.push(MissingPart {
                 category: "cooler".to_string(),
-                reason: "no cooler is selected and sourced bundled-cooling evidence is absent"
+                reason: "No cooler is selected and sourced bundled-cooling evidence is absent."
                     .to_string(),
                 follow_up:
                     "Select a cooler, or record `bundled_cooler=yes` on the CPU with its source."
@@ -823,6 +840,51 @@ mod tests {
         assert_eq!(state.status, CompletenessStatus::Incomplete);
         assert_eq!(state.missing[0].category, "storage");
         assert_eq!(overall_status(&rules, &state), Verdict::Unknown);
+    }
+
+    #[test]
+    fn missing_part_sentences_are_grammatical_and_do_not_repeat_the_reason() {
+        let state = completeness(&BuildParts::default());
+        assert_eq!(state.missing.len(), 8);
+        let motherboard = state
+            .missing
+            .iter()
+            .find(|entry| entry.category == "motherboard")
+            .unwrap();
+        assert_eq!(motherboard.reason, "A motherboard is required.");
+        assert_eq!(
+            motherboard.follow_up,
+            "Select a motherboard from this snapshot."
+        );
+        for entry in &state.missing {
+            assert!(
+                entry.reason.ends_with('.'),
+                "reason must be a complete sentence: {}",
+                entry.reason
+            );
+            assert!(
+                entry.follow_up.starts_with("Select "),
+                "follow-up must start with an action: {}",
+                entry.follow_up
+            );
+            assert!(
+                !entry.follow_up.contains("is required"),
+                "follow-up must not repeat the reason: {}",
+                entry.follow_up
+            );
+        }
+        let gpu = state
+            .missing
+            .iter()
+            .find(|entry| entry.category == "gpu")
+            .unwrap();
+        assert!(gpu.follow_up.contains("igpu=yes"));
+        let cooler = state
+            .missing
+            .iter()
+            .find(|entry| entry.category == "cooler")
+            .unwrap();
+        assert!(cooler.follow_up.contains("bundled_cooler=yes"));
     }
 
     #[test]

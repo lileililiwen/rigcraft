@@ -104,7 +104,7 @@ function reportFor(selection: SelectionItem[], attempt: number): CheckReport {
       missing: [
         {
           category: "storage",
-          reason: "startup storage is required",
+          reason: "Startup storage is required.",
           followUp: "Select startup storage from this snapshot.",
         },
       ],
@@ -278,11 +278,24 @@ describe("compatibility check page", () => {
     expect(screen.getAllByText("Not provided").length).toBeGreaterThan(0);
     expect(screen.getAllByText(/csv:fixture.csv/).length).toBeGreaterThan(0);
     expect(screen.getByText("Incomplete build")).toBeInTheDocument();
-    expect(screen.getByText(/startup storage is required/)).toBeInTheDocument();
+    expect(screen.getByText(/Startup storage is required\./)).toBeInTheDocument();
+    expect(
+      screen.getByText("Select startup storage from this snapshot."),
+    ).toBeInTheDocument();
+
+    expect(screen.getByRole("heading", { name: "Rule matrix" })).toBeInTheDocument();
+    expect(screen.getAllByText("Rule method and version")).toHaveLength(2);
+    expect(screen.getAllByText("AM5").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("AM4").length).toBeGreaterThan(0);
+    const summary = screen.getByText("Rules passed").closest("dl");
+    expect(summary).toHaveTextContent("Parts not evaluated");
+    expect(summary?.querySelectorAll("dd")[3]).toHaveTextContent("0");
+    expect(screen.getByText("1 unit selected")).toBeInTheDocument();
 
     const quantity = screen.getByLabelText("Quantity for FIX-CPU-AM5");
     await user.clear(quantity);
     await user.type(quantity, "2");
+    expect(screen.getByText("2 units selected")).toBeInTheDocument();
     expect(screen.getByText("This verdict is stale.")).toBeInTheDocument();
     expect(
       screen.getAllByRole("status").some((node) =>
@@ -295,6 +308,25 @@ describe("compatibility check page", () => {
       expect(screen.queryByText("This verdict is stale.")).not.toBeInTheDocument(),
     );
     expect(screen.getByText(/Quantity for FIX-CPU-AM5/)).toBeInTheDocument();
+  });
+
+  it("counts selected parts that no rule evaluated", async () => {
+    installFetch(
+      standardHandler((selection, attempt) =>
+        jsonResponse(reportFor(selection, attempt)),
+      ),
+    );
+    const user = userEvent.setup();
+    render(<CheckPage />);
+
+    await screen.findByLabelText("Snapshot");
+    await user.click(screen.getByRole("radio", { name: /Fixture AM5 CPU/ }));
+    await user.click(screen.getByRole("radio", { name: /Fixture Case/ }));
+    await user.click(screen.getByRole("button", { name: "Check compatibility" }));
+
+    await screen.findByRole("heading", { name: "Compatibility result" });
+    const summary = screen.getByText("Parts not evaluated").closest("dl");
+    expect(summary?.querySelectorAll("dd")[3]).toHaveTextContent("1");
   });
 
   it("explains the empty inventory state with a link to import", async () => {

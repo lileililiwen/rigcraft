@@ -5,21 +5,15 @@ import type {
   RecommendRequest,
   SearchStats,
 } from "./types";
+import { plural } from "./plural";
+
+export { plural };
 
 export const USE_CASES = [
   { value: "gaming", label: "Gaming" },
   { value: "office", label: "Office and general use" },
   { value: "creation", label: "Creation and heavy workloads" },
 ];
-
-/**
- * One pluralisation helper for every count the page composes. It never produces
- * an `(s)` pseudo-plural, so a count of one and a count of many read correctly.
- */
-export function plural(count: number, singular: string, pluralForm?: string): string {
-  const word = count === 1 ? singular : (pluralForm ?? `${singular}s`);
-  return `${count} ${word}`;
-}
 
 /**
  * Parse a human budget into integer minor units (1200 → 120000, 1299.50 →

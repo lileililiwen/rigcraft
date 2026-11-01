@@ -66,5 +66,54 @@ test("the seeded AM5 build reports 12 compatible, 0 conflicts and 2 named unknow
     "No definite conflict was found among the rules that could run.",
   );
 
+  // The rule matrix keeps every rule and shows the compared values with their
+  // provenance reference and the follow-up, not just a verdict.
+  await expect(page.getByRole("heading", { name: "Rule matrix" })).toBeVisible();
+  await expect(page.locator("table.rule-matrix tbody tr")).toHaveCount(14);
+  const socketRow = page
+    .locator("table.rule-matrix tbody tr")
+    .filter({ hasText: "cpu-socket" });
+  await expect(socketRow).toContainText("Compatible");
+  await expect(socketRow).toContainText("AM5");
+  await expect(socketRow).toContainText("Catalog · manufacturer@2026-10-31");
+  await expect(socketRow).toContainText("https://www.amd.com");
+  await expect(socketRow).toContainText("No follow-up");
+  const biosRow = page
+    .locator("table.rule-matrix tbody tr")
+    .filter({ hasText: "cpu-bios" });
+  await expect(biosRow).toContainText(
+    "Confirm the motherboard's installed BIOS version supports AMD Ryzen 7 7800X3D.",
+  );
+
+  await expectNoHorizontalOverflow(page);
+});
+
+/**
+ * An incomplete selection names the gap once: the reason is a sentence and the
+ * follow-up is an instruction, never a repeat of "is required".
+ */
+test("a CPU-only check states the motherboard gap without duplicating it", async ({
+  page,
+  request,
+}) => {
+  const snapshot = await seedSample(request);
+
+  await page.goto("/builds/check");
+  await chooseSnapshot(page, "#check-snapshot", snapshot);
+  await page.getByRole("radio", { name: /AMD Ryzen 7 7800X3D/ }).check();
+  await page.getByRole("button", { name: "Check compatibility" }).click();
+
+  await expect(page.getByRole("heading", { name: "Compatibility result" })).toBeVisible();
+  const gaps = page
+    .locator(".diagnostic-block")
+    .filter({ has: page.getByRole("heading", { name: "Incomplete build" }) });
+  await expect(gaps).toContainText("A motherboard is required.");
+  await expect(gaps).toContainText("Select a motherboard from this snapshot.");
+  await expect(gaps).not.toContainText("is required from this snapshot");
+  await expect(gaps).toContainText("A power supply is required.");
+
+  await expect(page.getByRole("heading", { name: "Rule matrix" })).toBeVisible();
+  await expect(page.locator("dl.result-summary dd").nth(3)).toHaveText("1");
+
   await expectNoHorizontalOverflow(page);
 });

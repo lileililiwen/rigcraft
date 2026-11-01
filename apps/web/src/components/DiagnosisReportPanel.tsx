@@ -1,7 +1,14 @@
-import type { Advice, DiagnosisReport, RuleEvidence, RuleResult } from "../types";
+import type {
+  Advice,
+  AdviceAction,
+  DiagnosisReport,
+  RuleEvidence,
+  RuleResult,
+} from "../types";
 import { categoryLabel } from "../compatibility";
 import { ACTION_META, PLAN_META, groupRows, reportHeadline, verdictWord } from "../diagnosis";
 import { formatTimestamp, formatMoney, shortId, sourceLabel } from "../inventory";
+import { plural, pluralWord } from "../plural";
 import { VERDICT_META } from "../compatibility";
 
 function EvidenceList({ evidence }: { evidence: RuleEvidence[] }) {
@@ -108,17 +115,28 @@ function Group({
   description,
   entries,
   emptyText,
+  action,
 }: {
   title: string;
   description: string;
   entries: Advice[];
   emptyText: string;
+  action: AdviceAction;
 }) {
+  const meta = ACTION_META[action];
   return (
-    <section className="advice-group" aria-label={title}>
-      <h3 className="advice-group__title">
-        {title} <span className="muted">({entries.length})</span>
-      </h3>
+    <section className={`advice-group advice-group--${action}`} aria-label={title}>
+      <div className="advice-group__head">
+        <h3 className="advice-group__title">
+          {title} <span className="muted">({entries.length})</span>
+        </h3>
+        <span className={`badge badge--${meta.className}`}>
+          <span className="badge__symbol" aria-hidden="true">
+            {meta.symbol}
+          </span>
+          {meta.label}
+        </span>
+      </div>
       <p className="small muted">{description}</p>
       {entries.length === 0 ? (
         <p className="small">{emptyText}</p>
@@ -169,54 +187,63 @@ export function DiagnosisReportPanel({ report }: { report: DiagnosisReport }) {
           Run it again before treating it as current.
         </div>
       ) : null}
-      <div className="verdict-line">
-        <span className={`badge badge--${meta.className} badge--verdict`}>
-          <span className="badge__symbol" aria-hidden="true">
-            {meta.symbol}
+      <div className="console-summary">
+        <div className="verdict-line">
+          <span className={`badge badge--${meta.className} badge--verdict`}>
+            <span className="badge__symbol" aria-hidden="true">
+              {meta.symbol}
+            </span>
+            {meta.label}
           </span>
-          {meta.label}
-        </span>
-        <span className="verdict-completeness">
-          {report.check.completeness.status === "complete"
-            ? "Complete build"
-            : `Incomplete build · ${report.check.completeness.missing.length} missing`}
-        </span>
-        <span className="small muted">
-          Checked{" "}
-          <time dateTime={report.check.checkedAt}>
-            {formatTimestamp(report.check.checkedAt)}
-          </time>{" "}
-          · snapshot revision {report.snapshotRevision} · rule set {report.ruleSetVersion} ·{" "}
-          {shortId(report.id)}
-        </span>
+          <span className="verdict-completeness">
+            {report.check.completeness.status === "complete"
+              ? "Complete build"
+              : `Incomplete build · ${plural(
+                  report.check.completeness.missing.length,
+                  "missing part",
+                )}`}
+          </span>
+          <span className="small muted">
+            Checked{" "}
+            <time dateTime={report.check.checkedAt}>
+              {formatTimestamp(report.check.checkedAt)}
+            </time>{" "}
+            · snapshot revision {report.snapshotRevision} · rule set{" "}
+            {report.ruleSetVersion} · {shortId(report.id)}
+          </span>
+        </div>
+        <dl className="summary-grid result-summary">
+          <div>
+            <dt>Rules passed</dt>
+            <dd>{report.check.summary.compatible}</dd>
+          </div>
+          <div>
+            <dt>Conflicts</dt>
+            <dd>{report.check.summary.incompatible}</dd>
+          </div>
+          <div>
+            <dt>Unknown</dt>
+            <dd>{report.check.summary.unknown}</dd>
+          </div>
+          <div>
+            <dt>Parts not evaluated</dt>
+            <dd>{unverified.length}</dd>
+          </div>
+        </dl>
       </div>
       <p className="lede">{reportHeadline(report)}</p>
-      <dl className="summary-grid result-summary">
-        <div>
-          <dt>Rules passed</dt>
-          <dd>{report.check.summary.compatible}</dd>
-        </div>
-        <div>
-          <dt>Conflicts</dt>
-          <dd>{report.check.summary.incompatible}</dd>
-        </div>
-        <div>
-          <dt>Unknown</dt>
-          <dd>{report.check.summary.unknown}</dd>
-        </div>
-        <div>
-          <dt>Parts not evaluated</dt>
-          <dd>{unverified.length}</dd>
-        </div>
-      </dl>
       <p className="small muted">
-        {evaluatedParts} of {report.build.length} described part
-        {report.build.length === 1 ? "" : "s"} were checked by at least one rule.
-        {unverified.length > 0
-          ? ` ${unverified.length} part${
-              unverified.length === 1 ? "" : "s"
-            } had no rule that could run and remain unverified.`
-          : " Every part was checked by at least one rule."}
+        {unverified.length === 0
+          ? "Every described part was checked by at least one rule."
+          : `${evaluatedParts} of ${plural(
+              report.build.length,
+              "described part",
+            )} ${pluralWord(evaluatedParts, "was", "were")} checked by at least one rule. ${plural(
+              unverified.length,
+              "part",
+            )} had no rule that could run and ${
+              unverified.length === 1 ? "remains" : "remain"
+            } unverified.`}
       </p>
 
       {report.check.completeness.status === "incomplete" ? (
@@ -238,24 +265,28 @@ export function DiagnosisReportPanel({ report }: { report: DiagnosisReport }) {
         description="A definite conflict is recorded for these parts; keeping them contradicts the checker."
         entries={mustReplace}
         emptyText="No described part is in a definite conflict."
+        action="must_replace"
       />
       <Group
         title="Should upgrade — verify first"
         description="No conflict is recorded, but a required fact is missing. Gather the evidence first; replace only if it shows the part is inadequate."
         entries={shouldUpgrade}
         emptyText="No part is waiting on missing evidence."
+        action="should_upgrade"
       />
       <Group
         title="Fine as is"
         description="Every rule involving these parts passed, or the plan resolves their conflict elsewhere."
         entries={keep}
         emptyText="No part is kept by this diagnosis."
+        action="keep"
       />
       <Group
         title="Not verified — no rule evaluated"
         description="No rule that could run involves these parts, so the checker did not evaluate them. This is not a compatibility claim."
         entries={unverified}
         emptyText="Every described part was involved in at least one evaluated rule."
+        action="unverified"
       />
 
       <section className="plan-block" aria-labelledby="plan-title">
@@ -271,7 +302,8 @@ export function DiagnosisReportPanel({ report }: { report: DiagnosisReport }) {
           </span>
           <span className="small muted">
             Each replacement is re-checked against {report.check.ruleSetVersion} with the
-            retained parts; {report.plan.evaluated} candidate substitution(s) evaluated.
+            retained parts;{" "}
+            {plural(report.plan.evaluated, "candidate substitution")} evaluated.
           </span>
         </div>
         <p>{report.plan.summary}</p>

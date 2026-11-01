@@ -774,6 +774,53 @@ tbody tr:last-child td {
   margin-top: var(--space-4);
 }
 
+/* The result summary stays beside the rule matrix while the operator reads it,
+   so the overall verdict never scrolls away from its rules. */
+.console-summary {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  margin-top: var(--space-3);
+  padding-block: var(--space-2) var(--space-3);
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.console-summary .verdict-line {
+  margin-top: 0;
+}
+
+.console-summary .result-summary {
+  margin-top: var(--space-3);
+}
+
+.rule-matrix__title {
+  font-weight: 700;
+}
+
+.rule-matrix__finding {
+  margin: 0 0 var(--space-2);
+}
+
+.rule-matrix td[data-label="Verdict"] {
+  white-space: nowrap;
+}
+
+.rule-matrix td[data-label="Follow-up"] {
+  min-width: 12rem;
+}
+
+.rule-matrix .rule-evidence {
+  margin-top: var(--space-2);
+}
+
+/* Provenance references are long URLs. They must wrap inside the responsive
+   card layout, where the table no longer has its own scroll container. */
+.rule-matrix td,
+.rule-matrix .tag {
+  overflow-wrap: anywhere;
+}
+
 .stale-note {
   margin-top: var(--space-3);
   padding: var(--space-3);
@@ -964,6 +1011,10 @@ tbody tr:last-child td {
 }
 
 @media (max-width: 760px) {
+  .console-summary {
+    position: static;
+  }
+
   .candidate {
     padding: var(--space-3);
   }
@@ -1114,12 +1165,40 @@ tbody tr:last-child td {
 
 .advice-group {
   margin-top: var(--space-6);
-  padding-top: var(--space-3);
-  border-top: 2px solid var(--color-border);
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-top-width: 2px;
+  border-left: 6px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-muted);
+}
+
+.advice-group--must_replace {
+  border-left-color: var(--color-danger);
+}
+
+.advice-group--should_upgrade {
+  border-left-color: var(--color-warning);
+}
+
+.advice-group--keep {
+  border-left-color: var(--color-success);
+}
+
+.advice-group--unverified {
+  border-left-color: var(--color-warning);
+}
+
+.advice-group__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
 }
 
 .advice-group__title {
-  margin: 0 0 var(--space-1);
+  margin: 0;
   font-size: var(--font-body);
 }
 

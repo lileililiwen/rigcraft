@@ -10,7 +10,7 @@ document is the authoritative statement those documents link to.
 ```sh
 cargo build          # the service binary the suite starts
 npm run build        # the bundle the service serves
-npm run test:e2e     # 20 tests, real Chrome, under a minute
+npm run test:e2e     # 24 tests, real Chrome, under a minute
 ```
 
 `npm run test:e2e` selects a free loopback port, starts `target/debug/rigcraft` with a
@@ -26,9 +26,9 @@ one worker, no retries, list and JSON reporters, and a trace only on retry.
 | Spec | What fails if it regresses |
 | --- | --- |
 | `e2e/inventory.spec.ts` | The sample download (filename, CSV header, 10 rows, `catalog:manufacturer@2026-10-31`, the AMD page URL), the preview counts and 10 review rows, the commit heading `Committed snapshot · revision 1`, 10 committed records with every seeded SKU, and the provenance split: `model`/`specs` as `Catalog · manufacturer@2026-10-31` with the manufacturer URL, `sku`/`quantity`/`price` as `User-provided · csv:rigcraft-inventory-sample.csv` and never as catalog facts. |
-| `e2e/compatibility.spec.ts` | Selecting the full seeded AM5 build and reading `12 compatible · 0 conflicts · 2 unknown`, summary 12/0/2, an `Unknown` overall badge that is not `Compatible`, and the `cpu-bios` / `psu-capacity` follow-ups. |
+| `e2e/compatibility.spec.ts` | Selecting the full seeded AM5 build and reading `12 compatible · 0 conflicts · 2 unknown`, summary 12/0/2, an `Unknown` overall badge that is not `Compatible`, and the `cpu-bios` / `psu-capacity` follow-ups; the 14-row rule matrix with `cpu-socket` values and provenance; and a CPU-only check whose gap reads `A motherboard is required.` / `Select a motherboard from this snapshot.` and never `is required from this snapshot`. |
 | `e2e/recommendation.spec.ts` | A 1,800.00 budget returns three ranked options; option 1 is labelled `Unknown` rather than `Compatible`, carries a "Confirm before building" list, and its total is under budget. A 900.00 budget returns `Budget constraint`, "The budget is below the cheapest complete build.", the 1,123.90 minimum and no candidates. |
-| `e2e/diagnosis.spec.ts` | One exact, one ambiguous and one unmatched pasted line; no preselected candidate on the ambiguous line; "Resolve the match review first" before resolution; then `Not verified — no rule evaluated (2)`, `Fine as is (0)`, two unverified badges, no compatible badge in the unverified group and no `keep` card at all. |
+| `e2e/diagnosis.spec.ts` | One exact, one ambiguous and one unmatched pasted line; no preselected candidate on the ambiguous line; "Resolve the match review first" before resolution; then `Not verified — no rule evaluated (2)`, `Fine as is (0)`, two unverified badges, no compatible badge in the unverified group and no `keep` card at all. Also an all-evaluated two-part diagnosis that prints `Every described part was checked by at least one rule.` exactly once (no `N of N` fraction) and keeps the grammatical `A power supply is required.` gap. |
 | `e2e/regression.spec.ts` | `/assets/nope.js`, `/robots.txt` and `/llms.txt` return 404 without the shell while `/diagnose` returns 200 HTML; a malformed JSON POST is `application/json` with `error.code` `invalid_json`; `/diagnose` renders sections 1–5 in order before any match; a `<time>` renders ISO 8601 UTC under `locale: 'de-DE'`. |
 | `e2e/shell.spec.ts` | A table caption at 390 px keeps more than 150 px of rendered width (the pre-fix value was 92.58 px); the unfocused skip link's bottom edge is at or above 0 and the first Tab makes it fully visible; `/favicon.ico` and `/favicon.svg` return 200 with an image type, `index.html` links an icon and no icon request fails on a real page load. |
 | `e2e/keyboard-responsive.spec.ts` | The first Tab lands on the skip link, Tab reaches the budget field, Enter generates a recommendation with no pointer input, and `document.documentElement.scrollWidth === clientWidth` at 390 px on `/inventory`, `/builds/check`, `/recommend` and `/diagnose`. |

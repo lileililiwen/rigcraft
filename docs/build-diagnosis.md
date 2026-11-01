@@ -242,7 +242,13 @@ groups, validated plan, needs-evidence plan, no-option plan, rejected plan, requ
 failure with retry, and stale after a snapshot revision. The numbered skeleton is
 stable: sections 1 (snapshot), 2 (paste), 3 (match review), 4 (manual entry) and 5
 (result) keep their numbers before a list is matched, and section 3 shows an empty
-state until then. It uses labelled controls, a polite live status region, a
+state until then. The four advice groups are console cards with a symbol-and-word
+chip beside the unchanged heading and count; the described-build table, rule
+evidence and upgrade plan keep every fact. The coverage fact is stated once: the
+checked fraction plus the unverified count when some parts were not evaluated, or
+`Every described part was checked by at least one rule.` when all were. An exact
+candidate hides its (empty) added and missing token lists; a non-exact candidate
+keeps them. Matching behaviour is unchanged. It uses labelled controls, a polite live status region, a
 `role="alert"` failure, focus on the match-review and result headings, symbol-plus-
 text status, visible focus, stacked cards at phone width and reduced-motion-safe
 transitions. Every visible timestamp is ISO 8601 UTC through one shared helper and
@@ -253,6 +259,9 @@ does not change with the browser locale.
 - `docs/assets/diagnosis-*.png` — browser states at 1440×900 and 390×844.
 - `docs/evidence/diagnosis-browser.md` — journey, keyboard, responsive,
   accessibility, privacy and measured contrast.
+- `docs/evidence/verdict-console-browser.md` — the console presentation, the
+  single coverage sentence, exact-match token noise and the verdict-console
+  Lighthouse run.
 - `docs/evidence/correctness-audit-browser.md` — the unverified group, stable
   numbering, ISO 8601 UTC timestamps and static 404s from the correctness audit.
 - `docs/evidence/token-contrast.json` — measured WCAG 2.2 AA contrast.

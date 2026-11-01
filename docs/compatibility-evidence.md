@@ -123,11 +123,12 @@ Checks do not mutate snapshots, reserve stock, or write a partial report. Databa
 
 The Rust process serves the SPA shell for extensionless client routes such as `/inventory` and `/builds/check`; an unknown static or metadata path is a real 404, and unknown `/api/*` routes remain JSON `route_not_found` 404 responses.
 
-`/builds/check` covers no snapshot, empty selection, selecting, checking, complete, incompatible, unknown, stale after a part or snapshot change, snapshot-load failure, and check failure with retry. It uses labelled radio/checkbox groups and quantity fields, a live status region, `role="alert"` failures, visible focus, focus on the result heading, symbol-plus-text verdicts, stacked mobile cards, and reduced-motion-safe CSS. The result lists conflict diagnostics, every unknown follow-up, and a per-rule evidence disclosure with source and observation time.
+`/builds/check` covers no snapshot, empty selection, selecting, checking, complete, incompatible, unknown, stale after a part or snapshot change, snapshot-load failure, and check failure with retry. It uses labelled radio/checkbox groups and quantity fields, a live status region, `role="alert"` failures, visible focus, focus on the result heading, symbol-plus-text verdicts, stacked mobile cards, and reduced-motion-safe CSS. The result opens with a summary bar (status, rules passed, conflicts, unknown, parts not evaluated) and a rule matrix in which every rule shows its verdict chip, each compared field and value with the recorded source, reference and observation time, and its follow-up. Conflict diagnostics and every unknown follow-up remain as a second reading of the same matrix. A missing required part is named once: a complete reason such as `A motherboard is required.` followed by an actionable `Select a motherboard from this snapshot.`, never a follow-up that repeats `is required`.
 
 ## Evidence
 
 - `docs/assets/compatibility-*.png` — browser states at 1440×900 and 390×844.
 - `docs/evidence/compatibility-browser.md` — journey, keyboard, responsive, accessibility, privacy and measured contrast.
+- `docs/evidence/verdict-console-browser.md` — the rule matrix, grammatical gap sentences, real incomplete and complete checks, and the verdict-console Lighthouse run.
 - `docs/evidence/token-contrast.json` — measured WCAG 2.2 AA contrast.
 - `docs/evidence/compatibility-lighthouse/` and `docs/evidence/compatibility-lighthouse-mobile/` — Lighthouse accessibility audits.

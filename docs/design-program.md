@@ -243,6 +243,22 @@ two copy defects in their text are fixed at the source.
 gap sentences and a Vitest assertion that the duplicated string cannot render;
 a11y 100; captures.
 
+**Delivered 2026-11-01.** `/builds/check` opens with a sticky summary bar (status,
+rules passed / conflicts / unknown / parts not evaluated) and a 14-row rule
+matrix in which each rule carries its chip, every compared value with source,
+reference and time, and its follow-up; `cpu-bios` and `psu-capacity` stay
+`Unknown` with their real follow-ups. `/diagnose` keeps the 1–5 skeleton, ids and
+statuses and presents the four advice groups as cards with symbol-and-word chips;
+the coverage fact prints once (`Every described part was checked by at least one
+rule.`) and the 8-line sample diagnosis returns 8 matched, 0 must replace, 3 to
+verify, 5 fine as is and 0 unverified. `completeness()` now says `A motherboard
+is required.` / `Select a motherboard from this snapshot.`; a Rust test fails if
+any follow-up contains `is required`. Exact matches hide their empty added and
+missing token lists. Captures: `docs/assets/verdict-*.png`; Lighthouse is 100 on
+accessibility, best practices, SEO and agentic browsing for both routes on
+desktop and mobile; no horizontal overflow at 1440 or 390 px. Evidence:
+`docs/evidence/verdict-console-browser.md`.
+
 ---
 
 ## Package 4 — `dataops-console`

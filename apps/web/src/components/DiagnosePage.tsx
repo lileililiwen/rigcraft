@@ -18,6 +18,7 @@ import {
   reviewedParts,
 } from "../diagnosis";
 import { formatTimestamp, formatMoney, shortId } from "../inventory";
+import { plural } from "../plural";
 import { DiagnosisReportPanel } from "./DiagnosisReportPanel";
 import { SiteHeader } from "./SiteHeader";
 
@@ -92,7 +93,7 @@ export function DiagnosePage() {
         if (entries.length > 0) {
           setSnapshotId(entries[0].id);
           setLive(
-            `Ready. ${entries.length} snapshot${entries.length === 1 ? "" : "s"} available; the newest is revision ${entries[0].revision}.`,
+            `Ready. ${plural(entries.length, "snapshot")} available; the newest is revision ${entries[0].revision}.`,
           );
         } else {
           setLive("No inventory snapshot is available. Import a CSV first.");
@@ -135,9 +136,10 @@ export function DiagnosePage() {
         setCurrency(next.currency);
         setSnapshotBusy(false);
         setLive(
-          `Snapshot revision ${next.revision} loaded: ${next.records.length} record${
-            next.records.length === 1 ? "" : "s"
-          }. Matching compares pasted models with these records only.`,
+          `Snapshot revision ${next.revision} loaded: ${plural(
+            next.records.length,
+            "record",
+          )}. Matching compares pasted models with these records only.`,
         );
       })
       .catch((error) => {
@@ -203,7 +205,7 @@ export function DiagnosePage() {
       setList(parsed);
       setChoices(initialChoices(parsed));
       setLive(
-        `Match review ready: ${parsed.lineCount} line(s). ${
+        `Match review ready: ${plural(parsed.lineCount, "line")}. ${
           counts.matched ?? 0
         } matched, ${counts.ambiguous ?? 0} ambiguous, ${counts.unmatched ?? 0} without a match, ${
           counts.invalid ?? 0
@@ -303,11 +305,19 @@ export function DiagnosePage() {
       setReport(result);
       setPhase("done");
       setLive(
-        `Diagnosis complete: ${result.check.overallStatus}. ${
-          result.groups.mustReplace.length
-        } part(s) must be replaced, ${result.groups.shouldUpgrade.length} should be verified, ${
-          result.groups.keep.length
-        } can be kept, ${result.groups.unverified.length} were not evaluated by any rule. Upgrade plan: ${result.plan.status.replace(/_/g, " ")}.`,
+        `Diagnosis complete: ${result.check.overallStatus}. ${plural(
+          result.groups.mustReplace.length,
+          "part",
+        )} must be replaced, ${plural(
+          result.groups.shouldUpgrade.length,
+          "part",
+        )} should be verified, ${plural(
+          result.groups.keep.length,
+          "part",
+        )} can be kept, and ${plural(
+          result.groups.unverified.length,
+          "part",
+        )} not evaluated by any rule. Upgrade plan: ${result.plan.status.replace(/_/g, " ")}.`,
       );
     } catch (error) {
       setProblem(describeFailure(error));
@@ -423,8 +433,8 @@ export function DiagnosePage() {
                   {snapshots.map((entry) => (
                     <option key={entry.id} value={entry.id}>
                       Revision {entry.revision} · {entry.sourceFilename} ·{" "}
-                      {formatTimestamp(entry.createdAt)} · {entry.recordCount} records ·{" "}
-                      {shortId(entry.id)}
+                      {formatTimestamp(entry.createdAt)} ·{" "}
+                      {plural(entry.recordCount, "record")} · {shortId(entry.id)}
                     </option>
                   ))}
                 </select>
@@ -500,7 +510,7 @@ export function DiagnosePage() {
               </button>
               <span className="small muted">
                 {list
-                  ? `${list.lineCount} line(s) reviewed`
+                  ? `${plural(list.lineCount, "line")} reviewed`
                   : "Matching never guesses a SKU for an ambiguous line."}
               </span>
             </div>
@@ -580,10 +590,12 @@ export function DiagnosePage() {
                                     <span className="small muted">
                                       {formatMoney(candidate.priceMinor, candidate.currency)} ·{" "}
                                       {candidate.available} in stock
-                                      {candidate.extraTokens.length > 0
+                                      {!candidate.exact &&
+                                      candidate.extraTokens.length > 0
                                         ? ` · adds ${candidate.extraTokens.join(", ")}`
                                         : ""}
-                                      {candidate.missingTokens.length > 0
+                                      {!candidate.exact &&
+                                      candidate.missingTokens.length > 0
                                         ? ` · missing ${candidate.missingTokens.join(", ")}`
                                         : ""}
                                     </span>
@@ -710,7 +722,9 @@ export function DiagnosePage() {
               <button type="button" onClick={addManualPart} disabled={busy}>
                 Add this part
               </button>
-              <span className="small muted">{manual.length} part(s) added by hand</span>
+              <span className="small muted">
+                {plural(manual.length, "part")} added by hand
+              </span>
             </div>
             {manual.length > 0 ? (
               <ul className="manual-list">
@@ -718,7 +732,7 @@ export function DiagnosePage() {
                   <li key={entry.key}>
                     <span>{entry.label}</span>{" "}
                     <span className="small muted">
-                      {entry.part.quantity} unit(s)
+                      {plural(entry.part.quantity ?? 1, "unit")}
                       {entry.part.specs ? " · specifications recorded" : " · no specifications"}
                     </span>{" "}
                     <button
@@ -742,7 +756,7 @@ export function DiagnosePage() {
                 {phase === "diagnosing" ? "Diagnosing…" : "Diagnose this build"}
               </button>
               <span className="small muted">
-                {partCount} part(s) will be diagnosed
+                {plural(partCount, "part")} will be diagnosed
                 {list
                   ? ` · ${reviewed.length} from the list, ${manual.length} by hand`
                   : ` · ${manual.length} by hand`}

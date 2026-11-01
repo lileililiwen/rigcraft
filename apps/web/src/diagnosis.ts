@@ -9,6 +9,7 @@ import type {
   PlanStatus,
   Verdict,
 } from "./types";
+import { plural, pluralWord } from "./plural";
 
 export interface StatusMeta {
   symbol: string;
@@ -180,25 +181,20 @@ export function groupRows(
 export function reportHeadline(report: DiagnosisReport): string {
   const conflict = report.check.summary.incompatible;
   const unknown = report.check.summary.unknown;
+  const missing = report.check.completeness.missing.length;
   const parts = [
-    `${report.check.summary.compatible} rule${
-      report.check.summary.compatible === 1 ? "" : "s"
-    } passed`,
-    `${conflict} conflict${conflict === 1 ? "" : "s"}`,
+    `${plural(report.check.summary.compatible, "rule")} passed`,
+    plural(conflict, "conflict"),
     `${unknown} unknown`,
   ];
   if (report.groups.unverified.length > 0) {
     parts.push(
-      `${report.groups.unverified.length} part${
-        report.groups.unverified.length === 1 ? "" : "s"
-      } not evaluated by any rule`,
+      `${plural(report.groups.unverified.length, "part")} not evaluated by any rule`,
     );
   }
   if (report.check.completeness.status === "incomplete") {
     parts.push(
-      `${report.check.completeness.missing.length} required part${
-        report.check.completeness.missing.length === 1 ? " is" : "s are"
-      } missing`,
+      `${plural(missing, "required part")} ${pluralWord(missing, "is", "are")} missing`,
     );
   }
   return parts.join(" · ");

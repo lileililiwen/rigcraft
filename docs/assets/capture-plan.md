@@ -106,6 +106,19 @@ Details: `docs/evidence/use-case-diversity-browser.md`. Lighthouse reports: `doc
 
 Details: `docs/evidence/workbench-recommendation-browser.md`. Lighthouse reports: `docs/evidence/workbench-lighthouse/`, `docs/evidence/workbench-lighthouse-mobile/` and `docs/evidence/workbench-lighthouse-results/`.
 
+### Verdict console captures (2026-11-01)
+
+| Capture | Route | Viewport | Condition |
+| --- | --- | --- | --- |
+| `verdict-check-desktop.png` | `/builds/check` | 1440×900 | CPU-only check: `Unknown`, six seeded gaps with grammatical reasons and follow-ups |
+| `verdict-check-mobile.png` | `/builds/check` | 390×844 | The same incomplete result as stacked cards |
+| `verdict-check-matrix-desktop.png` | `/builds/check` | 1440×900 | Full seeded build: summary bar above the 14-rule matrix with values, provenance and follow-ups |
+| `verdict-check-matrix-mobile.png` | `/builds/check` | 390×844 | The same matrix as labelled cards, no horizontal overflow |
+| `verdict-diagnosis-desktop.png` | `/diagnose` | 1440×900 | 8 matched lines: four console groups, one coverage sentence, plan and evidence table |
+| `verdict-diagnosis-mobile.png` | `/diagnose` | 390×844 | The same diagnosis stacked, no horizontal overflow |
+
+Details: `docs/evidence/verdict-console-browser.md`. Lighthouse reports: `docs/evidence/verdict-lighthouse/`.
+
 ## Refresh rule
 
 Refresh these captures after any change to `/inventory`, `/catalog`, `/builds/check`, `/recommend`, `/diagnose`, the shared tokens, the brand token layer, the import, check, recommendation or AI plan/revision API, the compatibility rules, the scoring version, the interpretation contract or the rendered states. A capture that names an older revision is historical evidence, not current evidence.

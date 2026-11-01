@@ -137,8 +137,8 @@ const parsed: ParsedList = {
           coverage: 1,
           exact: true,
           sharedTokens: ["am5", "cpu", "fixture", "7600"],
-          extraTokens: [],
-          missingTokens: [],
+          extraTokens: ["shouldnotshow"],
+          missingTokens: ["shouldnotshow2"],
           provenance,
         },
       ],
@@ -472,6 +472,9 @@ describe("build diagnosis page", () => {
     expect(
       screen.getByText(/add tokens you did not paste: twin, wind/),
     ).toBeInTheDocument();
+    expect(screen.getAllByText(/adds twin/).length).toBeGreaterThan(0);
+    expect(screen.queryByText(/adds shouldnotshow/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/missing shouldnotshow2/)).not.toBeInTheDocument();
 
     // The exact match is a preselected suggestion, not a silent confirmation.
     expect(
@@ -521,6 +524,15 @@ describe("build diagnosis page", () => {
     expect(
       screen.getByText(/2 of 3 described parts were checked by at least one rule/),
     ).toBeInTheDocument();
+    expect(
+      screen.queryByText("Every described part was checked by at least one rule."),
+    ).not.toBeInTheDocument();
+    const unverifiedGroup = screen
+      .getByRole("heading", { name: /Not verified — no rule evaluated/ })
+      .closest("section");
+    expect(unverifiedGroup?.querySelector(".advice-group__head .badge")).toHaveTextContent(
+      "Not verified",
+    );
     const checkedAt = document.querySelector('time[datetime="2026-10-31T12:05:00Z"]');
     expect(checkedAt).not.toBeNull();
     expect(checkedAt).toHaveTextContent("2026-10-31T12:05:00Z");
@@ -599,6 +611,9 @@ describe("build diagnosis page", () => {
     );
     await user.click(screen.getByRole("button", { name: "Add this part" }));
     expect(screen.getAllByText(/Fixture B650 Board/).length).toBeGreaterThan(0);
+    expect(screen.getByText("1 part added by hand")).toBeInTheDocument();
+    expect(screen.getByText(/1 unit/)).toBeInTheDocument();
+    expect(screen.getByText(/1 part will be diagnosed/)).toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: "Diagnose this build" }));
     await screen.findByRole("heading", { name: "Build diagnosis" });
@@ -612,6 +627,34 @@ describe("build diagnosis page", () => {
         specs: "socket=AM5;memory_type=DDR5",
       },
     ]);
+  });
+
+  it("states all-checked coverage once when every part was evaluated", async () => {
+    installFetch(async () => {
+      const report = diagnosis();
+      report.groups = {
+        mustReplace: [1],
+        shouldUpgrade: [2],
+        keep: [3],
+        unverified: [],
+      };
+      return jsonResponse(report);
+    });
+    const user = userEvent.setup();
+    render(<DiagnosePage />);
+    await screen.findByLabelText("Snapshot");
+
+    await user.type(screen.getByLabelText("Model"), "Fixture B650 Board");
+    await user.click(screen.getByRole("button", { name: "Add this part" }));
+    await user.click(screen.getByRole("button", { name: "Diagnose this build" }));
+
+    await screen.findByRole("heading", { name: "Build diagnosis" });
+    expect(
+      screen.getAllByText("Every described part was checked by at least one rule."),
+    ).toHaveLength(1);
+    expect(
+      screen.queryByText(/of 3 described parts were checked by at least one rule/),
+    ).not.toBeInTheDocument();
   });
 
   it("keeps the entered work when the diagnosis fails", async () => {
