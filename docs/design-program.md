@@ -326,6 +326,23 @@ desktop and mobile; no horizontal overflow at 1440 or 390 px. Evidence:
 for the CSV escape; e2e for a real 404; `docs/data-portability.md` and
 `docs/inventory-import.md` updated.
 
+**Delivered 2026-11-01.** `GET /api`, `GET /api/` and every unknown `/api/*` path
+return the JSON envelope with 404 `route_not_found`; a wrong method on a real route
+still returns 405. The SPA shell is served only for `/`, `/inventory`, `/catalog`,
+`/builds/check`, `/recommend` and `/diagnose`, with one trailing slash accepted;
+every other extensionless path returns a 404 `text/plain` document, so `/recomend`
+and `/nope` no longer render Inventory with status 200. CSV export prefixes one
+apostrophe to a cell whose first character is `=`, `+`, `-`, `@`, TAB or CR, or a
+quote followed by one of those, so a `=1+1` model exports as `'=1+1` while the JSON
+export keeps `=1+1`. A semicolon-delimited header that leaves the required columns
+missing now names the delimiter in `mapping_missing`, with the code, field and
+missing list unchanged. Verified by a 185-test Rust suite (route matrix,
+neutralisation, delimiter hint), 26 Playwright journeys including a direct visit to
+a typo path, and the recorded curl matrix in
+`docs/evidence/service-correctness-browser.md`. Captures:
+`docs/assets/service-correctness-*.png`. The change adds no dependency, no colour
+literal, no redirect and no new page.
+
 ---
 
 ## Package 6 — `delivery-hardening`

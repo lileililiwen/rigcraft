@@ -300,6 +300,68 @@ async fn csv_export_reimports_to_the_same_records_and_provenance_sources() {
 }
 
 #[tokio::test]
+async fn a_formula_leading_csv_cell_is_neutralised_while_json_keeps_the_raw_value() {
+    let harness = Harness::new();
+    let csv = "sku,category,model,quantity,price,currency,specs\n\
+               X-1,cpu,=1+1,1,10.00,USD,socket=AM5\n\
+               X-2,cpu,AMD Ryzen 7 7800X3D,1,20.00,USD,\n";
+    let preview = harness.preview("formula.csv", csv.as_bytes(), "USD").await;
+    assert_eq!(preview["summary"]["errors"], 0, "{preview}");
+    let preview_id = preview["previewId"].as_str().unwrap();
+    let decisions = json!({
+        "decisions": preview["rows"].as_array().unwrap().iter().map(|row| json!({
+            "row": row["row"],
+            "action": "accept",
+        })).collect::<Vec<_>>(),
+        "duplicateResolutions": [],
+    });
+    let request = Request::builder()
+        .method("POST")
+        .uri(format!("/api/imports/{preview_id}/commit"))
+        .header(header::CONTENT_TYPE, "application/json")
+        .body(Body::from(decisions.to_string()))
+        .unwrap();
+    let (status, committed) = harness.json(request).await;
+    assert_eq!(status, StatusCode::OK, "{committed}");
+    let snapshot_id = committed["snapshot"]["id"].as_str().unwrap();
+
+    let (status, _headers, bytes) = harness
+        .get_bytes(&format!(
+            "/api/inventory/snapshots/{snapshot_id}/export?format=csv"
+        ))
+        .await;
+    assert_eq!(status, StatusCode::OK);
+    let csv = String::from_utf8(bytes).unwrap();
+    let mut lines = csv.lines();
+    lines.next().unwrap();
+    // The apostrophe is the only change to the cell and to the line.
+    assert_eq!(
+        lines.next().unwrap(),
+        "X-1,cpu,'=1+1,1,10.00,USD,socket=AM5,user,"
+    );
+    // A value with no formula trigger is untouched.
+    assert_eq!(
+        lines.next().unwrap(),
+        "X-2,cpu,AMD Ryzen 7 7800X3D,1,20.00,USD,,user,"
+    );
+
+    let (status, _headers, bytes) = harness
+        .get_bytes(&format!(
+            "/api/inventory/snapshots/{snapshot_id}/export?format=json"
+        ))
+        .await;
+    assert_eq!(status, StatusCode::OK);
+    let export: Value = serde_json::from_slice(&bytes).unwrap();
+    let records = export["snapshot"]["records"].as_array().unwrap();
+    assert_eq!(records[0]["modelRaw"], "=1+1");
+    assert_eq!(records[1]["modelRaw"], "AMD Ryzen 7 7800X3D");
+
+    // The neutralisation is lossy: a re-import keeps the apostrophe.
+    let reimported = harness.preview("formula.csv", csv.as_bytes(), "USD").await;
+    assert_eq!(reimported["rows"][0]["values"]["model"], "'=1+1");
+}
+
+#[tokio::test]
 async fn json_export_round_trips_lots_and_per_field_provenance() {
     let harness = Harness::new();
     let snapshot = harness.seed_sample().await;

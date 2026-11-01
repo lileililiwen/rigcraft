@@ -143,12 +143,21 @@ fn resolve_mapping(
         .copied()
         .collect::<Vec<_>>();
     if !missing.is_empty() {
-        return Err(ApiError::bad_request(
-            "mapping_missing",
-            format!("Required columns are missing: {}.", missing.join(", ")),
-        )
-        .with_field(missing[0])
-        .with_details(serde_json::json!({ "missing": missing })));
+        // A semicolon-delimited file parses as one column containing `;`, so
+        // every required column looks absent. Name the likely cause instead of
+        // only listing columns the operator can already see in the file.
+        let semicolon_header = headers.len() == 1 && headers[0].contains(';');
+        let mut message = format!("Required columns are missing: {}.", missing.join(", "));
+        let mut details = serde_json::json!({ "missing": missing });
+        if semicolon_header {
+            message.push_str(
+                " The header looks semicolon-delimited; RigCraft expects comma-separated columns.",
+            );
+            details["delimiter"] = serde_json::json!("semicolon");
+        }
+        return Err(ApiError::bad_request("mapping_missing", message)
+            .with_field(missing[0])
+            .with_details(details));
     }
     Ok(mapping)
 }

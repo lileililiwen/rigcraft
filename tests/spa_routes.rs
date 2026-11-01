@@ -1,5 +1,5 @@
-//! Static and SPA fallback routing: a client route gets the shell, a missing
-//! file or metadata path gets a real 404.
+//! HTTP surface routing: the six client routes get the shell, the API root and
+//! every unknown API route are JSON 404s, and any other path is a real 404.
 
 use std::sync::Arc;
 
@@ -35,12 +35,16 @@ impl Harness {
     }
 
     async fn get(&self, uri: &str) -> (StatusCode, Option<String>, String) {
+        self.send("GET", uri).await
+    }
+
+    async fn send(&self, method: &str, uri: &str) -> (StatusCode, Option<String>, String) {
         let response = self
             .router
             .clone()
             .oneshot(
                 Request::builder()
-                    .method("GET")
+                    .method(method)
                     .uri(uri)
                     .body(Body::empty())
                     .unwrap(),
@@ -62,15 +66,17 @@ impl Harness {
 }
 
 #[tokio::test]
-async fn extensionless_client_routes_return_the_spa_shell() {
+async fn the_six_client_routes_return_the_spa_shell() {
     let harness = Harness::new();
     for uri in [
         "/",
         "/inventory",
+        "/catalog",
         "/builds/check",
         "/recommend",
         "/diagnose",
-        "/some/history/route",
+        "/inventory/",
+        "/diagnose/",
     ] {
         let (status, content_type, body) = harness.get(uri).await;
         assert_eq!(status, StatusCode::OK, "{uri}");
@@ -80,6 +86,53 @@ async fn extensionless_client_routes_return_the_spa_shell() {
         );
         assert!(body.contains(MARKER), "{uri} did not return the shell");
     }
+}
+
+#[tokio::test]
+async fn an_unknown_extensionless_path_is_a_real_404_document() {
+    let harness = Harness::new();
+    for uri in [
+        "/nope",
+        "/recomend",
+        "/some/history/route",
+        "/API/health",
+        "/inventory//",
+    ] {
+        let (status, content_type, body) = harness.get(uri).await;
+        assert_eq!(status, StatusCode::NOT_FOUND, "{uri}");
+        assert!(
+            !body.contains(MARKER),
+            "{uri} returned the SPA shell instead of 404"
+        );
+        assert!(
+            body.contains("404 Not found"),
+            "{uri} did not return the not-found document"
+        );
+        assert!(
+            !content_type.unwrap_or_default().starts_with("text/html"),
+            "{uri} returned an HTML document"
+        );
+    }
+}
+
+#[tokio::test]
+async fn the_api_root_and_unknown_api_routes_are_json_404s() {
+    let harness = Harness::new();
+    for uri in ["/api", "/api/", "/api/nope", "/api/inventory/nope/deeper"] {
+        let (status, content_type, body) = harness.get(uri).await;
+        assert_eq!(status, StatusCode::NOT_FOUND, "{uri}");
+        assert_eq!(content_type.as_deref(), Some("application/json"), "{uri}");
+        let value: serde_json::Value = serde_json::from_str(&body).unwrap();
+        assert_eq!(value["error"]["code"], "route_not_found", "{uri}");
+    }
+}
+
+#[tokio::test]
+async fn a_wrong_method_on_a_real_api_route_keeps_its_405() {
+    let harness = Harness::new();
+    let (status, _content_type, body) = harness.send("POST", "/api/health").await;
+    assert_eq!(status, StatusCode::METHOD_NOT_ALLOWED);
+    assert!(!body.contains(MARKER));
 }
 
 #[tokio::test]
@@ -101,14 +154,4 @@ async fn unknown_static_and_metadata_paths_are_not_html() {
             "{uri} returned the SPA shell instead of 404"
         );
     }
-}
-
-#[tokio::test]
-async fn unknown_api_routes_stay_json_not_found() {
-    let harness = Harness::new();
-    let (status, content_type, body) = harness.get("/api/nope").await;
-    assert_eq!(status, StatusCode::NOT_FOUND);
-    assert_eq!(content_type.as_deref(), Some("application/json"));
-    let value: serde_json::Value = serde_json::from_str(&body).unwrap();
-    assert_eq!(value["error"]["code"], "route_not_found");
 }

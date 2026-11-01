@@ -187,3 +187,15 @@ Details: `docs/evidence/dataops-console-browser.md`. Lighthouse reports: `docs/e
 | `ui-foundation-diagnose-mobile.png` | `/diagnose` | 390×844 | Stacked 1–5 skeleton |
 
 Details: `docs/evidence/ui-foundation-browser.md`. Lighthouse reports: `docs/evidence/ui-foundation-lighthouse/<route>/` and `docs/evidence/ui-foundation-lighthouse-mobile/<route>/`.
+
+### Service correctness captures (2026-11-01)
+
+| Capture | Route | Viewport | Condition |
+| --- | --- | --- | --- |
+| `service-correctness-404-desktop.png` | `/recomend` | 1440×900 | Real 404 document (status 404, `text/plain`) instead of the Inventory page |
+| `service-correctness-404-mobile.png` | `/recomend` | 390×844 | The same 404 document at phone width, no horizontal overflow |
+| `service-correctness-csv-desktop.png` | downloaded CSV bytes | 1440×900 | CSV export of a snapshot whose model is `=1+1`; the cell reads `'=1+1` |
+| `service-correctness-csv-mobile.png` | downloaded CSV bytes | 390×844 | The same 109 downloaded bytes at phone width |
+
+Details: `docs/evidence/service-correctness-browser.md`. The 404 is a plain-text
+document, so no Lighthouse audit applies; the reason is recorded in that document.

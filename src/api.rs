@@ -725,6 +725,19 @@ async fn api_not_found() -> Response {
     ApiError::not_found("route_not_found", "This API route does not exist.").into_response()
 }
 
+/// The body of a real 404 for an extensionless path that is not a client route.
+/// It is a constant: the requested path is never reflected into the response.
+const NOT_FOUND_BODY: &str = "404 Not found.\nRigCraft has no page at this address. Open /inventory to import stock, or /catalog to manage datasets.\n";
+
+fn not_found_document() -> Response {
+    (
+        StatusCode::NOT_FOUND,
+        [(header::CONTENT_TYPE, "text/plain; charset=utf-8")],
+        NOT_FOUND_BODY,
+    )
+        .into_response()
+}
+
 async fn web_not_built() -> Response {
     (
         StatusCode::NOT_FOUND,
@@ -733,15 +746,31 @@ async fn web_not_built() -> Response {
         .into_response()
 }
 
-/// History-mode routes have no file extension. A path with a dot in its last
-/// segment is a static or metadata file: it is served when it exists and is a
-/// 404 otherwise, never the SPA shell.
+/// The six pages the SPA resolves. A path is a client route only when it is one
+/// of them, with an optional trailing slash. Inferring "extensionless means a
+/// page" is what turned a typo into a 200 Inventory page.
+const CLIENT_ROUTES: [&str; 6] = [
+    "/",
+    "/inventory",
+    "/catalog",
+    "/builds/check",
+    "/recommend",
+    "/diagnose",
+];
+
+/// A static or metadata file is served when it exists and is a 404 otherwise;
+/// it is never the SPA shell.
 fn is_client_route(path: &str) -> bool {
     if path.starts_with("/assets/") {
         return false;
     }
-    let last = path.trim_end_matches('/').rsplit('/').next().unwrap_or("");
-    !last.contains('.')
+    let normalised = path.trim_end_matches('/');
+    let normalised = if normalised.is_empty() {
+        "/"
+    } else {
+        normalised
+    };
+    CLIENT_ROUTES.contains(&normalised) && !path.ends_with("//")
 }
 
 pub fn build_router(state: AppState) -> Router {
@@ -791,6 +820,10 @@ pub fn build_router(state: AppState) -> Router {
         .route("/api/diagnoses/{diagnosis_id}", get(get_diagnosis_report))
         .route("/api/ai/parse", post(ai_parse))
         .route("/api/ai/revise", post(ai_revise))
+        // `/api/{*rest}` needs at least one segment after the slash, so the API
+        // root is mounted explicitly in both spellings.
+        .route("/api", any(api_not_found))
+        .route("/api/", any(api_not_found))
         .route("/api/{*rest}", any(api_not_found))
         .layer(DefaultBodyLimit::max(11 * 1024 * 1024))
         .layer(TraceLayer::new_for_http())
@@ -798,17 +831,18 @@ pub fn build_router(state: AppState) -> Router {
     let index = web_dir.join("index.html");
     match std::fs::read_to_string(&index) {
         Ok(index_body) => {
-            // A client-side route such as `/builds/check` is not a file on
-            // disk. Serve the SPA shell with 200 for extensionless routes, but
-            // keep a real 404 for an unknown asset or metadata file so no
-            // unshipped `robots.txt` or catalog masquerades as HTML.
+            // Only the six pages the SPA resolves are served the shell. Any
+            // other extensionless path is a real 404 document, so a typo
+            // cannot masquerade as a 200 page. A static or metadata file keeps
+            // a real 404 too, so no unshipped `robots.txt` or catalog
+            // masquerades as HTML.
             let spa = move |uri: axum::http::Uri| {
                 let index_body = index_body.clone();
                 async move {
                     if is_client_route(uri.path()) {
                         Html(index_body).into_response()
                     } else {
-                        (StatusCode::NOT_FOUND, "Not found.").into_response()
+                        not_found_document()
                     }
                 }
             };

@@ -54,6 +54,8 @@ duplicateGroups[{groupId, sku, rows[]}], summary{total, valid, errors, duplicate
 
 Stable 400 codes include `file_too_large`, `not_utf8`, `empty_file`, `no_data_rows`, `csv_headers_missing`, `csv_parse_error`, `mapping_invalid`, `mapping_missing`, `mapping_duplicate`, `ambiguous_column`, `currency_format`. Per-row source errors are `source_format` and `source_url_format`. Previews expire after 24 hours.
 
+`mapping_missing` names the likely cause when the file is not comma-separated. A semicolon-delimited header parses as one column containing `;`, so every required column looks absent; in that case `details.delimiter` is `"semicolon"` and the message adds `The header looks semicolon-delimited; RigCraft expects comma-separated columns.` The code, the field and `details.missing` are unchanged, and the file's content is not echoed.
+
 ### `POST /api/imports/{previewId}/commit`
 
 ```json
@@ -119,10 +121,11 @@ Creates a new snapshot with `revision + 1`, `parentSnapshotId` set to the old ID
 - `GET /api/imports/sample` — the sourced sample UTF-8 CSV download (see below).
 - `GET /api/health` — service health.
 - `GET /api/backup`, `POST /api/backup/inspect`, `POST /api/backup/restore` — whole-database backup and guarded restore, documented in [docs/data-portability.md](data-portability.md).
-- `GET /inventory` — Web flow; the Rust process serves the built SPA for extensionless client routes.
+- `GET /inventory`, `GET /catalog`, `GET /builds/check`, `GET /recommend`, `GET /diagnose` and `GET /` — Web flows. The Rust process serves the built SPA shell only for these six routes, each with an optional trailing slash.
 - `GET /catalog`, `POST /api/catalog/datasets`, `GET /api/catalog/datasets`, `PATCH|DELETE /api/catalog/datasets/{id}`, `GET /api/catalog/search`, `GET /api/catalog/parts/{id}`, `POST /api/catalog/match` — operator-supplied catalog ingestion and enrichment, documented in [catalog-ingestion.md](catalog-ingestion.md).
+- Any other extensionless path (a typo such as `/recomend`, or `/API/health`) returns a plain-text `404 Not found.` document, not the SPA shell and not the Inventory page.
 - An unknown static or metadata path (for example `/assets/nope.js`, `/robots.txt`, `/llms.txt` or `/ai-catalog.json`) returns 404 rather than the SPA shell, because the build does not ship that file.
-- Unknown `/api/*` routes return JSON `route_not_found`.
+- `GET /api`, `GET /api/` and every unknown `/api/*` route return JSON `route_not_found` with HTTP 404; a wrong method on a real API route keeps its 405.
 
 ## Provenance and unknown values
 

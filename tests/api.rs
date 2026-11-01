@@ -280,6 +280,51 @@ async fn mixed_fixture_names_every_bad_row_and_duplicate_group() {
 }
 
 #[tokio::test]
+async fn a_semicolon_delimited_header_names_the_likely_delimiter() {
+    let harness = Harness::new();
+    let csv = "sku;category;model;quantity;price;currency\n\
+               X-1;cpu;Thing;1;10.00;USD\n";
+    let (status, error) = harness
+        .preview("semicolon.csv", csv.as_bytes(), "USD")
+        .await;
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+    assert_eq!(error["error"]["code"], "mapping_missing");
+    assert_eq!(error["error"]["field"], "sku");
+    assert_eq!(
+        error["error"]["details"]["missing"],
+        json!(["sku", "category", "model", "quantity", "price"])
+    );
+    assert_eq!(error["error"]["details"]["delimiter"], "semicolon");
+    let message = error["error"]["message"].as_str().unwrap();
+    assert!(
+        message.contains("semicolon-delimited"),
+        "the message names the delimiter: {message}"
+    );
+    assert!(
+        message.contains("comma-separated"),
+        "the message names what is expected: {message}"
+    );
+    // It names the cause, it does not echo the file.
+    assert!(!message.contains("X-1"));
+    assert!(!message.contains("Thing"));
+}
+
+#[tokio::test]
+async fn a_comma_csv_with_a_genuine_missing_column_gets_no_delimiter_hint() {
+    let harness = Harness::new();
+    let csv = "sku,model,quantity,price,currency\nX-1,Thing,1,10.00,USD\n";
+    let (status, error) = harness.preview("missing.csv", csv.as_bytes(), "USD").await;
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+    assert_eq!(error["error"]["code"], "mapping_missing");
+    assert_eq!(error["error"]["field"], "category");
+    assert!(error["error"]["details"]["delimiter"].is_null());
+    assert!(!error["error"]["message"]
+        .as_str()
+        .unwrap()
+        .contains("semicolon"));
+}
+
+#[tokio::test]
 async fn non_utf8_and_oversized_files_are_rejected() {
     let harness = Harness::new();
     let (status, error) = harness.preview("bad.csv", &[0xff, 0xfe], "USD").await;

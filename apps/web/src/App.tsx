@@ -6,8 +6,10 @@ import { InventoryPage } from "./components/InventoryPage";
 import { RecommendPage } from "./components/RecommendPage";
 
 /**
- * The Rust process serves one SPA shell for every non-API path, so the route
- * is resolved from the location before the first render.
+ * The Rust process serves the shell only for `/`, `/inventory`, `/catalog`,
+ * `/builds/check`, `/recommend` and `/diagnose`; any other path is a server 404
+ * document. The route is therefore resolved from the location before the first
+ * render and never guessed from an unknown path.
  */
 export default function App() {
   const path = typeof window === "undefined" ? "/" : window.location.pathname;

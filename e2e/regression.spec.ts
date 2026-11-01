@@ -27,6 +27,30 @@ test("static and metadata paths are not the SPA shell, while a client route is",
   expect(await shell.text()).toContain('id="root"');
 });
 
+test("a typo path is a real 404, not the Inventory page", async ({ page, request }) => {
+  // Visiting the typo directly must not render the app. The SPA shell is only
+  // served for the six listed routes.
+  const response = await page.goto("/recomend");
+  expect(response?.status(), "GET /recomend").toBe(404);
+  expect(response?.headers()["content-type"]).toContain("text/plain");
+  expect(await page.content()).not.toContain('id="root"');
+  expect(await page.locator("h1").count()).toBe(0);
+  await expect(page.locator("body")).toContainText("404 Not found");
+
+  // The client route it was meant to be still works.
+  const ok = await page.goto("/recommend");
+  expect(ok?.status()).toBe(200);
+  expect(await page.locator('div[id="root"]').count()).toBe(1);
+
+  // The API root is JSON, never HTML.
+  for (const path of ["/api", "/api/"]) {
+    const api = await request.get(path);
+    expect(api.status(), `GET ${path}`).toBe(404);
+    expect(api.headers()["content-type"], `GET ${path}`).toContain("application/json");
+    expect((await api.json()).error.code, `GET ${path}`).toBe("route_not_found");
+  }
+});
+
 test("a malformed JSON body still gets the JSON error envelope", async ({ request }) => {
   const response = await request.post("/api/builds/check", {
     headers: { "content-type": "application/json" },

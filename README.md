@@ -94,6 +94,7 @@ A provider key is optional and belongs to the operator. It is held in browser me
 - `POST /api/diagnoses/parse` — parse and match a bounded pasted parts list; stores nothing.
 - `POST /api/diagnoses` — diagnose the confirmed build and persist the advice and validated plan.
 - `GET /api/diagnoses/{id}` — read a stored diagnosis and its staleness.
+- `GET /`, `GET /inventory`, `GET /catalog`, `GET /builds/check`, `GET /recommend` and `GET /diagnose` — the SPA pages. Any other path returns a real 404 document, and `GET /api` or an unknown `/api/*` path returns JSON `route_not_found`.
 
 Contract shapes, error codes and provenance rules: [docs/inventory-import.md](docs/inventory-import.md), [docs/catalog-ingestion.md](docs/catalog-ingestion.md), [docs/data-portability.md](docs/data-portability.md), [docs/compatibility-evidence.md](docs/compatibility-evidence.md), [docs/build-recommendation.md](docs/build-recommendation.md), [docs/ai-planning.md](docs/ai-planning.md) and [docs/build-diagnosis.md](docs/build-diagnosis.md).
 

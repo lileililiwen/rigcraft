@@ -51,15 +51,15 @@ pub fn snapshot_csv(snapshot: &Snapshot) -> Result<String, csv::Error> {
     for record in &snapshot.records {
         let (source, source_url) = declared_source(record);
         writer.write_record([
-            record.sku.as_str(),
-            record.category.as_str(),
-            record.model_raw.as_str(),
-            &record.quantity.to_string(),
-            &money(record.price_minor),
-            record.currency.as_str(),
-            &specs_text(record),
-            &source,
-            &source_url,
+            neutralise(&record.sku),
+            neutralise(&record.category),
+            neutralise(&record.model_raw),
+            neutralise(&record.quantity.to_string()),
+            neutralise(&money(record.price_minor)),
+            neutralise(&record.currency),
+            neutralise(&specs_text(record)),
+            neutralise(&source),
+            neutralise(&source_url),
         ])?;
     }
     let bytes = writer.into_inner().map_err(|error| error.into_error())?;
@@ -69,6 +69,35 @@ pub fn snapshot_csv(snapshot: &Snapshot) -> Result<String, csv::Error> {
             error.to_string(),
         ))
     })
+}
+
+/// Characters a spreadsheet treats as the start of a formula.
+const FORMULA_TRIGGERS: [char; 6] = ['=', '+', '-', '@', '\t', '\r'];
+
+/// Stop a spreadsheet from evaluating an exported cell.
+///
+/// A cell beginning with `=`, `+`, `-`, `@`, a tab or a carriage return is a
+/// formula to Excel and Sheets, so third-party model text could execute in an
+/// operator's spreadsheet. One leading apostrophe makes the cell text. A value
+/// that begins with a quote and then a trigger is quoted by the writer and read
+/// as a formula, so it is neutralised too.
+///
+/// This is lossy: re-importing the file keeps the apostrophe. The JSON export is
+/// the authoritative artifact and keeps the raw value.
+fn neutralise(value: &str) -> String {
+    let mut chars = value.chars();
+    let dangerous = match chars.next() {
+        Some(first) if FORMULA_TRIGGERS.contains(&first) => true,
+        Some('\'') | Some('"') => chars
+            .next()
+            .is_some_and(|next| FORMULA_TRIGGERS.contains(&next)),
+        _ => false,
+    };
+    if dangerous {
+        format!("'{value}")
+    } else {
+        value.to_string()
+    }
 }
 
 /// The full-fidelity artifact. It embeds the immutable snapshot, so any field
@@ -339,4 +368,35 @@ pub fn counts_from(
         record_count,
         lot_count,
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::neutralise;
+
+    #[test]
+    fn every_formula_trigger_is_neutralised() {
+        for value in [
+            "=1+1", "+1+1", "-1+1", "-", "@SUM(A1)", "\t=1+1", "\r=1+1", "'=1+1", "\"=1+1",
+        ] {
+            assert_eq!(neutralise(value), format!("'{value}"), "{value:?}");
+        }
+    }
+
+    #[test]
+    fn ordinary_values_keep_their_bytes() {
+        for value in [
+            "AMD Ryzen 7 7800X3D",
+            "449.00",
+            "1",
+            "USD",
+            "socket=AM5;tdp=120W",
+            "https://example.invalid/cpu",
+            "",
+            "'quoted text",
+            "\"quoted text",
+        ] {
+            assert_eq!(neutralise(value), value, "{value:?}");
+        }
+    }
 }

@@ -42,6 +42,25 @@ part facts (`model`, specifications) keep their `catalog:<id>`. Record IDs, lot
 numbers, the source filename reference and observation timestamps are new, because
 they belong to the new batch.
 
+**Formula-leading cells are neutralised.** A cell whose first character is `=`,
+`+`, `-`, `@`, a tab or a carriage return is prefixed with one apostrophe (`'`), as
+is a cell that begins with a single or double quote followed by one of those
+characters. Without that, a model stored as `=1+1` would be evaluated as a formula
+by Excel or Google Sheets when the operator opens the file — and the catalog path
+can put third-party text into that cell.
+
+The rule is deliberately blunt and it is lossy:
+
+- a negative quantity or price (`-5`) is a formula trigger too, so it exports as
+  `'-5` and re-imports with the apostrophe;
+- the apostrophe is a literal character after a round trip: `=1+1` exports as
+  `'=1+1` and re-imports as `'=1+1`;
+- the cell is one character longer than the stored value.
+
+Only the CSV export is neutralised. The JSON export keeps the raw value and stays
+the authoritative artifact, so a file that must survive a round trip unchanged is
+exported as JSON.
+
 **CSV is lossy and says so.** It cannot carry:
 
 - lot identity or the snapshot's record order guarantee;
@@ -49,7 +68,8 @@ they belong to the new batch.
 - per-field provenance references and observation times (only the model's declared
   catalog source is exported);
 - match basis or confidence;
-- purchase cost, which the import contract does not accept.
+- purchase cost, which the import contract does not accept;
+- the original bytes of a formula-leading cell, which gains one apostrophe.
 
 The response carries `X-Rigcraft-Export-Lossy: true` and
 `X-Rigcraft-Export-Note` repeating this. Use JSON when the artifact must be
@@ -186,7 +206,8 @@ The panel keeps the page's keyboard order, visible focus, `role="status"` and
 ## Guarantees and limits
 
 - Snapshot export is deterministic and requires no network.
-- CSV round-trips records and provenance sources, not identity or metadata.
+- CSV round-trips records and provenance sources, not identity or metadata, and a
+  formula-leading cell gains one apostrophe.
 - A backup is one consistent, standard SQLite file.
 - A rejected restore changes nothing.
 - A completed restore is atomic; a failed restore rolls back and names the safety

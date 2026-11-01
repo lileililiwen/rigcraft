@@ -411,7 +411,7 @@ async fn spa_routes_serve_the_shell_with_200() {
     .unwrap();
     let store = Arc::new(Store::open(&dir.path().join("inventory.sqlite3")).unwrap());
     let router = build_router(AppState::new(store, web));
-    for path in ["/inventory", "/builds/check", "/builds/check/anything"] {
+    for path in ["/inventory", "/builds/check"] {
         let response = router
             .clone()
             .oneshot(
@@ -434,6 +434,20 @@ async fn spa_routes_serve_the_shell_with_200() {
         let bytes = response.into_body().collect().await.unwrap().to_bytes();
         assert!(String::from_utf8_lossy(&bytes).contains("RigCraft shell"));
     }
+    // A path below a client route is not that route: it is a real 404, not a
+    // 200 shell that renders the Inventory page.
+    let response = router
+        .clone()
+        .oneshot(
+            Request::builder()
+                .method("GET")
+                .uri("/builds/check/anything")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(response.status(), StatusCode::NOT_FOUND);
 }
 
 #[tokio::test]
