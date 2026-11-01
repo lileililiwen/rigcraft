@@ -4,7 +4,7 @@
   "runtime": "forge",
   "profile": "full",
   "runtime_version": "forge 0.1.1",
-  "revision": "2b40b1a72bb1570dda39b938e663ae5db9c7d183",
+  "revision": "e1aabbb3e9ddd4208fecdc2cda196685ba32f156",
   "manifest_digest": "sha256:88b43c9d70487a99",
   "rule_pack_version": "workspace-governance@1",
   "aggregate": "passed",
@@ -12,7 +12,7 @@
     {
       "id": "build",
       "state": "pass",
-      "note": "diagnostic: Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.06s"
+      "note": "diagnostic: Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.04s"
     },
     {
       "id": "governance-quality",
@@ -46,7 +46,7 @@
     {
       "id": "tests",
       "state": "pass",
-      "note": "diagnostic: running 66 tests\ntest ai::tests::a_missing_key_names_the_deterministic_flow ... ok\ntest ai::tests::a_secret_key_never_prints_its_value ... ok\ntest ai::tests::an_oversized_or_empty_sentence_is_refused ... ok\ntest ai::tests::provider_urls_are_https_or_loopback_http ... ok\ntest catalog::val…[truncated]"
+      "note": "diagnostic: running 66 tests\ntest ai::tests::a_secret_key_never_prints_its_value ... ok\ntest ai::tests::a_missing_key_names_the_deterministic_flow ... ok\ntest ai::tests::an_unknown_snapshot_does_not_claim_a_currency ... ok\ntest ai::tests::an_oversized_or_empty_sentence_is_refused ... ok\ntest ai::tes…[truncated]"
     },
     {
       "id": "ui-conformance",
@@ -54,6 +54,6 @@
       "note": "diagnostic: note rigcraft: content rules read 28 of 72 UI file(s): only files inside the declared ui.scope.roots are opened\n  note rigcraft: token source declares 17 colour literal(s); the comparison runs through dotnet-platform-libs/ui/scripts/lib/token-model.mjs, not a Python copy\nPASS: rigcraft u…[truncated]"
     }
   ],
-  "observed_at": "2026-11-01T07:08:02Z",
+  "observed_at": "2026-11-01T07:47:20Z",
   "dry_run": false
 }

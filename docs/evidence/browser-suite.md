@@ -10,7 +10,7 @@ document is the authoritative statement those documents link to.
 ```sh
 cargo build          # the service binary the suite starts
 npm run build        # the bundle the service serves
-npm run test:e2e     # 28 tests, real Chrome, under a minute
+npm run test:e2e     # 40 tests, real Chrome, under a minute
 ```
 
 `npm run test:e2e` selects a free loopback port, starts `target/debug/rigcraft` with a
@@ -35,6 +35,7 @@ one worker, no retries, list and JSON reporters, and a trace only on retry.
 | `e2e/catalog.spec.ts` | Upload of a small synthetic `rigcraft-catalog` document through `/catalog`, the accepted report and `catalog:synthetic-fixture@fixture-1` provenance, the registry row with `CC0-1.0`/`fixture-1`/3 parts/`Active`, ranked search with the exact SKU first and a stored part opening with its source URL; a refused document naming `Row 1 · model` while its dataset name is absent; and an import enriched from the catalog with the per-row opt-in, three `Catalog` badges and `specs` provenance `Catalog · synthetic-fixture@fixture-1` plus the part URL, while SKU, quantity and price stay `User-provided`. Also asserts no horizontal overflow at 1440 px and 390 px on `/catalog`. |
 | `e2e/portability.spec.ts` | CSV and JSON export filenames and bodies (10 lots, revision, authoritative JSON with per-field provenance), re-import of the exported CSV with catalog facts intact, a backup whose first bytes are the SQLite header, a non-SQLite upload rejected as `backup_not_sqlite` with the committed snapshot still visible, an inspected backup showing integrity/schema/counts, the replace button disabled until `RESTORE` is typed exactly, and success naming `inventory.sqlite3.pre-restore-`. |
 | `e2e/delivery.spec.ts` | All six client routes render under the CSP with an empty CSP-violation and page-error log, `/recomend` is still a real 404 with no `#root`, and the assistant reaches a Node loopback provider through `/api/ai/parse`, shows the proposal and applies `2000.00` to the budget. |
+| `e2e/visual.spec.ts` | Twelve committed pixel baselines: `/inventory`, `/catalog`, `/builds/check`, `/recommend`, `/diagnose` and the `/nope` 404 at 1440×900 and 390×844. Each test re-seeds the sample or resets and re-uploads the synthetic catalog immediately before the capture, masks the dynamic ids, timestamps, sha256 fragment and snapshot `<select>`, and fails on a change beyond the bounded tolerance with a diff artifact. See `visual-regression.md`. |
 
 Each test seeds its own snapshot (the inventory journey through the page, the rest
 through the documented API) and selects that snapshot by id, so the order does not
@@ -47,11 +48,14 @@ read, uploaded or committed.
 - The BYOK assistant panel. Driving it would need a provider key or the loopback stub;
   `apps/web/src/components/AssistantPanel.test.tsx`, `tests/ai_planning_api.rs` and
   `tests/ai_provider_transport.rs` remain its coverage.
-- Visual diffs, Lighthouse, and browsers other than Chrome. The captures in
-  `docs/assets/` and the Lighthouse reports stay the visual and accessibility record.
+- Lighthouse and browsers other than Chrome. The visual record is the committed
+  baseline set in `e2e/visual.spec.ts-snapshots/`; the Lighthouse reports stay the
+  performance and accessibility record.
 - Performance. The suite asserts behaviour and layout, not timings.
 
 ## Artifacts
 
-`test-results/` (gitignored) holds the JSON report, a failure screenshot and a trace on
-retry. No inventory database, sample copy or screenshot is committed.
+`test-results/` (gitignored) holds the JSON report, a failure screenshot, a trace on
+retry and, for a visual failure, the expected, actual and diff images. The twelve
+baseline images in `e2e/visual.spec.ts-snapshots/` are committed; no inventory
+database or sample copy is.

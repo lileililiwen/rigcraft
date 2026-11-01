@@ -6,6 +6,73 @@ export const CATALOG_SOURCE = "manufacturer@2026-10-31";
 export const CPU_URL =
   "https://www.amd.com/en/products/processors/desktops/ryzen/7000-series/amd-ryzen-7-7800x3d.html";
 
+/** The small synthetic catalog the journeys upload; no third-party data is used. */
+export const SYNTHETIC_CATALOG_NAME = "synthetic-fixture";
+
+export function syntheticCatalog() {
+  return {
+    format: "rigcraft-catalog",
+    version: 1,
+    dataset: {
+      name: SYNTHETIC_CATALOG_NAME,
+      sourceUrl: "https://example.invalid/catalog",
+      commit: "fixture-1",
+      license: "CC0-1.0",
+      retrievedAt: "2026-11-01T00:00:00Z",
+    },
+    parts: [
+      {
+        externalId: "MPN-CPU-1",
+        sku: "SYN-CPU-1",
+        category: "cpu",
+        model: "Synthetic CPU One",
+        manufacturer: "Synthetic Labs",
+        specs: { socket: "AM5", tdp: "120W", igpu: "yes" },
+        sourceUrl: "https://example.invalid/cpu-one",
+        verifiedAt: "2026-11-01T00:00:00Z",
+      },
+      {
+        externalId: "MPN-CPU-2",
+        sku: "SYN-CPU-2",
+        category: "cpu",
+        model: "Synthetic CPU One",
+        specs: { socket: "AM5", tdp: "105W" },
+      },
+      {
+        externalId: "MPN-GPU-1",
+        sku: "SYN-GPU-1",
+        category: "gpu",
+        model: "Synthetic GPU One",
+        specs: { length: "250mm", tdp: "200W", vram: "12GB" },
+      },
+    ],
+  };
+}
+
+/**
+ * Put the catalog registry into one known state: remove every stored dataset
+ * through the documented API, then upload the synthetic fixture once. Removing a
+ * dataset cascades only to its own parts and never touches inventory, so this is
+ * safe to call on any database and yields the same registry on a repeat run.
+ */
+export async function resetCatalog(request: APIRequestContext): Promise<void> {
+  const listed = await request.get("/api/catalog/datasets");
+  expect(listed.status(), "GET /api/catalog/datasets").toBe(200);
+  const datasets: Array<{ id: string }> = await listed.json();
+  for (const dataset of datasets) {
+    const removed = await request.delete(
+      `/api/catalog/datasets/${dataset.id}?confirm=remove`,
+    );
+    expect(removed.status(), `DELETE /api/catalog/datasets/${dataset.id}`).toBe(200);
+  }
+  const uploaded = await request.post("/api/catalog/datasets", {
+    data: { acknowledged: true, catalog: syntheticCatalog() },
+  });
+  expect(uploaded.status(), "POST /api/catalog/datasets").toBe(200);
+  const report = await uploaded.json();
+  expect(report.partCount, "the synthetic fixture has three parts").toBe(3);
+}
+
 export interface SeededSnapshot {
   id: string;
   revision: number;

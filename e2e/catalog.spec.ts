@@ -1,54 +1,18 @@
 import { writeFileSync } from "node:fs";
 import { expect, test } from "@playwright/test";
-import { expectNoHorizontalOverflow } from "./fixtures";
+import {
+  SYNTHETIC_CATALOG_NAME,
+  expectNoHorizontalOverflow,
+  syntheticCatalog,
+} from "./fixtures";
 
 /**
  * Operator-supplied catalog journeys. The document is a small synthetic fixture;
  * no third-party dataset is read, uploaded or committed.
  */
 
-const CATALOG_NAME = "synthetic-fixture";
 const CLEAN_URL = "https://example.invalid/cpu-one";
 
-function syntheticCatalog() {
-  return {
-    format: "rigcraft-catalog",
-    version: 1,
-    dataset: {
-      name: CATALOG_NAME,
-      sourceUrl: "https://example.invalid/catalog",
-      commit: "fixture-1",
-      license: "CC0-1.0",
-      retrievedAt: "2026-11-01T00:00:00Z",
-    },
-    parts: [
-      {
-        externalId: "MPN-CPU-1",
-        sku: "SYN-CPU-1",
-        category: "cpu",
-        model: "Synthetic CPU One",
-        manufacturer: "Synthetic Labs",
-        specs: { socket: "AM5", tdp: "120W", igpu: "yes" },
-        sourceUrl: CLEAN_URL,
-        verifiedAt: "2026-11-01T00:00:00Z",
-      },
-      {
-        externalId: "MPN-CPU-2",
-        sku: "SYN-CPU-2",
-        category: "cpu",
-        model: "Synthetic CPU One",
-        specs: { socket: "AM5", tdp: "105W" },
-      },
-      {
-        externalId: "MPN-GPU-1",
-        sku: "SYN-GPU-1",
-        category: "gpu",
-        model: "Synthetic GPU One",
-        specs: { length: "250mm", tdp: "200W", vram: "12GB" },
-      },
-    ],
-  };
-}
 
 function writeCatalog(name: string): string {
   return test.info().outputPath(name);
@@ -72,12 +36,12 @@ test("an operator uploads a catalog, sees the registry and searches it", async (
   await expect(accepted).toBeVisible();
   await expect(accepted).toBeFocused();
   await expect(page.getByText(/3 parts/).first()).toBeVisible();
-  await expect(page.getByText(`catalog:${CATALOG_NAME}@fixture-1`)).toBeVisible();
+  await expect(page.getByText(`catalog:${SYNTHETIC_CATALOG_NAME}@fixture-1`)).toBeVisible();
 
   const registry = page
     .locator("table.responsive-table")
     .filter({ has: page.locator("caption", { hasText: "Stored catalogs" }) });
-  const row = registry.locator("tbody tr").filter({ hasText: CATALOG_NAME });
+  const row = registry.locator("tbody tr").filter({ hasText: SYNTHETIC_CATALOG_NAME });
   await expect(row).toContainText("CC0-1.0");
   await expect(row).toContainText("fixture-1");
   await expect(row).toContainText("3");
@@ -157,7 +121,7 @@ test("an import row is enriched from the catalog and the committed field carries
     .locator("tbody tr")
     .filter({ hasText: "SYN-CPU-1" });
   await expect(previewRow).toContainText("Matched");
-  await expect(previewRow).toContainText(`by sku to ${CATALOG_NAME}`);
+  await expect(previewRow).toContainText(`by sku to ${SYNTHETIC_CATALOG_NAME}`);
   await expect(previewRow).toContainText("Will add from the catalog");
   await expect(previewRow).toContainText("specs.igpu, specs.socket, specs.tdp");
 
@@ -179,7 +143,7 @@ test("an import row is enriched from the catalog and the committed field carries
   await snapshotRow.getByText("Show provenance").click();
   const provenance = snapshotRow.locator("ul.provenance-list");
   const specs = provenance.locator("li").filter({ hasText: "specs:" });
-  await expect(specs).toContainText(`Catalog · ${CATALOG_NAME}@fixture-1`);
+  await expect(specs).toContainText(`Catalog · ${SYNTHETIC_CATALOG_NAME}@fixture-1`);
   await expect(specs).toContainText(CLEAN_URL);
   await expect(provenance.locator("li").filter({ hasText: "sku:" })).toContainText(
     "User-provided",

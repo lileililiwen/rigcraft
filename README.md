@@ -26,7 +26,7 @@ Browser regression suite:
 ```sh
 cargo build                    # prerequisite: the service binary
 npm run build                  # prerequisite: the bundle the service serves
-npm run test:e2e               # real Chrome, 28 browser tests, under a minute
+npm run test:e2e               # real Chrome, 40 browser tests, under a minute
 ```
 
 `npm run test:e2e` picks a free loopback port, starts `target/debug/rigcraft`
@@ -36,6 +36,14 @@ port 8080, never reuses your inventory and needs no network; `RIGCRAFT_E2E_PORT`
 pins a port only when you need one. The Playwright suite lives in `e2e/` and its
 config in `playwright.config.ts`; the JSON report is written to the gitignored
 `test-results/`.
+
+Twelve of the journeys are committed pixel baselines for `/inventory`, `/catalog`,
+`/builds/check`, `/recommend`, `/diagnose` and the `/nope` 404 at 1440×900 and
+390×844. `npm run test:e2e -- --update-snapshots` regenerates them; only do that
+for an intended visual change that a human reviewed and that ships in the same
+change. The baselines are platform-specific — the committed set was made on
+Linux with Chrome — so a different OS or font stack needs its own set. See
+`docs/evidence/visual-regression.md`.
 
 Individual checks:
 
@@ -136,7 +144,8 @@ Referencing a kit package never grants the capability it implements.
 - `docs/evidence/diagnosis-browser.md` — existing-build matching (ambiguity, miss, duplicate), reuse advice groups, validated/needs-evidence/rejected plan states, keyboard, responsive, accessibility and privacy evidence.
 - `docs/evidence/correctness-audit-browser.md` — corrected unverified advice group, stable `/diagnose` numbering, ISO 8601 UTC timestamps and static/metadata 404 behaviour.
 - `docs/evidence/catalog-seed-browser.md` — corrected sourced sample download, a catalog-column import and the operator-versus-catalog distinction.
-- `docs/evidence/browser-suite.md` — the checked-in Playwright suite: command, the twenty-eight tests and what each holds, and its explicit non-coverage.
+- `docs/evidence/browser-suite.md` — the checked-in Playwright suite: command, the forty tests and what each holds, and its explicit non-coverage.
+- `docs/evidence/visual-regression.md` — the twelve committed pixel baselines, the masked values, the bounded threshold, the two clean runs, the one-token mutation that fails, and the deliberate update command.
 - `docs/evidence/data-portability-browser.md` — snapshot export, backup download, inspected restore, the typed confirmation guard and a rejected restore.
 - `docs/evidence/catalog-ingestion-browser.md` — catalog upload and refusal, the registry with a licence, search and a catalog-enriched import with committed provenance.
 - `docs/evidence/verdict-console-browser.md` — the rule matrix, single coverage sentence, grammatical gap sentences, exact-match token noise and the verdict-console Lighthouse numbers.
