@@ -7,7 +7,10 @@
 html {
   font-family: var(--font-sans);
   line-height: 1.5;
-  color-scheme: light;
+  /* The brand mode is dark. Native selects, scrollbars, checkbox ticks and
+     autofill follow it, and accent-color keeps a checked control legible. */
+  color-scheme: dark;
+  accent-color: var(--color-primary);
 }
 
 body {
@@ -34,7 +37,10 @@ a:hover {
 .skip-link {
   position: absolute;
   left: var(--space-4);
-  top: calc(-1 * var(--space-8));
+  top: 0;
+  /* Its own rendered height plus a gap, so no fragment of an empty rounded box
+     can peek above the header whatever the padding or line-height becomes. */
+  transform: translateY(calc(-100% - var(--space-4)));
   z-index: 10;
   padding: var(--space-2) var(--space-4);
   background: var(--color-surface);
@@ -45,6 +51,7 @@ a:hover {
 
 .skip-link:focus {
   top: var(--space-2);
+  transform: none;
 }
 
 .visually-hidden {
@@ -381,29 +388,44 @@ button:disabled,
   padding: 0.1rem var(--space-2);
   font-size: var(--font-small);
   font-weight: 700;
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--color-border-subtle);
   border-radius: var(--radius-full);
-  background: var(--color-muted);
+  background: var(--color-chip-neutral);
   color: var(--color-muted-foreground);
   white-space: nowrap;
 }
 
+/* A status chip is icon + word + border. The border takes the status colour so
+   the meaning never depends on the tint alone. */
 .badge--valid,
 .badge--confirmed {
   color: var(--color-success);
+  background: var(--color-chip-verified);
+  border-color: currentColor;
 }
 
 .badge--error {
   color: var(--color-danger);
+  background: var(--color-chip-danger);
+  border-color: currentColor;
 }
 
-.badge--duplicate,
+.badge--duplicate {
+  color: var(--color-warning);
+  background: var(--color-chip-warning);
+  border-color: currentColor;
+}
+
 .badge--unknown {
   color: var(--color-warning);
+  background: var(--color-chip-unknown);
+  border-color: currentColor;
 }
 
 .badge--catalog {
   color: var(--color-primary);
+  background: var(--color-chip-primary);
+  border-color: currentColor;
 }
 
 .badge__symbol {
@@ -444,8 +466,9 @@ tbody tr:last-child td {
 }
 
 .mono {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-family: var(--font-mono);
   font-size: var(--font-small);
+  font-variant-numeric: tabular-nums;
   overflow-wrap: anywhere;
 }
 
@@ -547,7 +570,8 @@ tbody tr:last-child td {
 }
 
 .tag {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
 }
 
 .record-meta {
@@ -665,7 +689,7 @@ tbody tr:last-child td {
   padding: var(--space-3);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
-  background: var(--color-background);
+  background: var(--color-surface-raised);
 }
 
 .part-option--none {
@@ -719,10 +743,14 @@ tbody tr:last-child td {
 
 .badge--compatible {
   color: var(--color-success);
+  background: var(--color-chip-verified);
+  border-color: currentColor;
 }
 
 .badge--incompatible {
   color: var(--color-danger);
+  background: var(--color-chip-danger);
+  border-color: currentColor;
 }
 
 .badge--verdict {
@@ -764,7 +792,7 @@ tbody tr:last-child td {
   padding: var(--space-3);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
-  background: var(--color-background);
+  background: var(--color-surface-raised);
 }
 
 .diagnostic-block h3 {
@@ -831,7 +859,7 @@ tbody tr:last-child td {
   padding: var(--space-4);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
-  background: var(--color-background);
+  background: var(--color-surface-raised);
 }
 
 .candidate__head {
@@ -911,7 +939,7 @@ tbody tr:last-child td {
   padding: var(--space-3);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
-  background: var(--color-background);
+  background: var(--color-surface-raised);
 }
 
 .proposal-field__label {
@@ -967,6 +995,14 @@ tbody tr:last-child td {
     height: 1px;
     overflow: hidden;
     clip: rect(0 0 0 0);
+  }
+
+  /* A block-level table no longer sizes the caption as a table caption; without
+     this it shrink-wraps to one word per line. */
+  .responsive-table caption {
+    display: block;
+    width: 100%;
+    text-align: left;
   }
 
   .responsive-table,
@@ -1036,7 +1072,7 @@ tbody tr:last-child td {
   padding: var(--space-3);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
-  background: var(--color-background);
+  background: var(--color-surface-raised);
 }
 
 .review-line legend {
@@ -1100,7 +1136,7 @@ tbody tr:last-child td {
   border: 1px solid var(--color-border);
   border-left: 6px solid var(--color-border);
   border-radius: var(--radius-md);
-  background: var(--color-background);
+  background: var(--color-surface-raised);
 }
 
 .advice-card--must_replace {

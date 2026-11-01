@@ -19,7 +19,8 @@
         "apps/web/src"
       ],
       "exclude": [
-        "apps/web/src/styles/vendor/tokens.css"
+        "apps/web/src/styles/vendor/tokens.css",
+        "apps/web/src/styles/brand.css"
       ]
     },
     "shared_layer": {

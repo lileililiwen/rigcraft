@@ -1,6 +1,6 @@
 # Documentation capture plan
 
-Source: the local Web UI at `/inventory`, `/builds/check` and `/recommend`. Capture tool: Chrome DevTools MCP against the production build served by `cargo run`; `shot-scraper` remains an alternative for deterministic stills. Viewports: 1440×900 desktop and 390×844 mobile.
+Source: the local Web UI at `/inventory`, `/catalog`, `/builds/check`, `/recommend` and `/diagnose`. Capture tool: Chrome DevTools MCP against the production build served by `cargo run`; `shot-scraper` remains an alternative for deterministic stills. Viewports: 1440×900 desktop and 390×844 mobile.
 
 Wait for the page's stable ready state, then capture a state only after the live status region names it (`Preview ready…`, `Committed snapshot…`, `Snapshot committed…`). Store screenshots in `docs/assets/`, and record the source revision, route, viewport, action or wait condition, command and privacy review with each capture.
 
@@ -96,7 +96,7 @@ Details: `docs/evidence/use-case-diversity-browser.md`. Lighthouse reports: `doc
 
 ## Refresh rule
 
-Refresh these captures after any change to `/inventory`, `/builds/check`, `/recommend`, the shared tokens, the import, check, recommendation or AI plan/revision API, the compatibility rules, the scoring version, the interpretation contract or the rendered states. A capture that names an older revision is historical evidence, not current evidence.
+Refresh these captures after any change to `/inventory`, `/catalog`, `/builds/check`, `/recommend`, `/diagnose`, the shared tokens, the brand token layer, the import, check, recommendation or AI plan/revision API, the compatibility rules, the scoring version, the interpretation contract or the rendered states. A capture that names an older revision is historical evidence, not current evidence.
 
 ### Catalog seed captures (2026-10-31)
 
@@ -128,3 +128,22 @@ Details: `docs/evidence/data-portability-browser.md`. Lighthouse reports: `docs/
 | `catalog-ingestion-enriched-desktop.png` | `/inventory` | 1440×900 | Import row matched to the catalog, proposals listed, opt-in checked |
 | `catalog-ingestion-provenance-desktop.png` | `/inventory` | 1440×900 | Committed snapshot with catalog-sourced specifications and `catalog:<name>@<version>` provenance |
 | `catalog-ingestion-mobile.png` | `/catalog` | 390×844 | Stacked registry and search with no horizontal overflow |
+
+### UI foundation captures (2026-11-01)
+
+| Capture | Route | Viewport | Condition |
+| --- | --- | --- | --- |
+| `ui-foundation-inventory-desktop.png` | `/inventory` | 1440×900 | Empty import form, snapshot history and panels on the dark brand layer |
+| `ui-foundation-inventory-records-desktop.png` | `/inventory` | 1440×900 | Revision 1 opened: surface, raised records and chip tints |
+| `ui-foundation-focus-desktop.png` | `/recommend` | 1440×900 | Skip link focused by Tab: 3 px cyan ring, 2 px offset |
+| `ui-foundation-catalog-desktop.png` | `/catalog` | 1440×900 | Empty registry, upload form and native checkbox |
+| `ui-foundation-check-desktop.png` | `/builds/check` | 1440×900 | Snapshot loaded, part selection radios and facts |
+| `ui-foundation-recommend-desktop.png` | `/recommend` | 1440×900 | One GPU-inclusive build, `? Unknown` chip, raised candidate card |
+| `ui-foundation-diagnose-desktop.png` | `/diagnose` | 1440×900 | Stable 1–5 skeleton before any list is matched |
+| `ui-foundation-inventory-records-mobile.png` | `/inventory` | 390×844 | The caption spans the card (332 px) with stacked rows |
+| `ui-foundation-catalog-mobile.png` | `/catalog` | 390×844 | Stacked upload and registry |
+| `ui-foundation-check-mobile.png` | `/builds/check` | 390×844 | Stacked part selection |
+| `ui-foundation-recommend-mobile.png` | `/recommend` | 390×844 | Summary, warning rule and `? Unknown` chip stacked |
+| `ui-foundation-diagnose-mobile.png` | `/diagnose` | 390×844 | Stacked 1–5 skeleton |
+
+Details: `docs/evidence/ui-foundation-browser.md`. Lighthouse reports: `docs/evidence/ui-foundation-lighthouse/<route>/` and `docs/evidence/ui-foundation-lighthouse-mobile/<route>/`.

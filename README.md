@@ -26,7 +26,7 @@ Browser regression suite:
 ```sh
 cargo build                    # prerequisite: the service binary
 npm run build                  # prerequisite: the bundle the service serves
-npm run test:e2e               # real Chrome, 17 browser tests, under a minute
+npm run test:e2e               # real Chrome, 20 browser tests, under a minute
 ```
 
 `npm run test:e2e` picks a free loopback port, starts `target/debug/rigcraft`
@@ -119,7 +119,7 @@ it is stored only in that instance and is never committed or shared.
 
 ## Shared layer
 
-Kit `none` (no version) on the `cargo` ecosystem. The UI consumes the pinned vendored token stylesheet; `.project.json` records its SHA-256.
+Kit `none` (no version) on the `cargo` ecosystem. The UI consumes the pinned vendored token stylesheet and layers one app-owned dark brand token file (`apps/web/src/styles/brand.css`) on top; `.project.json` records the pin's SHA-256 and `docs/branding.md` records the measured palette.
 
 Declared minimum consumption: 0 (a declared zero, not a met floor). Reason: no crate in rust-platform-libs has two external consumers (1 consumer: trailCrew); the 8 crates stay commented-out Cargo.toml entries.
 
@@ -134,9 +134,10 @@ Referencing a kit package never grants the capability it implements.
 - `docs/evidence/diagnosis-browser.md` — existing-build matching (ambiguity, miss, duplicate), reuse advice groups, validated/needs-evidence/rejected plan states, keyboard, responsive, accessibility and privacy evidence.
 - `docs/evidence/correctness-audit-browser.md` — corrected unverified advice group, stable `/diagnose` numbering, ISO 8601 UTC timestamps and static/metadata 404 behaviour.
 - `docs/evidence/catalog-seed-browser.md` — corrected sourced sample download, a catalog-column import and the operator-versus-catalog distinction.
-- `docs/evidence/browser-suite.md` — the checked-in Playwright suite: command, the fourteen tests and what each holds, and its explicit non-coverage.
+- `docs/evidence/browser-suite.md` — the checked-in Playwright suite: command, the twenty tests and what each holds, and its explicit non-coverage.
 - `docs/evidence/data-portability-browser.md` — snapshot export, backup download, inspected restore, the typed confirmation guard and a rejected restore.
 - `docs/evidence/catalog-ingestion-browser.md` — catalog upload and refusal, the registry with a licence, search and a catalog-enriched import with committed provenance.
-- `docs/evidence/token-contrast.json` — measured WCAG 2.2 AA contrast.
+- `docs/evidence/ui-foundation-browser.md` — dark token layer, shell-chrome fixes, focus ring, caption width and icon evidence, with the Lighthouse numbers.
+- `docs/evidence/token-contrast.json` — measured WCAG 2.2 AA contrast for the effective dark theme (40 pairs, both token source hashes).
 - `docs/evidence/inventory-lighthouse*/`, `docs/evidence/compatibility-lighthouse*/`, `docs/evidence/recommendation-lighthouse*/`, `docs/evidence/byok-lighthouse*/`, `docs/evidence/diagnosis-lighthouse*/`, `docs/evidence/correctness-diagnose-lighthouse*/`, `docs/evidence/catalog-lighthouse*/`, `docs/evidence/data-portability-lighthouse*/` and `docs/evidence/catalog-ingestion-lighthouse*/` — Lighthouse reports.
 - `docs/assets/` — captured UI states.

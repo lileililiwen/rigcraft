@@ -1,0 +1,68 @@
+/*
+ * RigCraft brand token layer.
+ *
+ * Imported after the generated, hash-pinned vendored kit (`vendor/tokens.css`)
+ * and before the component stylesheet, so these declarations win by cascade
+ * order and the vendored file stays byte-identical.
+ *
+ * Custom properties only: components reference the semantic aliases below and
+ * never a `--brand-*` primitive. Every text-bearing value is a flat literal so
+ * `scripts/check-contrast.mjs` can measure it; `color-mix()` is used only for
+ * decoration, which that checker lists but never scores as a text pair.
+ */
+:root {
+  /* Carbon substrate. Elevation is tonal: page, panel, raised module. */
+  --brand-carbon-950: #0a1224;
+  --brand-carbon-900: #0e1729;
+  --brand-carbon-800: #141e33;
+  --brand-carbon-700: #1b2740;
+  --brand-slate-200: #b9c5da;
+  --brand-slate-100: #e6edf7;
+  --brand-slate-400: #6b7a99;
+
+  /* Interaction and status. */
+  --brand-cyan-500: #06b6d4;
+  --brand-cyan-400: #22d3ee;
+  --brand-cyan-950: #04121c;
+  --brand-emerald-400: #34d399;
+  --brand-rust-400: #fb923c;
+  --brand-red-400: #f87171;
+
+  /* Chip tints are flat so the text on each one is measurable. */
+  --brand-chip-neutral: #202c47;
+  --brand-chip-verified: #10291f;
+  --brand-chip-warning: #2c2114;
+  --brand-chip-unknown: #1f2739;
+  --brand-chip-danger: #2e1a1d;
+  --brand-chip-primary: #0e2a33;
+
+  /* System stacks: no webfont, no download, no layout shift. */
+  --brand-font-sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue",
+    Arial, sans-serif;
+  --brand-font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+    monospace;
+
+  --color-background: var(--brand-carbon-950);
+  --color-surface: var(--brand-carbon-800);
+  --color-surface-raised: var(--brand-carbon-700);
+  --color-foreground: var(--brand-slate-100);
+  --color-muted: var(--brand-carbon-900);
+  --color-muted-foreground: var(--brand-slate-200);
+  --color-primary: var(--brand-cyan-500);
+  --color-primary-hover: var(--brand-cyan-400);
+  --color-on-primary: var(--brand-cyan-950);
+  --color-border: var(--brand-slate-400);
+  --color-border-subtle: color-mix(in srgb, var(--brand-slate-400) 38%, transparent);
+  --color-danger: var(--brand-red-400);
+  --color-success: var(--brand-emerald-400);
+  --color-warning: var(--brand-rust-400);
+  --color-chip-neutral: var(--brand-chip-neutral);
+  --color-chip-verified: var(--brand-chip-verified);
+  --color-chip-warning: var(--brand-chip-warning);
+  --color-chip-unknown: var(--brand-chip-unknown);
+  --color-chip-danger: var(--brand-chip-danger);
+  --color-chip-primary: var(--brand-chip-primary);
+  --focus-ring: var(--brand-cyan-400);
+  --font-sans: var(--brand-font-sans);
+  --font-mono: var(--brand-font-mono);
+}

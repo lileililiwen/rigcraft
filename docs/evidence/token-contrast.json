@@ -1,18 +1,34 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "standard": "WCAG 2.2 AA",
-  "source": {
-    "file": "apps/web/src/styles/vendor/tokens.css",
-    "sha256": "7ca6b7956b3f6b475254b4a5d0cf599724e4e1af5f0f88aba4fbccb9f38fc19b"
-  },
+  "mode": "dark",
+  "sources": [
+    {
+      "file": "apps/web/src/styles/vendor/tokens.css",
+      "role": "vendored shared kit (generated, hash-pinned, not edited)",
+      "sha256": "7ca6b7956b3f6b475254b4a5d0cf599724e4e1af5f0f88aba4fbccb9f38fc19b"
+    },
+    {
+      "file": "apps/web/src/styles/brand.css",
+      "role": "app-owned brand layer (declared after the kit)",
+      "sha256": "fc1fc93211cf1d19a7959ff8489b350fe42271de9cd1286693b1ba66340f6fbd"
+    }
+  ],
+  "decoration": [
+    {
+      "token": "color-border-subtle",
+      "value": "color-mix(in srgb, var(--brand-slate-400) 38%, transparent)",
+      "reason": "1 px separators inside raised surfaces; a color-mix() value with no text on it, so no pair is claimed for it."
+    }
+  ],
   "pairs": [
     {
       "name": "Body text on page",
       "foreground": "--color-foreground",
       "background": "--color-background",
-      "resolvedForeground": "#f8fafc",
-      "resolvedBackground": "#0f172a",
-      "ratio": 17.06,
+      "resolvedForeground": "#e6edf7",
+      "resolvedBackground": "#0a1224",
+      "ratio": 15.84,
       "required": 4.5,
       "pass": true
     },
@@ -20,9 +36,19 @@
       "name": "Body text on surface",
       "foreground": "--color-foreground",
       "background": "--color-surface",
-      "resolvedForeground": "#f8fafc",
-      "resolvedBackground": "#334155",
-      "ratio": 9.9,
+      "resolvedForeground": "#e6edf7",
+      "resolvedBackground": "#141e33",
+      "ratio": 14.11,
+      "required": 4.5,
+      "pass": true
+    },
+    {
+      "name": "Body text on raised",
+      "foreground": "--color-foreground",
+      "background": "--color-surface-raised",
+      "resolvedForeground": "#e6edf7",
+      "resolvedBackground": "#1b2740",
+      "ratio": 12.63,
       "required": 4.5,
       "pass": true
     },
@@ -30,9 +56,29 @@
       "name": "Secondary text on page",
       "foreground": "--color-muted-foreground",
       "background": "--color-background",
-      "resolvedForeground": "#f1f5f9",
-      "resolvedBackground": "#0f172a",
-      "ratio": 16.3,
+      "resolvedForeground": "#b9c5da",
+      "resolvedBackground": "#0a1224",
+      "ratio": 10.72,
+      "required": 4.5,
+      "pass": true
+    },
+    {
+      "name": "Secondary text on surface",
+      "foreground": "--color-muted-foreground",
+      "background": "--color-surface",
+      "resolvedForeground": "#b9c5da",
+      "resolvedBackground": "#141e33",
+      "ratio": 9.55,
+      "required": 4.5,
+      "pass": true
+    },
+    {
+      "name": "Secondary text on raised",
+      "foreground": "--color-muted-foreground",
+      "background": "--color-surface-raised",
+      "resolvedForeground": "#b9c5da",
+      "resolvedBackground": "#1b2740",
+      "ratio": 8.55,
       "required": 4.5,
       "pass": true
     },
@@ -40,9 +86,9 @@
       "name": "Secondary text on muted",
       "foreground": "--color-muted-foreground",
       "background": "--color-muted",
-      "resolvedForeground": "#f1f5f9",
-      "resolvedBackground": "#334155",
-      "ratio": 9.45,
+      "resolvedForeground": "#b9c5da",
+      "resolvedBackground": "#0e1729",
+      "ratio": 10.28,
       "required": 4.5,
       "pass": true
     },
@@ -50,9 +96,9 @@
       "name": "Primary button label",
       "foreground": "--color-on-primary",
       "background": "--color-primary",
-      "resolvedForeground": "#0f172a",
-      "resolvedBackground": "#93c5fd",
-      "ratio": 9.9,
+      "resolvedForeground": "#04121c",
+      "resolvedBackground": "#06b6d4",
+      "ratio": 7.8,
       "required": 4.5,
       "pass": true
     },
@@ -60,9 +106,9 @@
       "name": "Primary button hover label",
       "foreground": "--color-on-primary",
       "background": "--color-primary-hover",
-      "resolvedForeground": "#0f172a",
-      "resolvedBackground": "#bfdbfe",
-      "ratio": 12.56,
+      "resolvedForeground": "#04121c",
+      "resolvedBackground": "#22d3ee",
+      "ratio": 10.48,
       "required": 4.5,
       "pass": true
     },
@@ -70,9 +116,19 @@
       "name": "Link on surface",
       "foreground": "--color-primary",
       "background": "--color-surface",
-      "resolvedForeground": "#93c5fd",
-      "resolvedBackground": "#334155",
-      "ratio": 5.74,
+      "resolvedForeground": "#06b6d4",
+      "resolvedBackground": "#141e33",
+      "ratio": 6.85,
+      "required": 4.5,
+      "pass": true
+    },
+    {
+      "name": "Link on raised",
+      "foreground": "--color-primary",
+      "background": "--color-surface-raised",
+      "resolvedForeground": "#06b6d4",
+      "resolvedBackground": "#1b2740",
+      "ratio": 6.13,
       "required": 4.5,
       "pass": true
     },
@@ -80,9 +136,19 @@
       "name": "Error text on surface",
       "foreground": "--color-danger",
       "background": "--color-surface",
-      "resolvedForeground": "#fca5a5",
-      "resolvedBackground": "#334155",
-      "ratio": 5.46,
+      "resolvedForeground": "#f87171",
+      "resolvedBackground": "#141e33",
+      "ratio": 6.01,
+      "required": 4.5,
+      "pass": true
+    },
+    {
+      "name": "Error text on raised",
+      "foreground": "--color-danger",
+      "background": "--color-surface-raised",
+      "resolvedForeground": "#f87171",
+      "resolvedBackground": "#1b2740",
+      "ratio": 5.38,
       "required": 4.5,
       "pass": true
     },
@@ -90,9 +156,29 @@
       "name": "Error text on muted",
       "foreground": "--color-danger",
       "background": "--color-muted",
-      "resolvedForeground": "#fca5a5",
-      "resolvedBackground": "#334155",
-      "ratio": 5.46,
+      "resolvedForeground": "#f87171",
+      "resolvedBackground": "#0e1729",
+      "ratio": 6.47,
+      "required": 4.5,
+      "pass": true
+    },
+    {
+      "name": "Success text on surface",
+      "foreground": "--color-success",
+      "background": "--color-surface",
+      "resolvedForeground": "#34d399",
+      "resolvedBackground": "#141e33",
+      "ratio": 8.65,
+      "required": 4.5,
+      "pass": true
+    },
+    {
+      "name": "Success text on raised",
+      "foreground": "--color-success",
+      "background": "--color-surface-raised",
+      "resolvedForeground": "#34d399",
+      "resolvedBackground": "#1b2740",
+      "ratio": 7.74,
       "required": 4.5,
       "pass": true
     },
@@ -100,9 +186,29 @@
       "name": "Success text on muted",
       "foreground": "--color-success",
       "background": "--color-muted",
-      "resolvedForeground": "#86efac",
-      "resolvedBackground": "#334155",
-      "ratio": 7.37,
+      "resolvedForeground": "#34d399",
+      "resolvedBackground": "#0e1729",
+      "ratio": 9.31,
+      "required": 4.5,
+      "pass": true
+    },
+    {
+      "name": "Warning text on surface",
+      "foreground": "--color-warning",
+      "background": "--color-surface",
+      "resolvedForeground": "#fb923c",
+      "resolvedBackground": "#141e33",
+      "ratio": 7.35,
+      "required": 4.5,
+      "pass": true
+    },
+    {
+      "name": "Warning text on raised",
+      "foreground": "--color-warning",
+      "background": "--color-surface-raised",
+      "resolvedForeground": "#fb923c",
+      "resolvedBackground": "#1b2740",
+      "ratio": 6.58,
       "required": 4.5,
       "pass": true
     },
@@ -110,9 +216,9 @@
       "name": "Warning text on muted",
       "foreground": "--color-warning",
       "background": "--color-muted",
-      "resolvedForeground": "#fcd34d",
-      "resolvedBackground": "#334155",
-      "ratio": 7.18,
+      "resolvedForeground": "#fb923c",
+      "resolvedBackground": "#0e1729",
+      "ratio": 7.91,
       "required": 4.5,
       "pass": true
     },
@@ -120,9 +226,9 @@
       "name": "Warning text on page",
       "foreground": "--color-warning",
       "background": "--color-background",
-      "resolvedForeground": "#fcd34d",
-      "resolvedBackground": "#0f172a",
-      "ratio": 12.38,
+      "resolvedForeground": "#fb923c",
+      "resolvedBackground": "#0a1224",
+      "ratio": 8.25,
       "required": 4.5,
       "pass": true
     },
@@ -130,19 +236,99 @@
       "name": "Catalog badge on muted",
       "foreground": "--color-primary",
       "background": "--color-muted",
-      "resolvedForeground": "#93c5fd",
-      "resolvedBackground": "#334155",
-      "ratio": 5.74,
+      "resolvedForeground": "#06b6d4",
+      "resolvedBackground": "#0e1729",
+      "ratio": 7.37,
       "required": 4.5,
+      "pass": true
+    },
+    {
+      "name": "Chip text on verified tint",
+      "foreground": "--color-success",
+      "background": "--color-chip-verified",
+      "resolvedForeground": "#34d399",
+      "resolvedBackground": "#10291f",
+      "ratio": 8.04,
+      "required": 4.5,
+      "pass": true
+    },
+    {
+      "name": "Chip text on warning tint",
+      "foreground": "--color-warning",
+      "background": "--color-chip-warning",
+      "resolvedForeground": "#fb923c",
+      "resolvedBackground": "#2c2114",
+      "ratio": 6.95,
+      "required": 4.5,
+      "pass": true
+    },
+    {
+      "name": "Chip text on unknown tint",
+      "foreground": "--color-warning",
+      "background": "--color-chip-unknown",
+      "resolvedForeground": "#fb923c",
+      "resolvedBackground": "#1f2739",
+      "ratio": 6.59,
+      "required": 4.5,
+      "pass": true
+    },
+    {
+      "name": "Chip text on neutral tint",
+      "foreground": "--color-muted-foreground",
+      "background": "--color-chip-neutral",
+      "resolvedForeground": "#b9c5da",
+      "resolvedBackground": "#202c47",
+      "ratio": 7.97,
+      "required": 4.5,
+      "pass": true
+    },
+    {
+      "name": "Chip text on danger tint",
+      "foreground": "--color-danger",
+      "background": "--color-chip-danger",
+      "resolvedForeground": "#f87171",
+      "resolvedBackground": "#2e1a1d",
+      "ratio": 5.92,
+      "required": 4.5,
+      "pass": true
+    },
+    {
+      "name": "Chip text on primary tint",
+      "foreground": "--color-primary",
+      "background": "--color-chip-primary",
+      "resolvedForeground": "#06b6d4",
+      "resolvedBackground": "#0e2a33",
+      "ratio": 6.19,
+      "required": 4.5,
+      "pass": true
+    },
+    {
+      "name": "Control border on page",
+      "foreground": "--color-border",
+      "background": "--color-background",
+      "resolvedForeground": "#6b7a99",
+      "resolvedBackground": "#0a1224",
+      "ratio": 4.33,
+      "required": 3,
       "pass": true
     },
     {
       "name": "Control border on surface",
       "foreground": "--color-border",
       "background": "--color-surface",
-      "resolvedForeground": "#cbd5e1",
-      "resolvedBackground": "#334155",
-      "ratio": 6.97,
+      "resolvedForeground": "#6b7a99",
+      "resolvedBackground": "#141e33",
+      "ratio": 3.85,
+      "required": 3,
+      "pass": true
+    },
+    {
+      "name": "Control border on raised",
+      "foreground": "--color-border",
+      "background": "--color-surface-raised",
+      "resolvedForeground": "#6b7a99",
+      "resolvedBackground": "#1b2740",
+      "ratio": 3.45,
       "required": 3,
       "pass": true
     },
@@ -150,9 +336,9 @@
       "name": "Focus ring on page",
       "foreground": "--focus-ring",
       "background": "--color-background",
-      "resolvedForeground": "#bfdbfe",
-      "resolvedBackground": "#0f172a",
-      "ratio": 12.56,
+      "resolvedForeground": "#22d3ee",
+      "resolvedBackground": "#0a1224",
+      "ratio": 10.33,
       "required": 3,
       "pass": true
     },
@@ -160,12 +346,92 @@
       "name": "Focus ring on surface",
       "foreground": "--focus-ring",
       "background": "--color-surface",
-      "resolvedForeground": "#bfdbfe",
-      "resolvedBackground": "#334155",
-      "ratio": 7.29,
+      "resolvedForeground": "#22d3ee",
+      "resolvedBackground": "#141e33",
+      "ratio": 9.2,
+      "required": 3,
+      "pass": true
+    },
+    {
+      "name": "Focus ring on raised",
+      "foreground": "--focus-ring",
+      "background": "--color-surface-raised",
+      "resolvedForeground": "#22d3ee",
+      "resolvedBackground": "#1b2740",
+      "ratio": 8.24,
+      "required": 3,
+      "pass": true
+    },
+    {
+      "name": "Focus ring on verified tint",
+      "foreground": "--focus-ring",
+      "background": "--color-chip-verified",
+      "resolvedForeground": "#22d3ee",
+      "resolvedBackground": "#10291f",
+      "ratio": 8.55,
+      "required": 3,
+      "pass": true
+    },
+    {
+      "name": "Focus ring on warning tint",
+      "foreground": "--focus-ring",
+      "background": "--color-chip-warning",
+      "resolvedForeground": "#22d3ee",
+      "resolvedBackground": "#2c2114",
+      "ratio": 8.71,
+      "required": 3,
+      "pass": true
+    },
+    {
+      "name": "Focus ring on unknown tint",
+      "foreground": "--focus-ring",
+      "background": "--color-chip-unknown",
+      "resolvedForeground": "#22d3ee",
+      "resolvedBackground": "#1f2739",
+      "ratio": 8.26,
+      "required": 3,
+      "pass": true
+    },
+    {
+      "name": "Focus ring on neutral tint",
+      "foreground": "--focus-ring",
+      "background": "--color-chip-neutral",
+      "resolvedForeground": "#22d3ee",
+      "resolvedBackground": "#202c47",
+      "ratio": 7.68,
+      "required": 3,
+      "pass": true
+    },
+    {
+      "name": "Focus ring on danger tint",
+      "foreground": "--focus-ring",
+      "background": "--color-chip-danger",
+      "resolvedForeground": "#22d3ee",
+      "resolvedBackground": "#2e1a1d",
+      "ratio": 9.07,
+      "required": 3,
+      "pass": true
+    },
+    {
+      "name": "Focus ring on primary tint",
+      "foreground": "--focus-ring",
+      "background": "--color-chip-primary",
+      "resolvedForeground": "#22d3ee",
+      "resolvedBackground": "#0e2a33",
+      "ratio": 8.31,
       "required": 3,
       "pass": true
     }
   ],
+  "summary": {
+    "pairs": 40,
+    "passed": 40,
+    "failed": 0,
+    "lowest": {
+      "name": "Control border on raised",
+      "ratio": 3.45,
+      "required": 3
+    }
+  },
   "status": "pass"
 }

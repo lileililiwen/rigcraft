@@ -21,3 +21,22 @@ All five packages are implemented, archived and committed on `main`, in dependen
 5. Deferred: FPS, merchant margin, live retail pricing, MCP and advanced optimization.
 
 The five implementation packages above exist and are archived. The operator-supplied catalog mechanism is implemented in `user-catalog-ingestion`: a versioned document, strict validation, per-instance SQLite storage, search, matching and import enrichment, with the data and licence supplied by the operator. No release or deployment readiness is claimed: deployment remains disabled in `.project.json`, and no third-party hardware catalog, live pricing or performance evidence is bundled. The sourced sample, the operator-fetch converters and the ingestion contract are recorded in `docs/data-sources.md` and `docs/catalog-ingestion.md`.
+
+## Design program (reference-led)
+
+The Stitch `OpenPCBuilder` / `Kinetic Silicon` project is a visual reference, not
+a source. `docs/design-program.md` records what is taken, what is declined (the
+crawler/ETL and AI-by-default scope), the token/contrast guardrails that may not
+break, and six delivery packages:
+
+| # | Change | Single outcome | Depends on |
+| --- | --- | --- | --- |
+| 1 | `dark-brand-token-layer` | The measured dark token set and a defect-free shell | — |
+| 2 | `workbench-recommendation` | `/recommend` as the workbench reference | 1 |
+| 3 | `verdict-console` | `/builds/check` and `/diagnose` as a rule console | 1 |
+| 4 | `dataops-console` | `/inventory` and `/catalog` as an operator console | 1 |
+| 5 | `service-correctness` | API and client-route correctness, safe CSV | — |
+| 6 | `delivery-hardening` | Compression, cache and security headers | — |
+
+One change is active at a time; packages 5 and 6 are independent and may be taken
+first.
