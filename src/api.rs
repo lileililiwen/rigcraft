@@ -5,12 +5,15 @@ use std::path::PathBuf;
 use std::sync::Arc;
 
 use axum::extract::multipart::MultipartRejection;
-use axum::extract::{DefaultBodyLimit, Multipart, Path as AxumPath, Query, State};
+use axum::extract::{DefaultBodyLimit, Multipart, Path as AxumPath, Query, Request, State};
 use axum::http::{header, HeaderValue, StatusCode};
+use axum::middleware::{from_fn, Next};
 use axum::response::{Html, IntoResponse, Response};
 use axum::routing::{any, get, patch, post};
 use axum::{Json, Router};
 use time::OffsetDateTime;
+use tower_http::compression::predicate::{NotForContentType, Predicate, SizeAbove};
+use tower_http::compression::CompressionLayer;
 use tower_http::services::ServeDir;
 use tower_http::trace::TraceLayer;
 use uuid::Uuid;
@@ -773,6 +776,87 @@ fn is_client_route(path: &str) -> bool {
     CLIENT_ROUTES.contains(&normalised) && !path.ends_with("//")
 }
 
+/// The one CSP the built bundle and the BYOK assistant work under. Every
+/// allowance is justified in the change design and `docs/delivery-headers.md`.
+const CONTENT_SECURITY_POLICY: &str = "default-src 'self'; script-src 'self'; \
+style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; \
+connect-src 'self' https: http://127.0.0.1:* http://localhost:*; \
+frame-ancestors 'none'; base-uri 'none'; object-src 'none'; form-action 'self'";
+
+/// Compression covers the text representations this service produces. Images
+/// other than SVG are already compressed (the predicate also excludes
+/// `image/*`), so the favicon is never re-compressed.
+fn is_textual(content_type: Option<&HeaderValue>) -> bool {
+    let Some(value) = content_type.and_then(|value| value.to_str().ok()) else {
+        return false;
+    };
+    let media_type = value.split(';').next().unwrap_or("").trim();
+    media_type.starts_with("text/")
+        || media_type == "application/json"
+        || media_type == "application/javascript"
+        || media_type == "image/svg+xml"
+}
+
+/// One cache policy for the whole delivery surface, decided from the request
+/// path and the response, never per handler.
+fn cache_control(
+    path: &str,
+    content_type: Option<&HeaderValue>,
+    status: StatusCode,
+) -> Option<&'static str> {
+    let html = content_type
+        .and_then(|value| value.to_str().ok())
+        .is_some_and(|value| value.starts_with("text/html"));
+    if status.is_success() && path.starts_with("/assets/") {
+        // Vite writes a content hash into the file name, so the bytes behind
+        // this URL can never change.
+        return Some("public, max-age=31536000, immutable");
+    }
+    if status.is_success() && (path == "/favicon.ico" || path == "/favicon.svg") {
+        return Some("public, max-age=86400");
+    }
+    if html {
+        // The shell names the current asset hashes, so it must be revalidated
+        // or a deploy would keep serving the previous bundle.
+        return Some("no-cache");
+    }
+    if path == "/api" || path.starts_with("/api/") {
+        // Inventory and provider traffic is private and never cacheable.
+        return Some("no-store");
+    }
+    None
+}
+
+async fn delivery_policy(request: Request, next: Next) -> Response {
+    let path = request.uri().path().to_string();
+    let mut response = next.run(request).await;
+    let status = response.status();
+    let content_type = response.headers().get(header::CONTENT_TYPE).cloned();
+    let headers = response.headers_mut();
+    headers.insert(
+        header::X_CONTENT_TYPE_OPTIONS,
+        HeaderValue::from_static("nosniff"),
+    );
+    headers.insert(
+        header::REFERRER_POLICY,
+        HeaderValue::from_static("no-referrer"),
+    );
+    headers.insert(header::X_FRAME_OPTIONS, HeaderValue::from_static("DENY"));
+    headers.insert(
+        header::CONTENT_SECURITY_POLICY,
+        HeaderValue::from_static(CONTENT_SECURITY_POLICY),
+    );
+    // The compression layer already appends this when it compresses; a text
+    // response sent without negotiation still varies on it.
+    if is_textual(content_type.as_ref()) && !headers.contains_key(header::VARY) {
+        headers.insert(header::VARY, HeaderValue::from_static("accept-encoding"));
+    }
+    if let Some(value) = cache_control(&path, content_type.as_ref(), status) {
+        headers.insert(header::CACHE_CONTROL, HeaderValue::from_static(value));
+    }
+    response
+}
+
 pub fn build_router(state: AppState) -> Router {
     let web_dir = state.web_dir.clone();
     let router = Router::new()
@@ -829,7 +913,7 @@ pub fn build_router(state: AppState) -> Router {
         .layer(TraceLayer::new_for_http())
         .with_state(state);
     let index = web_dir.join("index.html");
-    match std::fs::read_to_string(&index) {
+    let router = match std::fs::read_to_string(&index) {
         Ok(index_body) => {
             // Only the six pages the SPA resolves are served the shell. Any
             // other extensionless path is a real 404 document, so a typo
@@ -850,5 +934,20 @@ pub fn build_router(state: AppState) -> Router {
             router.fallback_service(ServeDir::new(web_dir).fallback(spa_service))
         }
         Err(_) => router.fallback(web_not_built),
-    }
+    };
+    // Applied to the finished router, so the layers cover the API routes, the
+    // static files and the SPA fallback alike. The policy is outermost so it
+    // sees the compression layer's `Vary` instead of duplicating it.
+    //
+    // Below 256 bytes the framing costs more than the saving (`/api/health`
+    // is 46 bytes plain and 69 bytes gzipped), so small payloads stay
+    // identity; images other than SVG are already compressed and are never
+    // re-encoded.
+    let compressible = SizeAbove::new(256)
+        .and(NotForContentType::GRPC)
+        .and(NotForContentType::IMAGES)
+        .and(NotForContentType::SSE);
+    router
+        .layer(CompressionLayer::new().compress_when(compressible))
+        .layer(from_fn(delivery_policy))
 }

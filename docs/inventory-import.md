@@ -127,6 +127,16 @@ Creates a new snapshot with `revision + 1`, `parentSnapshotId` set to the old ID
 - An unknown static or metadata path (for example `/assets/nope.js`, `/robots.txt`, `/llms.txt` or `/ai-catalog.json`) returns 404 rather than the SPA shell, because the build does not ship that file.
 - `GET /api`, `GET /api/` and every unknown `/api/*` route return JSON `route_not_found` with HTTP 404; a wrong method on a real API route keeps its 405.
 
+## Delivery policy
+
+One response layer, outside the router, sets the delivery headers for every route, static file, JSON error and the 404 document:
+
+- Text responses (`text/*`, `application/json`, `application/javascript`, `image/svg+xml`) negotiate `gzip` or `br` above 256 bytes and declare `Vary: Accept-Encoding`; a compressed response drops its stale `Content-Length`, a range response is never compressed, and `image/x-icon` is never re-encoded.
+- Hashed `/assets/*` are `public, max-age=31536000, immutable`; the shell and every HTML response are `no-cache`; `/favicon.ico` and `/favicon.svg` are `public, max-age=86400`; everything under `/api` is `no-store`.
+- Every response carries `X-Content-Type-Options: nosniff`, `Referrer-Policy: no-referrer`, `X-Frame-Options: DENY` and a Content-Security-Policy (`default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' https: http://127.0.0.1:* http://localhost:*; frame-ancestors 'none'; base-uri 'none'; object-src 'none'; form-action 'self'`). The build has no inline script and the assistant still reaches a loopback provider.
+
+The policy, its allowances and the measured byte effects are in [delivery-headers.md](delivery-headers.md).
+
 ## Provenance and unknown values
 
 - Without `source`/`sourceUrl`, imported values cite `source: "user"` with `reference: "csv:<filename>"` and the observation timestamp.

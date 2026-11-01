@@ -199,3 +199,10 @@ Details: `docs/evidence/ui-foundation-browser.md`. Lighthouse reports: `docs/evi
 
 Details: `docs/evidence/service-correctness-browser.md`. The 404 is a plain-text
 document, so no Lighthouse audit applies; the reason is recorded in that document.
+
+### Delivery hardening (2026-11-01)
+
+No capture is added. Compression, cache policy and security headers change
+response headers rather than pixels, so the route captures above remain the
+visual record. The measurable evidence is the `curl -i` and byte matrix in
+`docs/evidence/delivery-hardening-browser.md`, not a screenshot.

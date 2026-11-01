@@ -26,7 +26,7 @@ Browser regression suite:
 ```sh
 cargo build                    # prerequisite: the service binary
 npm run build                  # prerequisite: the bundle the service serves
-npm run test:e2e               # real Chrome, 25 browser tests, under a minute
+npm run test:e2e               # real Chrome, 28 browser tests, under a minute
 ```
 
 `npm run test:e2e` picks a free loopback port, starts `target/debug/rigcraft`
@@ -136,10 +136,12 @@ Referencing a kit package never grants the capability it implements.
 - `docs/evidence/diagnosis-browser.md` — existing-build matching (ambiguity, miss, duplicate), reuse advice groups, validated/needs-evidence/rejected plan states, keyboard, responsive, accessibility and privacy evidence.
 - `docs/evidence/correctness-audit-browser.md` — corrected unverified advice group, stable `/diagnose` numbering, ISO 8601 UTC timestamps and static/metadata 404 behaviour.
 - `docs/evidence/catalog-seed-browser.md` — corrected sourced sample download, a catalog-column import and the operator-versus-catalog distinction.
-- `docs/evidence/browser-suite.md` — the checked-in Playwright suite: command, the twenty tests and what each holds, and its explicit non-coverage.
+- `docs/evidence/browser-suite.md` — the checked-in Playwright suite: command, the twenty-eight tests and what each holds, and its explicit non-coverage.
 - `docs/evidence/data-portability-browser.md` — snapshot export, backup download, inspected restore, the typed confirmation guard and a rejected restore.
 - `docs/evidence/catalog-ingestion-browser.md` — catalog upload and refusal, the registry with a licence, search and a catalog-enriched import with committed provenance.
 - `docs/evidence/verdict-console-browser.md` — the rule matrix, single coverage sentence, grammatical gap sentences, exact-match token noise and the verdict-console Lighthouse numbers.
+- `docs/evidence/delivery-hardening-browser.md` — the real `curl` header and byte matrix with and without compression, the CSP/browser verdict and the measured `/recommend` traces.
+- `docs/delivery-headers.md` — the compression, cache and security header contract, with each CSP allowance justified.
 - `docs/evidence/ui-foundation-browser.md` — dark token layer, shell-chrome fixes, focus ring, caption width and icon evidence, with the Lighthouse numbers.
 - `docs/evidence/token-contrast.json` — measured WCAG 2.2 AA contrast for the effective dark theme (40 pairs, both token source hashes).
 - `docs/evidence/inventory-lighthouse*/`, `docs/evidence/compatibility-lighthouse*/`, `docs/evidence/recommendation-lighthouse*/`, `docs/evidence/workbench-lighthouse*/`, `docs/evidence/byok-lighthouse*/`, `docs/evidence/diagnosis-lighthouse*/`, `docs/evidence/correctness-diagnose-lighthouse*/`, `docs/evidence/catalog-lighthouse*/`, `docs/evidence/data-portability-lighthouse*/` and `docs/evidence/catalog-ingestion-lighthouse*/` and `docs/evidence/verdict-lighthouse/` — Lighthouse reports.

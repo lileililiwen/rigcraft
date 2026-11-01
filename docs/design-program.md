@@ -365,6 +365,26 @@ policy for an app that holds private inventory and a BYOK key.
 **Oracle:** header assertions in Rust tests; `npm run test:e2e` still green;
 performance report committed.
 
+**Delivered 2026-11-01.** One response layer outside the router now serves the
+same bytes under a header policy that covers the API, the static files, the SPA
+fallback and the plain-text 404. Text responses negotiate `gzip`/`br` above 256
+bytes and declare `Vary: Accept-Encoding`; hashed `/assets/*` are
+`public, max-age=31536000, immutable`, the shell and every HTML response are
+`no-cache`, the favicon is one day and `/api/*` is `no-store`; every response
+carries `nosniff`, `no-referrer`, `X-Frame-Options: DENY` and the documented CSP.
+Measured on `/assets/index-DO5RYnOJ.js`: 307,491 bytes identity, 86,177 gzip,
+87,370 brotli, with the same decompressed SHA-256. A cold `/recommend` load
+transfers 97,326 bytes instead of 364,831, and a warm reload 3,998 because the
+hashed assets are immutable. Verified by a 190-test Rust suite (a new header,
+cache and compression matrix), 28 Playwright journeys (all six routes with no CSP
+console violation, the assistant reaching a loopback provider, and a typo still
+a real 404), and the recorded traces in
+`docs/evidence/delivery-hardening-browser.md`; the trace's single-run LCP
+numbers are recorded honestly as lab variance, not as an improvement. The change
+enables two existing `tower-http` features (seven transitive crates, no new
+direct dependency, no zstd), adds no route, API shape, schema, engine value,
+colour literal or copy string, and leaves the vendored token file untouched.
+
 ---
 
 ## Findings disposition

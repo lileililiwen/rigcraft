@@ -10,7 +10,7 @@ document is the authoritative statement those documents link to.
 ```sh
 cargo build          # the service binary the suite starts
 npm run build        # the bundle the service serves
-npm run test:e2e     # 25 tests, real Chrome, under a minute
+npm run test:e2e     # 28 tests, real Chrome, under a minute
 ```
 
 `npm run test:e2e` selects a free loopback port, starts `target/debug/rigcraft` with a
@@ -34,6 +34,7 @@ one worker, no retries, list and JSON reporters, and a trace only on retry.
 | `e2e/keyboard-responsive.spec.ts` | The first Tab lands on the skip link, Tab reaches the budget field, Enter generates a recommendation with no pointer input, and `document.documentElement.scrollWidth === clientWidth` at 390 px on `/inventory`, `/builds/check`, `/recommend` and `/diagnose`. Also that `Preview CSV`, `Search catalog`, `Match this list` and `Diagnose this build` are disabled with their `aria-describedby` reason visible at 390 px, with no overflow on those pages. |
 | `e2e/catalog.spec.ts` | Upload of a small synthetic `rigcraft-catalog` document through `/catalog`, the accepted report and `catalog:synthetic-fixture@fixture-1` provenance, the registry row with `CC0-1.0`/`fixture-1`/3 parts/`Active`, ranked search with the exact SKU first and a stored part opening with its source URL; a refused document naming `Row 1 · model` while its dataset name is absent; and an import enriched from the catalog with the per-row opt-in, three `Catalog` badges and `specs` provenance `Catalog · synthetic-fixture@fixture-1` plus the part URL, while SKU, quantity and price stay `User-provided`. Also asserts no horizontal overflow at 1440 px and 390 px on `/catalog`. |
 | `e2e/portability.spec.ts` | CSV and JSON export filenames and bodies (10 lots, revision, authoritative JSON with per-field provenance), re-import of the exported CSV with catalog facts intact, a backup whose first bytes are the SQLite header, a non-SQLite upload rejected as `backup_not_sqlite` with the committed snapshot still visible, an inspected backup showing integrity/schema/counts, the replace button disabled until `RESTORE` is typed exactly, and success naming `inventory.sqlite3.pre-restore-`. |
+| `e2e/delivery.spec.ts` | All six client routes render under the CSP with an empty CSP-violation and page-error log, `/recomend` is still a real 404 with no `#root`, and the assistant reaches a Node loopback provider through `/api/ai/parse`, shows the proposal and applies `2000.00` to the budget. |
 
 Each test seeds its own snapshot (the inventory journey through the page, the rest
 through the documented API) and selects that snapshot by id, so the order does not
