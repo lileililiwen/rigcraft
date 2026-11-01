@@ -150,4 +150,5 @@ console contained no messages.
   verified through the accessibility tree, Lighthouse and the keyboard journey.
 - The engine's own sentences still contain `unit(s)`/`conflict(s)`; the page
   composes none of them and this change deliberately leaves engine copy
-  untouched (see Decision 5).
+  untouched (see Decision 5). The engine residual was closed later by
+  `report-copy-plurals` (`docs/evidence/report-copy-plurals.md`).

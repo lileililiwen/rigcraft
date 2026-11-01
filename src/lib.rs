@@ -16,6 +16,7 @@ pub mod error;
 pub mod portability;
 pub mod recommend;
 pub mod store;
+pub mod text;
 
 use std::env;
 use std::path::PathBuf;

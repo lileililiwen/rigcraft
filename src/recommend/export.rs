@@ -131,10 +131,14 @@ pub fn export_markdown(report: &RecommendationReport) -> String {
         ));
     }
     out.push_str(&format!(
-        "- Search: {} node(s), {} complete combination(s), {} valid build(s), limit {}{}\n",
-        report.search.nodes_examined,
-        report.search.leaves_evaluated,
-        report.search.valid_builds,
+        "- Search: {}, {}, {}, limit {}{}\n",
+        crate::text::plural(report.search.nodes_examined, "node", "nodes"),
+        crate::text::plural(
+            report.search.leaves_evaluated,
+            "complete combination",
+            "complete combinations"
+        ),
+        crate::text::plural(report.search.valid_builds, "valid build", "valid builds"),
         report.search.limit,
         if report.search.limited {
             " (limit reached; no global optimum claimed)"

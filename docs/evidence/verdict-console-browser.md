@@ -125,4 +125,5 @@ Reports: `docs/evidence/verdict-lighthouse/check-desktop/`,
   pass; the accessibility tree, Lighthouse and keyboard focus were the checks.
 - The engine's own `step(s)` wording in the plan summary and the API's
   `unit(s)` stock error are still engine/export text; only the page-composed
-  strings use the plural helper.
+  strings use the plural helper. The engine residual was closed later by
+  `report-copy-plurals` (`docs/evidence/report-copy-plurals.md`).

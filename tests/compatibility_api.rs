@@ -368,6 +368,14 @@ async fn malformed_selection_and_unknown_snapshot_have_stable_codes() {
     assert_eq!(status, StatusCode::UNPROCESSABLE_ENTITY);
     assert_eq!(error["error"]["code"], "insufficient_stock");
     assert_eq!(error["error"]["details"]["available"], 2);
+    assert!(
+        error["error"]["message"]
+            .as_str()
+            .unwrap()
+            .contains("needs 99 units"),
+        "{}",
+        error["error"]["message"]
+    );
 
     let (status, error) = harness
         .check("missing-snapshot", json!([{ "sku": "X", "quantity": 1 }]))

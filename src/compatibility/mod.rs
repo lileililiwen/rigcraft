@@ -259,8 +259,8 @@ fn resolve_selection(
             return Err(ApiError::unprocessable(
                 "insufficient_stock",
                 format!(
-                    "SKU {sku} needs {} unit(s) but this snapshot has {available}.",
-                    item.quantity
+                    "SKU {sku} needs {} but this snapshot has {available}.",
+                    crate::text::plural(item.quantity, "unit", "units")
                 ),
             )
             .with_details(

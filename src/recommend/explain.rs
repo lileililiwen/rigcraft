@@ -117,7 +117,8 @@ pub(crate) fn compatibility_solution(
             category: key.split(':').nth(1).map(str::to_string),
             sku: None,
             detail: format!(
-                "{count} complete combination(s): {}.",
+                "{}: {}.",
+                crate::text::plural(**count, "complete combination", "complete combinations"),
                 describe_rejection(key)
             ),
         })
@@ -127,10 +128,10 @@ pub(crate) fn compatibility_solution(
         binding: "compatibility".to_string(),
         headline: "No complete build passes the compatibility rules.".to_string(),
         explanation: format!(
-            "{} complete combination(s) were checked within the {} budget and none passed: {} rejection(s) came from compatibility conflicts or missing required evidence. No build the checker would fail is presented as a recommendation.",
-            leaves,
+            "The search checked {} within the {} budget and none passed: {} came from compatibility conflicts or missing required evidence. No build the checker would fail is presented as a recommendation.",
+            crate::text::plural(leaves, "complete combination", "complete combinations"),
             format_money(settings.budget_minor, &settings.currency),
-            rejected
+            crate::text::plural(rejected, "rejection", "rejections")
         ),
         blockers,
         adjustable: vec![
@@ -148,8 +149,10 @@ pub(crate) fn search_limit_solution(nodes: u64, leaves: u64, minimum: Option<i64
         binding: "search_limit".to_string(),
         headline: "The search limit was reached before a valid build was confirmed.".to_string(),
         explanation: format!(
-            "The search examined {} node(s) and {} complete combination(s) before hitting the {} node limit. This is not proof that no build exists, and no global optimum is claimed.",
-            nodes, leaves, SEARCH_WORK_LIMIT
+            "The search examined {} and {} before hitting the {} node limit. This is not proof that no build exists, and no global optimum is claimed.",
+            crate::text::plural(nodes, "node", "nodes"),
+            crate::text::plural(leaves, "complete combination", "complete combinations"),
+            SEARCH_WORK_LIMIT
         ),
         blockers: Vec::new(),
         adjustable: vec![

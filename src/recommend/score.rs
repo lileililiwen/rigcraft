@@ -112,8 +112,10 @@ fn upgrade_room(parts: &[&Piece]) -> (Option<f64>, String) {
     (
         Some(round2((free / 4.0).clamp(0.0, 1.0))),
         format!(
-            "{free} free memory slot(s): {slots} on {} minus {modules} module(s) recorded on the memory.",
-            board.record.sku
+            "{}: {slots} on {} minus {} recorded on the memory.",
+            crate::text::plural(free, "free memory slot", "free memory slots"),
+            board.record.sku,
+            crate::text::plural(modules, "module", "modules")
         ),
     )
 }

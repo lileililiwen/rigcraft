@@ -96,8 +96,8 @@ pub(crate) fn make_candidate(
             settings.use_case, evaluated.scores.total
         )),
         "lowest_cost" => reasons.push(format!(
-            "Lowest total price among {} validated build(s): {}.",
-            valid_builds,
+            "Lowest total price among {}: {}.",
+            crate::text::plural(valid_builds, "validated build", "validated builds"),
             format_money(total, &settings.currency)
         )),
         "highest_performance" => reasons.push(format!(
@@ -127,7 +127,7 @@ pub(crate) fn make_candidate(
         ),
     }
     reasons.push(format!(
-        "Total {} leaves {} {}, and {} unit(s) come from snapshot stock.",
+        "Total {} leaves {} {}, and snapshot stock supplies {}.",
         format_money(total, &settings.currency),
         format_money(budget_delta, &settings.currency),
         if budget_delta >= 0 {
@@ -135,11 +135,12 @@ pub(crate) fn make_candidate(
         } else {
             "over the budget"
         },
-        units_from_stock
+        crate::text::plural(units_from_stock, "unit", "units")
     ));
     if owned_units > 0 {
         reasons.push(format!(
-            "{owned_units} owned part(s) are included at zero incremental price and take no stock."
+            "Included at zero incremental price and taking no stock: {}.",
+            crate::text::plural(owned_units, "owned part", "owned parts")
         ));
     }
     let status_label = match evaluated.report.overall_status {
@@ -148,8 +149,17 @@ pub(crate) fn make_candidate(
         Verdict::Unknown => "unknown",
     };
     reasons.push(format!(
-        "Complete build; the compatibility check returned {status_label} with {} conflict(s) and {} unknown rule(s).",
-        evaluated.report.summary.incompatible, evaluated.report.summary.unknown
+        "Complete build; the compatibility check returned {status_label} with {} and {}.",
+        crate::text::plural(
+            evaluated.report.summary.incompatible,
+            "conflict",
+            "conflicts"
+        ),
+        crate::text::plural(
+            evaluated.report.summary.unknown,
+            "unknown rule",
+            "unknown rules"
+        )
     ));
     if let Some(dimension) = evaluated
         .scores

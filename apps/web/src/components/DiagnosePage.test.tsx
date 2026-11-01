@@ -347,7 +347,7 @@ function diagnosis(): DiagnosisReport {
     plan: {
       status: "validated",
       summary:
-        "The checker validates the upgraded build as compatible. 1 step(s) add USD 379.00; no trade-in or resale value is assumed.",
+        "The checker validates the upgraded build as compatible. 1 step adds USD 379.00; no trade-in or resale value is assumed.",
       steps: [
         {
           row: 1,

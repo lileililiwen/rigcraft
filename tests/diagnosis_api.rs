@@ -371,6 +371,14 @@ async fn validated_upgrade_plan_replaces_the_conflicting_part() {
 
     assert_eq!(report["plan"]["status"], "validated", "{}", report["plan"]);
     assert_eq!(report["plan"]["steps"].as_array().unwrap().len(), 1);
+    assert!(
+        report["plan"]["summary"]
+            .as_str()
+            .unwrap()
+            .contains("1 step adds"),
+        "{}",
+        report["plan"]["summary"]
+    );
     assert_eq!(report["plan"]["steps"][0]["toSku"], "FIX-AM5-CPU-7600");
     assert_eq!(report["plan"]["steps"][0]["ruleIds"], json!(["cpu-socket"]));
     assert_eq!(report["plan"]["additionalCostMinor"], 24900);
@@ -461,6 +469,9 @@ async fn a_snapshot_without_a_replacement_says_so() {
         .as_str()
         .unwrap()
         .contains("cpu-socket"));
+    let summary = report["plan"]["summary"].as_str().unwrap();
+    assert!(!summary.contains("(s)"), "{summary}");
+    assert!(summary.contains("rule"), "{summary}");
     let must_replace = report["groups"]["mustReplace"].as_array().unwrap();
     assert!(must_replace.iter().any(|row| row == 1));
     assert!(must_replace.iter().any(|row| row == 2));

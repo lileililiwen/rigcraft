@@ -306,7 +306,8 @@ pub fn inspect_sqlite(
         .collect::<Vec<_>>();
     if !missing.is_empty() {
         return Err(BackupProblem::WrongShape(format!(
-            "missing table(s): {}",
+            "missing {}: {}",
+            crate::text::plural(missing.len(), "table", "tables"),
             missing.join(", ")
         )));
     }

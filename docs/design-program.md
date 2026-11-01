@@ -399,7 +399,7 @@ colour literal or copy string, and leaves the vendored token file untouched.
 | Exact-match token noise | 3 (R5) |
 | Assistant panel pushes the form below the fold | 2 (R4) |
 | Budget rejects `1,800` | 2 (R5) |
-| `unit(s)` / `part(s)` pseudo-plurals | 2 (R6), 4 (R5) |
+| `unit(s)` / `part(s)` pseudo-plurals | 2 (R6), 4 (R5); closed by gap-closure package 1 |
 | Fixture placeholders in the diagnosis form | 4 (R5) |
 | Actions enabled with empty input | 2 (R5), 4 (R4) |
 | Export dead after a snapshot exists | 4 (R2) |

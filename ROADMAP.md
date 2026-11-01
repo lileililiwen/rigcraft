@@ -40,3 +40,10 @@ break, and six delivery packages:
 
 One change is active at a time; packages 5 and 6 are independent and may be taken
 first.
+
+## Gap closure
+
+`docs/gap-closure.md` closes the residuals recorded after the design program:
+`report-copy-plurals`, `performance-evidence`, `visual-regression-baseline` and
+`cross-browser-smoke`. One change at a time; the manual screen-reader pass stays a
+human step and is not claimed by an agent.

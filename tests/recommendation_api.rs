@@ -460,6 +460,28 @@ async fn exports_round_trip_the_report_and_name_the_check_reports() {
         .await;
     let id = report["id"].as_str().unwrap();
 
+    // The grammatical engine sentence is what both exports carry.
+    for candidate in report["candidates"].as_array().unwrap() {
+        for reason in candidate["reasons"].as_array().unwrap() {
+            let reason = reason.as_str().unwrap();
+            assert!(!reason.contains("(s)"), "pseudo-plural in {reason}");
+        }
+    }
+    let stock_reason = report["candidates"][0]["reasons"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .filter_map(Value::as_str)
+        .find(|reason| reason.contains("snapshot stock supplies"))
+        .expect("the stock sentence is present");
+    let supplied = stock_reason
+        .split("snapshot stock supplies ")
+        .nth(1)
+        .and_then(|tail| tail.strip_suffix('.'))
+        .expect("the stock sentence ends with the unit count");
+    let (count, noun) = supplied.split_once(' ').expect("a count and a noun");
+    assert_eq!(noun, if count == "1" { "unit" } else { "units" });
+
     let (status, content_type, body) = harness
         .raw(
             Request::builder()
@@ -509,6 +531,10 @@ async fn exports_round_trip_the_report_and_name_the_check_reports() {
     assert!(body.contains(report["candidates"][0]["checkReportId"].as_str().unwrap()));
     assert!(body.contains(report["candidates"][0]["label"].as_str().unwrap()));
     assert!(body.contains("Evidence sources"));
+    assert!(
+        body.contains(stock_reason),
+        "the Markdown export carries the grammatical stock sentence"
+    );
 
     let (status, error) = harness
         .get(&format!("/api/recommendations/{id}/export?format=xml"))

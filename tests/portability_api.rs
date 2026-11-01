@@ -607,6 +607,12 @@ async fn rejected_restores_return_their_own_codes_and_leave_data_intact() {
             .await;
         assert_eq!(status, expected_status, "inspect {file_name}: {body}");
         assert_eq!(body["error"]["code"], expected_code, "inspect {file_name}");
+        if file_name == "wrong-shape.sqlite3" {
+            let reason = body["error"]["details"]["reason"].as_str().unwrap();
+            assert!(!reason.contains("(s)"), "{reason}");
+            assert!(reason.starts_with("missing "), "{reason}");
+            assert!(reason.contains("tables"), "{reason}");
+        }
 
         let (status, body) = harness
             .post_backup("/api/backup/restore", file_name, bytes, Some("restore"))

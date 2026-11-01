@@ -653,7 +653,8 @@ pub(crate) fn advise(
             (
                 "no_option",
                 format!(
-                    "This snapshot holds no validated replacement for the rule(s) {}, so no upgrade plan is offered.",
+                    "This snapshot holds no validated replacement for {}: {}, so no upgrade plan is offered.",
+                    crate::text::plural(unresolved.len(), "rule", "rules"),
                     unresolved.join(", ")
                 ),
                 None,
@@ -673,8 +674,9 @@ pub(crate) fn advise(
                 Verdict::Compatible => (
                     "validated",
                     format!(
-                        "The checker validates the upgraded build as compatible. {} step(s) add {}; no trade-in or resale value is assumed.",
-                        steps.len(),
+                        "The checker validates the upgraded build as compatible. {} {} {}; no trade-in or resale value is assumed.",
+                        crate::text::plural(steps.len(), "step", "steps"),
+                        if steps.len() == 1 { "adds" } else { "add" },
                         crate::recommend::format_money(additional, currency)
                     ),
                     Some(composed.clone()),
