@@ -26,7 +26,7 @@ Browser regression suite:
 ```sh
 cargo build                    # prerequisite: the service binary
 npm run build                  # prerequisite: the bundle the service serves
-npm run test:e2e               # real Chrome, 40 browser tests, under a minute
+npm run test:e2e               # 46 Chrome journeys plus 6 smoke tests each in Firefox and WebKit
 ```
 
 `npm run test:e2e` picks a free loopback port, starts `target/debug/rigcraft`
@@ -44,6 +44,15 @@ for an intended visual change that a human reviewed and that ships in the same
 change. The baselines are platform-specific — the committed set was made on
 Linux with Chrome — so a different OS or font stack needs its own set. See
 `docs/evidence/visual-regression.md`.
+
+The `firefox` and `webkit` projects run only `e2e/smoke.spec.ts`: the six routes,
+the skip link, 390 px overflow, the real 404, a seeded recommendation and the
+inventory CSV download. They carry no pixel baseline; the chromium project keeps
+the whole suite. Install the two engines with `npx playwright install firefox
+webkit`. They both ran here; the WebKit host-library workaround and the exact
+errors are recorded in `docs/evidence/cross-browser-smoke.md`. The
+assistive-technology review, and the human screen-reader script it hands over, is
+`docs/evidence/assistive-technology-review.md`.
 
 Individual checks:
 
@@ -144,8 +153,10 @@ Referencing a kit package never grants the capability it implements.
 - `docs/evidence/diagnosis-browser.md` — existing-build matching (ambiguity, miss, duplicate), reuse advice groups, validated/needs-evidence/rejected plan states, keyboard, responsive, accessibility and privacy evidence.
 - `docs/evidence/correctness-audit-browser.md` — corrected unverified advice group, stable `/diagnose` numbering, ISO 8601 UTC timestamps and static/metadata 404 behaviour.
 - `docs/evidence/catalog-seed-browser.md` — corrected sourced sample download, a catalog-column import and the operator-versus-catalog distinction.
-- `docs/evidence/browser-suite.md` — the checked-in Playwright suite: command, the forty tests and what each holds, and its explicit non-coverage.
+- `docs/evidence/browser-suite.md` — the checked-in Playwright suite: command, the 46 Chrome tests and what each holds, and its explicit non-coverage.
 - `docs/evidence/visual-regression.md` — the twelve committed pixel baselines, the masked values, the bounded threshold, the two clean runs, the one-token mutation that fails, and the deliberate update command.
+- `docs/evidence/cross-browser-smoke.md` — the Firefox and WebKit smoke projects, the install and run output, the WebKit host-library workaround with its exact loader error, and the browser matrix.
+- `docs/evidence/assistive-technology-review.md` — per-route accessibility tree, landmarks, heading order, focus order, live regions and role/name gaps, with the human screen-reader script it hands over.
 - `docs/evidence/data-portability-browser.md` — snapshot export, backup download, inspected restore, the typed confirmation guard and a rejected restore.
 - `docs/evidence/catalog-ingestion-browser.md` — catalog upload and refusal, the registry with a licence, search and a catalog-enriched import with committed provenance.
 - `docs/evidence/verdict-console-browser.md` — the rule matrix, single coverage sentence, grammatical gap sentences, exact-match token noise and the verdict-console Lighthouse numbers.

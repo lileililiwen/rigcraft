@@ -18,6 +18,13 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
       - name: Install pinned Forge release
         run: sh .standard/scripts/install-forge.sh
+      # The browser suite now runs Firefox and WebKit projects as well as the
+      # real Chrome channel. The runner image has Chrome, not Playwright's
+      # engines, so install them (with their system libraries) before the gate.
+      - name: Install Playwright browsers
+        run: |
+          npm ci
+          npx playwright install --with-deps firefox webkit
       - name: Standard verification
         run: sh .standard/scripts/verify.sh
       - name: Forge Gate

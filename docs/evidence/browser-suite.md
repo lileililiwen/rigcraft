@@ -10,16 +10,24 @@ document is the authoritative statement those documents link to.
 ```sh
 cargo build          # the service binary the suite starts
 npm run build        # the bundle the service serves
-npm run test:e2e     # 40 tests, real Chrome, under a minute
+npx playwright install firefox webkit   # the two non-Chrome engines (once)
+npm run test:e2e     # 46 Chrome journeys + 6 smoke tests each in Firefox and WebKit
 ```
 
 `npm run test:e2e` selects a free loopback port, starts `target/debug/rigcraft` with a
 fresh `RIGCRAFT_DATA_DIR` under the operating system's temporary directory, waits for
 `/api/health`, and removes the scratch directory when the run ends. Port 8080 is never
 used, a developer's inventory is never read, and `RIGCRAFT_E2E_PORT` pins a port only
-when one is needed. The configuration is `playwright.config.ts`: one headless chromium
+when one is needed. The configuration is `playwright.config.ts`: a headless `chromium`
 project on `channel: 'chrome'` (the installed Google Chrome, so no browser download),
-one worker, no retries, list and JSON reporters, and a trace only on retry.
+plus `firefox` and `webkit` projects whose `testMatch` is `/smoke\.spec\.ts/`. One
+worker, no retries, list and JSON reporters, and a trace only on retry.
+
+The engines are not Chromium and do not inherit the Chrome channel. The `firefox` and
+`webkit` projects run the smoke subset only, so they cannot silently replace a Chrome
+journey and the Chrome project keeps every journey, including the pixel baselines. The
+WebKit host-library workaround and the exact errors are in
+[`cross-browser-smoke.md`](cross-browser-smoke.md).
 
 ## What it runs
 
@@ -36,6 +44,7 @@ one worker, no retries, list and JSON reporters, and a trace only on retry.
 | `e2e/portability.spec.ts` | CSV and JSON export filenames and bodies (10 lots, revision, authoritative JSON with per-field provenance), re-import of the exported CSV with catalog facts intact, a backup whose first bytes are the SQLite header, a non-SQLite upload rejected as `backup_not_sqlite` with the committed snapshot still visible, an inspected backup showing integrity/schema/counts, the replace button disabled until `RESTORE` is typed exactly, and success naming `inventory.sqlite3.pre-restore-`. |
 | `e2e/delivery.spec.ts` | All six client routes render under the CSP with an empty CSP-violation and page-error log, `/recomend` is still a real 404 with no `#root`, and the assistant reaches a Node loopback provider through `/api/ai/parse`, shows the proposal and applies `2000.00` to the budget. |
 | `e2e/visual.spec.ts` | Twelve committed pixel baselines: `/inventory`, `/catalog`, `/builds/check`, `/recommend`, `/diagnose` and the `/nope` 404 at 1440×900 and 390×844. Each test re-seeds the sample or resets and re-uploads the synthetic catalog immediately before the capture, masks the dynamic ids, timestamps, sha256 fragment and snapshot `<select>`, and fails on a change beyond the bounded tolerance with a diff artifact. See `visual-regression.md`. |
+| `e2e/smoke.spec.ts` | The six-route shell and titles, the skip link as the first Tab stop and its focus move to `main`, `scrollWidth === clientWidth` at 390 px on every route, `/recomend` as the real 404, a seeded 1,800.00 recommendation with the gaming rule, and the inventory CSV download filename. Runs in the Chromium project and as the only spec in the Firefox and WebKit projects; it asserts no pixels. |
 
 Each test seeds its own snapshot (the inventory journey through the page, the rest
 through the documented API) and selects that snapshot by id, so the order does not
@@ -48,9 +57,14 @@ read, uploaded or committed.
 - The BYOK assistant panel. Driving it would need a provider key or the loopback stub;
   `apps/web/src/components/AssistantPanel.test.tsx`, `tests/ai_planning_api.rs` and
   `tests/ai_provider_transport.rs` remain its coverage.
-- Lighthouse and browsers other than Chrome. The visual record is the committed
-  baseline set in `e2e/visual.spec.ts-snapshots/`; the Lighthouse reports stay the
-  performance and accessibility record.
+- Lighthouse and engines other than Chrome beyond the smoke subset. Firefox and
+  WebKit run the six smoke journeys only; they have no pixel baselines and no
+  full journey parity. The visual record is the committed Chrome baseline set in
+  `e2e/visual.spec.ts-snapshots/`; the Lighthouse reports stay the performance
+  and accessibility record.
+- Any screen-reader result. `assistive-technology-review.md` records the
+  accessibility tree, focus order and live regions and hands over the human
+  script; no NVDA, VoiceOver or JAWS output is claimed.
 - Performance. The suite asserts behaviour and layout, not timings.
 
 ## Artifacts

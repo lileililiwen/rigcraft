@@ -27,7 +27,6 @@ export default defineConfig({
   ],
   use: {
     baseURL,
-    channel: "chrome",
     headless: true,
     locale: "en-US",
     timezoneId: "UTC",
@@ -37,8 +36,23 @@ export default defineConfig({
   },
   projects: [
     {
+      // The full suite, including the committed pixel baselines, runs in real
+      // Chrome. `channel: 'chrome'` is project-scoped so Firefox and WebKit do
+      // not inherit it.
       name: "chromium",
       use: { ...devices["Desktop Chrome"], channel: "chrome" },
+    },
+    {
+      // Cross-browser smoke only: the visual baselines are Chrome's, and a
+      // smoke project must not stand in for a Chrome journey.
+      name: "firefox",
+      testMatch: /smoke\.spec\.ts/,
+      use: { ...devices["Desktop Firefox"] },
+    },
+    {
+      name: "webkit",
+      testMatch: /smoke\.spec\.ts/,
+      use: { ...devices["Desktop Safari"] },
     },
   ],
   webServer: {
