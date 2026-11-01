@@ -187,9 +187,15 @@ export function priceToMinor(value: string): number | null {
   return Number.isSafeInteger(minor) ? minor : null;
 }
 
+/**
+ * Money renders one way. `en-001` (neutral English) yields `US$1,672.90` for
+ * USD, so the amount never depends on the operator's browser locale and the
+ * symbol says which dollar it is. The fallback covers a runtime without that
+ * locale; it is the same suffix form the engine's export uses.
+ */
 export function formatMoney(minor: number, currency: string): string {
   try {
-    return new Intl.NumberFormat(undefined, {
+    return new Intl.NumberFormat("en-001", {
       style: "currency",
       currency,
     }).format(minor / 100);

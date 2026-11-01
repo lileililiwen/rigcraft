@@ -113,6 +113,20 @@ afterEach(() => {
 });
 
 describe("assistant panel", () => {
+  it("starts collapsed and keeps the credential fields in a form", async () => {
+    const user = userEvent.setup();
+    renderPanel();
+    const details = document.querySelector("details.assistant") as HTMLDetailsElement;
+    expect(details).not.toBeNull();
+    expect(details.open).toBe(false);
+
+    await user.click(details.querySelector("summary") as HTMLElement);
+    expect(details.open).toBe(true);
+    expect(screen.getByText("No key configured")).toBeInTheDocument();
+    const key = screen.getByLabelText("Provider key") as HTMLInputElement;
+    expect(key.form).toBe(details.querySelector("form.assistant-transport"));
+  });
+
   it("states the no-key state and offers the deterministic flow", async () => {
     const user = userEvent.setup();
     const { onSkip } = renderPanel();

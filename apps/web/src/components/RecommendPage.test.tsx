@@ -485,20 +485,58 @@ describe("recommendation page", () => {
     );
   });
 
-  it("rejects an invalid budget without calling the service", async () => {
+  it("disables Generate while the budget is empty or unparsable and keeps the guidance", async () => {
     const fetchMock = installFetch(handlerWith(() => jsonResponse(report())));
     const user = userEvent.setup();
     render(<RecommendPage />);
 
-    await screen.findByLabelText("Total budget (USD)");
-    await user.type(screen.getByLabelText("Total budget (USD)"), "1.234");
-    await user.click(screen.getByRole("button", { name: "Generate recommendations" }));
+    const budget = await screen.findByLabelText("Total budget (USD)");
+    const generate = screen.getByRole("button", { name: "Generate recommendations" });
+    expect(generate).toBeDisabled();
+    expect(generate).toHaveAccessibleDescription(
+      /Generate stays disabled until the budget is a positive amount/,
+    );
 
-    expect(await screen.findByText("Enter a budget")).toBeInTheDocument();
-    expect(screen.getByText(/at most two decimals/)).toBeInTheDocument();
+    await user.type(budget, "1.234");
+    expect(generate).toBeDisabled();
+    expect(budget).toHaveAttribute("aria-invalid", "true");
+    expect(screen.getByText("Enter a budget")).toBeInTheDocument();
+    expect(screen.getAllByText(/at most two decimals/).length).toBeGreaterThan(0);
+    expect(screen.getByText("budget_invalid")).toBeInTheDocument();
     expect(
       fetchMock.mock.calls.some(([url]) => String(url) === "/api/recommendations"),
     ).toBe(false);
+
+    await user.clear(budget);
+    await user.type(budget, "1,800");
+    expect(generate).toBeEnabled();
+    expect(budget).not.toHaveAttribute("aria-invalid");
+  });
+
+  it("sends grouped comma and space budgets as integer minor units", async () => {
+    const bodies: Array<Record<string, unknown>> = [];
+    installFetch(async (url, init) => {
+      if (url === "/api/recommendations" && init?.method === "POST") {
+        bodies.push(JSON.parse(String(init.body)));
+        return jsonResponse(report());
+      }
+      return handlerWith(() => jsonResponse(report()))(url, init);
+    });
+    const user = userEvent.setup();
+    render(<RecommendPage />);
+
+    const budget = await screen.findByLabelText("Total budget (USD)");
+    await user.type(budget, "1,800");
+    await user.click(screen.getByRole("button", { name: "Generate recommendations" }));
+    await screen.findByRole("heading", { name: "Recommended builds" });
+
+    await user.clear(budget);
+    await user.type(budget, "1 800.50");
+    await user.click(screen.getByRole("button", { name: "Generate recommendations" }));
+    await waitFor(() => expect(bodies).toHaveLength(2));
+
+    expect(bodies[0]).toMatchObject({ budgetMinor: 180000 });
+    expect(bodies[1]).toMatchObject({ budgetMinor: 180050 });
   });
   it("applies a confirmed assistant proposal and then runs the deterministic search", async () => {
     const bodies: unknown[] = [];
@@ -578,5 +616,107 @@ describe("recommendation page", () => {
       excludedSkus: [],
       inventoryOnly: true,
     });
+  });
+
+  it("lays out constraints, options and verdict as three workbench regions", async () => {
+    installFetch(handlerWith(() => jsonResponse(report())));
+    const user = userEvent.setup();
+    const { container } = render(<RecommendPage />);
+
+    await screen.findByLabelText("Total budget (USD)");
+    await user.type(screen.getByLabelText("Total budget (USD)"), "2000");
+    await user.click(screen.getByRole("button", { name: "Generate recommendations" }));
+    await screen.findByRole("heading", { name: "Recommended builds" });
+
+    const constraints = container.querySelector(".workbench__constraints");
+    const options = container.querySelector(".workbench__options");
+    const verdict = container.querySelector(".workbench__verdict");
+    expect(constraints).not.toBeNull();
+    expect(options).not.toBeNull();
+    expect(verdict).not.toBeNull();
+
+    // The request controls live in constraints, the modules in options, and the
+    // one report summary plus the rule matrix in the verdict rail.
+    expect(constraints).toContainElement(screen.getByLabelText("Total budget (USD)"));
+    expect(options).toContainElement(
+      screen.getByRole("heading", { name: "Recommended builds" }),
+    );
+    expect(options?.querySelectorAll("article.spec-module")).toHaveLength(2);
+    expect(verdict?.querySelector("dl.result-summary")).not.toBeNull();
+    expect(options?.querySelector("dl.result-summary")).toBeNull();
+    expect(
+      screen.getByRole("heading", { name: "Verdict and score" }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("6 valid candidates")).toBeInTheDocument();
+    expect(screen.getByText("2 distinct builds")).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Gaming requires a discrete graphics card" }),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/2 materially different builds found/)).toBeInTheDocument();
+  });
+
+  it("renders each option as a labelled spec module with mono numerals and a status chip", async () => {
+    installFetch(handlerWith(() => jsonResponse(report())));
+    const user = userEvent.setup();
+    const { container } = render(<RecommendPage />);
+
+    await screen.findByLabelText("Total budget (USD)");
+    await user.type(screen.getByLabelText("Total budget (USD)"), "2000");
+    await user.click(screen.getByRole("button", { name: "Generate recommendations" }));
+    await screen.findByRole("heading", { name: "Recommended builds" });
+
+    const module = container.querySelector("article.spec-module") as HTMLElement;
+    expect(module).not.toBeNull();
+    const caps = module.querySelector(".caps-label") as HTMLElement;
+    expect(caps).toHaveAttribute("aria-hidden", "true");
+    expect(caps.textContent).toBe("Build spec · option 1");
+
+    const heading = module.querySelector("h3") as HTMLElement;
+    expect(heading.textContent).toBe("1. Best overall");
+
+    const rows = module.querySelector("dl.spec-rows") as HTMLElement;
+    expect(rows).not.toBeNull();
+    expect(rows.querySelectorAll("dd")).toHaveLength(4);
+    expect(rows.querySelector("dd")?.textContent).toBe("US$278.00");
+
+    const chip = module.querySelector(".badge--verdict") as HTMLElement;
+    expect(chip.textContent).toContain("Compatible");
+    expect(chip.querySelector(".badge__symbol")?.getAttribute("aria-hidden")).toBe(
+      "true",
+    );
+
+    // The engine's own sentences and the report's version strings stay verbatim.
+    expect(
+      screen.getAllByText(/Total 2,000.00 USD leaves 0.00 USD\./).length,
+    ).toBeGreaterThan(0);
+    expect(screen.getAllByText(/check-1/).length).toBeGreaterThan(0);
+    expect(screen.getByText(/24 combinations checked/)).toBeInTheDocument();
+  });
+
+  it("collapses the optional assistant by default and still reaches the budget", async () => {
+    installFetch(handlerWith(() => jsonResponse(report())));
+    const user = userEvent.setup();
+    const { container } = render(<RecommendPage />);
+
+    await screen.findByLabelText("Total budget (USD)");
+    const details = container.querySelector("details.assistant") as HTMLDetailsElement;
+    expect(details).not.toBeNull();
+    expect(details.open).toBe(false);
+
+    const summary = details.querySelector("summary") as HTMLElement;
+    await user.click(summary);
+    expect(details.open).toBe(true);
+    expect(
+      screen.getByRole("heading", { name: "No key configured" }),
+    ).toBeInTheDocument();
+    // The key field has a form owner, so the browser stops warning that a
+    // password field is outside a form; the form never submits.
+    const key = screen.getByLabelText("Provider key") as HTMLInputElement;
+    expect(key.form).toBe(details.querySelector("form.assistant-transport"));
+
+    await user.click(screen.getAllByRole("button", { name: "Continue without AI" })[0]);
+    await waitFor(() =>
+      expect(screen.getByLabelText("Total budget (USD)")).toHaveFocus(),
+    );
   });
 });

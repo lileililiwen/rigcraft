@@ -22,7 +22,10 @@ primitive, and no component stylesheet contains a colour literal.
 | UI | `system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif` |
 | Numeric readouts, SKUs, specifications | `ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace` with `font-variant-numeric: tabular-nums` |
 
-Body stays 16 px, meta is 13–14 px, and no content text is 10 px. No webfont is
+Body stays 16 px, meta is 13–14 px, and no content text is 10 px. A caps
+micro-label (`BUILD SPEC · OPTION 1`, `CONSTRAINTS`) is 12 px decoration: it is
+`aria-hidden` and the heading beside it always carries the same meaning, so no
+reading depends on it. No webfont is
 downloaded and no font file ships, so the first paint does not wait on a network
 font and phones pay nothing for it.
 

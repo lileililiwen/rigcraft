@@ -94,6 +94,18 @@ Details, commands, keyboard results, measured contrast and privacy review: `docs
 
 Details: `docs/evidence/use-case-diversity-browser.md`. Lighthouse reports: `docs/evidence/use-case-lighthouse/` and `docs/evidence/use-case-lighthouse-mobile/`.
 
+### Workbench recommendation captures (2026-11-01)
+
+| Capture | Route | Viewport | Condition |
+| --- | --- | --- | --- |
+| `workbench-desktop.png` | `/recommend` | 1440×900 | Gaming at 1,800: occurrences of all three regions in one viewport — collapsed assistant and budget form, spec module, verdict rail |
+| `workbench-desktop-full.png` | `/recommend` | 1440×900 | The whole workbench report: reasons, parts, score breakdown, rule evidence, comparison, exports, rule matrix |
+| `workbench-mobile.png` | `/recommend` | 390×844 | Page top at phone width |
+| `workbench-mobile-workbench.png` | `/recommend` | 390×844 | Single-column workbench at the constraints region |
+| `workbench-mobile-full.png` | `/recommend` | 390×844 | The same report stacked, no horizontal overflow |
+
+Details: `docs/evidence/workbench-recommendation-browser.md`. Lighthouse reports: `docs/evidence/workbench-lighthouse/`, `docs/evidence/workbench-lighthouse-mobile/` and `docs/evidence/workbench-lighthouse-results/`.
+
 ## Refresh rule
 
 Refresh these captures after any change to `/inventory`, `/catalog`, `/builds/check`, `/recommend`, `/diagnose`, the shared tokens, the brand token layer, the import, check, recommendation or AI plan/revision API, the compatibility rules, the scoring version, the interpretation contract or the rendered states. A capture that names an older revision is historical evidence, not current evidence.

@@ -1192,3 +1192,174 @@ tbody tr:last-child td {
     align-items: flex-start;
   }
 }
+
+/* Workbench (recommendation page): constraints | options | verdict.
+   Source order is the same at every width, so keyboard order and visual order
+   never disagree; only the column count changes. */
+.page--wide,
+.site-header__inner--wide {
+  width: min(100% - 2 * var(--space-4), 88rem);
+}
+
+.workbench {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-4);
+  margin-top: var(--space-6);
+}
+
+.workbench > * {
+  min-width: 0;
+}
+
+.workbench .panel {
+  margin-top: 0;
+}
+
+.workbench__constraints > * + * {
+  margin-top: var(--space-4);
+}
+
+@media (min-width: 1100px) {
+  .workbench {
+    grid-template-columns: minmax(0, 21rem) minmax(0, 1fr) minmax(0, 19rem);
+    grid-template-areas: "constraints options verdict";
+  }
+
+  .workbench__constraints {
+    grid-area: constraints;
+  }
+
+  .workbench__options {
+    grid-area: options;
+  }
+
+  .workbench__verdict {
+    grid-area: verdict;
+  }
+}
+
+/* A caps micro-label is decoration; the heading next to it carries the meaning
+   for assistive technology, so it is hidden there and never the only label. */
+.caps-label {
+  margin: 0 0 var(--space-2);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-muted-foreground);
+}
+
+.spec-module {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.spec-rows {
+  margin: 0;
+}
+
+.spec-rows dd {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.verdict-rail .result-summary {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin-top: 0;
+}
+
+.counter-line {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  margin: var(--space-3) 0 0;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: var(--font-small);
+  color: var(--color-muted-foreground);
+}
+
+.verdict-rail__top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  margin-top: var(--space-4);
+}
+
+.verdict-rail__top-label {
+  margin: 0;
+}
+
+.verdict-rows {
+  margin-top: var(--space-2);
+}
+
+.verdict-rows div {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding-block: var(--space-2);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.verdict-rows dt {
+  font-size: var(--font-small);
+  color: var(--color-muted-foreground);
+}
+
+.verdict-rows dd {
+  margin: 0;
+  font-size: var(--font-body);
+  font-weight: 700;
+}
+
+.rule-summary {
+  display: grid;
+  gap: var(--space-2);
+  margin: var(--space-2) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.assistant > summary {
+  display: flex;
+  align-items: center;
+  min-height: var(--component-control-min-height);
+  cursor: pointer;
+}
+
+.assistant > summary .panel__title {
+  margin: 0;
+}
+
+.assistant__body {
+  margin-top: var(--space-3);
+}
+
+.assistant-transport {
+  margin: 0;
+}
+
+.field__error__title {
+  font-weight: 700;
+}
+
+/* Inside a spec module the numeric columns never wrap: a wrapped price or a
+   one-character-per-line header makes the module unreadable. The part name
+   still wraps, so the table keeps its width. */
+.spec-module .responsive-table th {
+  white-space: nowrap;
+}
+
+.spec-module .responsive-table td[data-label="SKU"],
+.spec-module .responsive-table td[data-label="Quantity"],
+.spec-module .responsive-table td[data-label="Unit price"],
+.spec-module .responsive-table td[data-label="Line total"],
+.spec-module .responsive-table td[data-label="Stock"] {
+  white-space: nowrap;
+}

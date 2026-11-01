@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { AiProposalResponse, ProposedField, RecordItem, Snapshot } from "../types";
 import { ApiFailure, parseWithAssistant } from "../api";
-import { USE_CASES, parseBudgetMinor } from "../recommend";
+import { USE_CASES, parseBudgetMinor, plural } from "../recommend";
 import { fieldIsEdited, proposalToForm, recordLabel, sameSkus, skusOf, sourceLabel } from "../ai";
 
 export interface AppliedProposal {
@@ -144,11 +144,11 @@ export function AssistantPanel({ snapshot, disabled, onApply, onSkip, announce }
         ),
       });
       setPhase("proposed");
-      const needsConfirmation = next.ambiguities.length;
       announce(
-        `Proposal ready with ${needsConfirmation} item${
-          needsConfirmation === 1 ? "" : "s"
-        } to confirm. Review every field before confirming.`,
+        `Proposal ready with ${plural(
+          next.ambiguities.length,
+          "item",
+        )} to confirm. Review every field before confirming.`,
       );
     } catch (error) {
       const detail =
@@ -232,7 +232,8 @@ export function AssistantPanel({ snapshot, disabled, onApply, onSkip, announce }
         <legend>{legend}</legend>
         <details className="details-block">
           <summary>
-            Choose parts ({selected} selected) · {sourceLine(field, edited)}
+            Choose parts ({plural(selected, "part")} selected) ·{" "}
+            {sourceLine(field, edited)}
           </summary>
           <ul className="part-list">
             {snapshot.records.map((record) => (
@@ -256,149 +257,159 @@ export function AssistantPanel({ snapshot, disabled, onApply, onSkip, announce }
   }
 
   return (
-    <section className="panel assistant" aria-labelledby="assistant-title">
-      <h2 className="panel__title" id="assistant-title">
-        2. Ask in your own words (optional)
-      </h2>
-      <p className="lede">
-        Describe the build in one sentence. Your own provider turns it into a
-        proposed request that you review and confirm; the deterministic search
-        below still checks every part, price and compatibility rule.
-      </p>
-
-      {noKey ? (
-        <div className="diagnostic-block diagnostic-block--unknown">
-          <h3>No key configured</h3>
-          <p>
-            The assistant needs your own provider key and is switched off until you
-            enter one. Everything on this page — budget, constraints, generate,
-            compare and export — works without it. Use{" "}
-            <strong>Continue without AI</strong> below to go straight to the form.
-          </p>
-        </div>
-      ) : null}
-
-      <div className="field-grid">
-        <div className="field">
-          <label htmlFor="assistant-key">Provider key</label>
-          <input
-            id="assistant-key"
-            type="password"
-            autoComplete="off"
-            spellCheck={false}
-            value={key}
-            disabled={busy}
-            aria-describedby="assistant-key-hint"
-            onChange={(event) => setKey(event.target.value)}
-          />
-          <p className="field__hint" id="assistant-key-hint">
-            Kept in this tab for this session only. Never stored, logged, exported
-            or shown again.
-          </p>
-        </div>
-        <div className="field">
-          <label htmlFor="assistant-base-url">Provider base URL</label>
-          <input
-            id="assistant-base-url"
-            inputMode="url"
-            spellCheck={false}
-            placeholder="https://provider.example/v1"
-            value={baseUrl}
-            disabled={busy}
-            aria-describedby="assistant-base-url-hint"
-            onChange={(event) => setBaseUrl(event.target.value)}
-          />
-          <p className="field__hint" id="assistant-base-url-hint">
-            HTTPS, or plain HTTP only for a loopback model such as
-            http://127.0.0.1:11434/v1. Redirects are not followed.
-          </p>
-        </div>
-        <div className="field">
-          <label htmlFor="assistant-model">Model name</label>
-          <input
-            id="assistant-model"
-            spellCheck={false}
-            value={model}
-            disabled={busy}
-            onChange={(event) => setModel(event.target.value)}
-          />
-          <p className="field__hint">Whatever your provider calls the model.</p>
-        </div>
-      </div>
-
-      <div className="assistant-disclosure">
-        <h3>What leaves this machine</h3>
-        <p>
-          Your sentence, the snapshot currency ({snapshot.currency}) and the allowed
-          use-case names go to the provider URL you typed. Your inventory is{" "}
-          <strong>not</strong> sent unless you include it below.
+    <details className="panel assistant" aria-labelledby="assistant-title">
+      <summary className="assistant__summary">
+        <h2 className="panel__title" id="assistant-title">
+          2. Ask in your own words (optional)
+        </h2>
+      </summary>
+      <div className="assistant__body">
+        <p className="lede">
+          Describe the build in one sentence. Your own provider turns it into a
+          proposed request that you review and confirm; the deterministic search
+          below still checks every part, price and compatibility rule.
         </p>
-        <label className="choice" htmlFor="assistant-include-summary">
+
+        {noKey ? (
+          <div className="diagnostic-block diagnostic-block--unknown">
+            <h3>No key configured</h3>
+            <p>
+              The assistant needs your own provider key and is switched off until you
+              enter one. Everything on this page — budget, constraints, generate,
+              compare and export — works without it. Use{" "}
+              <strong>Continue without AI</strong> below to go straight to the form.
+            </p>
+          </div>
+        ) : null}
+
+        {/* A form owner keeps the browser from warning that the password field is
+            outside a form. It never submits: the interpret action is a button. */}
+        <form
+          className="assistant-transport"
+          onSubmit={(event) => event.preventDefault()}
+        >
+          <div className="field-grid">
+            <div className="field">
+              <label htmlFor="assistant-key">Provider key</label>
+              <input
+                id="assistant-key"
+                type="password"
+                autoComplete="off"
+                spellCheck={false}
+                value={key}
+                disabled={busy}
+                aria-describedby="assistant-key-hint"
+                onChange={(event) => setKey(event.target.value)}
+              />
+              <p className="field__hint" id="assistant-key-hint">
+                Kept in this tab for this session only. Never stored, logged, exported
+                or shown again.
+              </p>
+            </div>
+            <div className="field">
+              <label htmlFor="assistant-base-url">Provider base URL</label>
+              <input
+                id="assistant-base-url"
+                inputMode="url"
+                spellCheck={false}
+                placeholder="https://provider.example/v1"
+                value={baseUrl}
+                disabled={busy}
+                aria-describedby="assistant-base-url-hint"
+                onChange={(event) => setBaseUrl(event.target.value)}
+              />
+              <p className="field__hint" id="assistant-base-url-hint">
+                HTTPS, or plain HTTP only for a loopback model such as
+                http://127.0.0.1:11434/v1. Redirects are not followed.
+              </p>
+            </div>
+            <div className="field">
+              <label htmlFor="assistant-model">Model name</label>
+              <input
+                id="assistant-model"
+                spellCheck={false}
+                value={model}
+                disabled={busy}
+                onChange={(event) => setModel(event.target.value)}
+              />
+              <p className="field__hint">Whatever your provider calls the model.</p>
+            </div>
+          </div>
+        </form>
+
+        <div className="assistant-disclosure">
+          <h3>What leaves this machine</h3>
+          <p>
+            Your sentence, the snapshot currency ({snapshot.currency}) and the allowed
+            use-case names go to the provider URL you typed. Your inventory is{" "}
+            <strong>not</strong> sent unless you include it below.
+          </p>
+          <label className="choice" htmlFor="assistant-include-summary">
+            <input
+              type="checkbox"
+              id="assistant-include-summary"
+              checked={includeSummary}
+              disabled={busy}
+              onChange={(event) => setIncludeSummary(event.target.checked)}
+            />
+            <span>
+              Include a part list: at most 50 records, only SKU, category, model, price
+              and quantity.
+            </span>
+          </label>
+          <p className="small muted">
+            Your key is used for this request only. It is never saved, never written to
+            a log or an export, and never sent anywhere except the URL above.
+          </p>
+        </div>
+
+        <div className="field">
+          <label htmlFor="assistant-sentence">Your sentence</label>
+          <textarea
+            id="assistant-sentence"
+            rows={3}
+            maxLength={8192}
+            value={sentence}
+            disabled={busy}
+            placeholder="A $1200 gaming build from my stock, keep the board I already have."
+            onChange={(event) => {
+              setSentence(event.target.value);
+              setConfirmed(false);
+            }}
+          />
+        </div>
+
+        <div className="choice">
           <input
             type="checkbox"
-            id="assistant-include-summary"
-            checked={includeSummary}
+            id="assistant-consent"
+            checked={consent}
             disabled={busy}
-            onChange={(event) => setIncludeSummary(event.target.checked)}
+            onChange={(event) => setConsent(event.target.checked)}
           />
-          <span>
-            Include a part list: at most 50 records, only SKU, category, model, price
-            and quantity.
-          </span>
-        </label>
-        <p className="small muted">
-          Your key is used for this request only. It is never saved, never written to
-          a log or an export, and never sent anywhere except the URL above.
+          <label htmlFor="assistant-consent">
+            I understand this sends my sentence, the fields above and my key to the
+            provider URL I entered.
+          </label>
+        </div>
+
+        <div className="button-row">
+          <button
+            type="button"
+            disabled={busy || missing !== ""}
+            aria-describedby="assistant-parse-hint"
+            onClick={() => void parse()}
+          >
+            {phase === "parsing" ? "Interpreting…" : "Interpret sentence"}
+          </button>
+          <button type="button" className="button--secondary" onClick={onSkip}>
+            Continue without AI
+          </button>
+        </div>
+        <p className="field__hint" id="assistant-parse-hint" aria-live="polite">
+          {missing ||
+            "Interpretation proposes fields only; it never runs the search or writes a price."}
         </p>
-      </div>
-
-      <div className="field">
-        <label htmlFor="assistant-sentence">Your sentence</label>
-        <textarea
-          id="assistant-sentence"
-          rows={3}
-          maxLength={8192}
-          value={sentence}
-          disabled={busy}
-          placeholder="A $1200 gaming build from my stock, keep the board I already have."
-          onChange={(event) => {
-            setSentence(event.target.value);
-            setConfirmed(false);
-          }}
-        />
-      </div>
-
-      <div className="choice">
-        <input
-          type="checkbox"
-          id="assistant-consent"
-          checked={consent}
-          disabled={busy}
-          onChange={(event) => setConsent(event.target.checked)}
-        />
-        <label htmlFor="assistant-consent">
-          I understand this sends my sentence, the fields above and my key to the
-          provider URL I entered.
-        </label>
-      </div>
-
-      <div className="button-row">
-        <button
-          type="button"
-          disabled={busy || missing !== ""}
-          aria-describedby="assistant-parse-hint"
-          onClick={() => void parse()}
-        >
-          {phase === "parsing" ? "Interpreting…" : "Interpret sentence"}
-        </button>
-        <button type="button" className="button--secondary" onClick={onSkip}>
-          Continue without AI
-        </button>
-      </div>
-      <p className="field__hint" id="assistant-parse-hint" aria-live="polite">
-        {missing ||
-          "Interpretation proposes fields only; it never runs the search or writes a price."}
-      </p>
 
       {problem ? (
         <div className="alert" role="alert" tabIndex={-1} ref={errorRef}>
@@ -433,7 +444,7 @@ export function AssistantPanel({ snapshot, disabled, onApply, onSkip, announce }
             {response.promptVersion}. Sent: your sentence, currency, allowed use
             cases
             {response.sent.inventoryRecords > 0
-              ? ` and ${response.sent.inventoryRecords} inventory record(s) limited to ${response.sent.inventoryFields.join(", ")}.`
+              ? ` and ${plural(response.sent.inventoryRecords, "inventory record")} limited to ${response.sent.inventoryFields.join(", ")}.`
               : "; no inventory record."}
           </p>
 
@@ -556,6 +567,7 @@ export function AssistantPanel({ snapshot, disabled, onApply, onSkip, announce }
           </p>
         </div>
       ) : null}
-    </section>
+      </div>
+    </details>
   );
 }

@@ -199,6 +199,23 @@ number the engine produces.
 budget, disabled Generate, collapsed panel and plural forms; a11y 100;
 captures.
 
+**Delivered 2026-11-01.** `/recommend` is a named-area grid
+(`constraints | options | verdict`) capped at 88 rem at ≥ 1100 px and one column
+below, with the same source order at every width. Each option is a spec module
+with a decorative caps label repeated by its heading, a symbol + word + border
+chip and monospaced tabular money, stock and score rows. The verdict rail carries
+the status, budget delta, stock units, score, rule matrix, the exact
+`Gaming requires a discrete graphics card` heading and the no-padding sentence,
+plus the labelled counter `2 valid candidates → 1 distinct build`. The assistant
+is a closed native `<details>` whose credential fields sit in a non-submitting
+form (the Chrome password-field warning is gone), and `Continue without AI` still
+focuses the budget. The budget accepts `1,800`, `1 800` and `1,800.50` and
+refuses ambiguous forms with `budget_invalid`; Generate is disabled until the
+field parses. A shared `plural` helper replaces page-composed `(s)`, and money is
+pinned to `US$1,672.90`. Evidence:
+`docs/evidence/workbench-recommendation-browser.md` and the `workbench-*`
+captures. Engine prose and every e2e-asserted string are unchanged.
+
 ---
 
 ## Package 3 — `verdict-console`

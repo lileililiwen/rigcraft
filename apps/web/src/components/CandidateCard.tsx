@@ -101,14 +101,18 @@ export function CandidateCard({
 }) {
   const headingId = `candidate-${candidate.rank}-title`;
   return (
-    <article className="candidate" aria-labelledby={headingId}>
+    <article className="candidate spec-module" aria-labelledby={headingId}>
+      {/* Decorative caps label; the heading below carries the same identity. */}
+      <p className="caps-label" aria-hidden="true">
+        Build spec · option {candidate.rank}
+      </p>
       <div className="candidate__head">
         <h3 id={headingId}>
           <span className="candidate__rank">{candidate.rank}.</span> {candidate.label}
         </h3>
         <StatusBadge candidate={candidate} />
       </div>
-      <dl className="summary-grid result-summary">
+      <dl className="summary-grid spec-rows">
         <div>
           <dt>Total</dt>
           <dd>{formatMoney(candidate.totalMinor, currency)}</dd>

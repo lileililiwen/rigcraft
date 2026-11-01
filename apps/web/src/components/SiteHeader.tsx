@@ -1,6 +1,6 @@
 export type CurrentPage = "inventory" | "catalog" | "compatibility" | "recommend" | "diagnose";
 
-export function SiteHeader({ current }: { current: CurrentPage }) {
+export function SiteHeader({ current, wide = false }: { current: CurrentPage; wide?: boolean }) {
   return (
     <>
       <a className="skip-link" href="#main">
@@ -15,7 +15,7 @@ export function SiteHeader({ current }: { current: CurrentPage }) {
                 : "Skip to inventory"}
       </a>
       <header className="site-header">
-        <div className="site-header__inner">
+        <div className={`site-header__inner${wide ? " site-header__inner--wide" : ""}`}>
           <a className="brand" href="/inventory">
             RigCraft
           </a>

@@ -12,14 +12,30 @@ export const USE_CASES = [
   { value: "creation", label: "Creation and heavy workloads" },
 ];
 
-/** Parse a human budget such as 1200 or 1299.50 into integer minor units. */
+/**
+ * One pluralisation helper for every count the page composes. It never produces
+ * an `(s)` pseudo-plural, so a count of one and a count of many read correctly.
+ */
+export function plural(count: number, singular: string, pluralForm?: string): string {
+  const word = count === 1 ? singular : (pluralForm ?? `${singular}s`);
+  return `${count} ${word}`;
+}
+
+/**
+ * Parse a human budget into integer minor units (1200 → 120000, 1299.50 →
+ * 129950). A comma or a single space groups thousands only in an unambiguous
+ * layout: one to three digits, then groups of exactly three. `1.800,50` is a
+ * decimal-comma layout this app does not accept, and guessing it would move the
+ * budget by three orders of magnitude, so it is refused.
+ */
 export function parseBudgetMinor(value: string): number | null {
   const trimmed = value.trim();
-  if (!/^\d+(\.\d{1,2})?$/.test(trimmed)) {
+  const match = /^(\d{1,3}(?:[, ]\d{3})+|\d+)(?:\.(\d{1,2}))?$/.exec(trimmed);
+  if (!match) {
     return null;
   }
-  const [whole, fraction = ""] = trimmed.split(".");
-  const minor = Number(whole) * 100 + Number(fraction.padEnd(2, "0"));
+  const whole = Number(match[1].replace(/[, ]/g, ""));
+  const minor = whole * 100 + Number((match[2] ?? "").padEnd(2, "0"));
   if (!Number.isSafeInteger(minor) || minor <= 0) {
     return null;
   }
@@ -35,9 +51,7 @@ export function formatWeight(value: number): string {
 }
 
 export function searchSummary(search: SearchStats): string {
-  const base = `${search.leavesEvaluated} combination${
-    search.leavesEvaluated === 1 ? "" : "s"
-  } checked · limit ${search.limit} nodes`;
+  const base = `${plural(search.leavesEvaluated, "combination")} checked · limit ${search.limit} nodes`;
   return search.limited
     ? `${base} · limit reached, results are best effort and not proven optimal`
     : base;

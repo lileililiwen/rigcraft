@@ -4,6 +4,7 @@ import {
   bindingLabel,
   formatWeight,
   parseBudgetMinor,
+  plural,
   requestSignature,
   searchSummary,
 } from "./recommend";
@@ -26,6 +27,38 @@ describe("recommendation helpers", () => {
     expect(parseBudgetMinor("-5")).toBeNull();
     expect(parseBudgetMinor("1.234")).toBeNull();
     expect(parseBudgetMinor("")).toBeNull();
+  });
+
+  it("accepts comma and space grouping only when the layout is unambiguous", () => {
+    expect(parseBudgetMinor("1,800")).toBe(180000);
+    expect(parseBudgetMinor("1 800")).toBe(180000);
+    expect(parseBudgetMinor("1,800.50")).toBe(180050);
+    expect(parseBudgetMinor("1 800.5")).toBe(180050);
+    expect(parseBudgetMinor("1,234,567.89")).toBe(123456789);
+    expect(parseBudgetMinor("12,345")).toBe(1234500);
+  });
+
+  it("refuses an ambiguous or malformed grouping instead of guessing", () => {
+    expect(parseBudgetMinor("1.800,50")).toBeNull();
+    expect(parseBudgetMinor("1,80")).toBeNull();
+    expect(parseBudgetMinor("1,8000")).toBeNull();
+    expect(parseBudgetMinor("1 80")).toBeNull();
+    expect(parseBudgetMinor("1,800.")).toBeNull();
+    expect(parseBudgetMinor("1,800.123")).toBeNull();
+    expect(parseBudgetMinor("1.234")).toBeNull();
+    expect(parseBudgetMinor("$1,800")).toBeNull();
+    expect(parseBudgetMinor("0,000")).toBeNull();
+  });
+
+  it("renders one plural form for one and another for many", () => {
+    expect(plural(0, "unit")).toBe("0 units");
+    expect(plural(1, "unit")).toBe("1 unit");
+    expect(plural(2, "unit")).toBe("2 units");
+    expect(plural(1, "materially different build")).toBe("1 materially different build");
+    expect(plural(3, "materially different build")).toBe(
+      "3 materially different builds",
+    );
+    expect(plural(2, "person", "people")).toBe("2 people");
   });
 
   it("formats weights as whole percentages", () => {

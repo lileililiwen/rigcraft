@@ -4,7 +4,7 @@
   "runtime": "forge",
   "profile": "full",
   "runtime_version": "forge 0.1.1",
-  "revision": "3f2170c275d5585a3113d0a1c3b728f00791a349",
+  "revision": "8dc2dc042988db2012df07c126fe3b1d58c1a0e2",
   "manifest_digest": "sha256:88b43c9d70487a99",
   "rule_pack_version": "workspace-governance@1",
   "aggregate": "passed",
@@ -12,7 +12,7 @@
     {
       "id": "build",
       "state": "pass",
-      "note": "diagnostic: Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.06s"
+      "note": "diagnostic: Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.13s"
     },
     {
       "id": "governance-quality",
@@ -46,14 +46,14 @@
     {
       "id": "tests",
       "state": "pass",
-      "note": "diagnostic: running 59 tests\ntest ai::tests::a_missing_key_names_the_deterministic_flow ... ok\ntest ai::tests::provider_urls_are_https_or_loopback_http ... ok\ntest catalog::validate::tests::unknown_format_and_version_are_refused ... ok\ntest ai::tests::an_oversized_or_empty_sentence_is_refused ... ok…[truncated]"
+      "note": "diagnostic: running 59 tests\ntest ai::tests::a_secret_key_never_prints_its_value ... ok\ntest ai::tests::a_missing_key_names_the_deterministic_flow ... ok\ntest ai::tests::an_oversized_or_empty_sentence_is_refused ... ok\ntest ai::tests::provider_urls_are_https_or_loopback_http ... ok\ntest ai::tests::a…[truncated]"
     },
     {
       "id": "ui-conformance",
       "state": "pass",
-      "note": "diagnostic: note rigcraft: content rules read 25 of 58 UI file(s): only files inside the declared ui.scope.roots are opened\n  note rigcraft: token source declares 17 colour literal(s); the comparison runs through dotnet-platform-libs/ui/scripts/lib/token-model.mjs, not a Python copy\nPASS: rigcraft u…[truncated]"
+      "note": "diagnostic: note rigcraft: content rules read 27 of 63 UI file(s): only files inside the declared ui.scope.roots are opened\n  note rigcraft: token source declares 17 colour literal(s); the comparison runs through dotnet-platform-libs/ui/scripts/lib/token-model.mjs, not a Python copy\nPASS: rigcraft u…[truncated]"
     }
   ],
-  "observed_at": "2026-11-01T02:16:29Z",
+  "observed_at": "2026-11-01T02:55:16Z",
   "dry_run": false
 }
