@@ -1,0 +1,31 @@
+# Everything the image does not need stays out of the build context. The
+# Dockerfile copies only the manifests, `src/`, `apps/web/`, `LICENSE` and
+# `NOTICE`, so nothing else is reachable from a COPY.
+.git
+.github
+.gitignore
+target
+node_modules
+apps/web/node_modules
+apps/web/dist
+test-results
+playwright-report
+e2e
+docs/assets
+.forge
+openspec
+.standard
+.vscode
+.idea
+*.log
+
+# Secret-like files: a credential must never enter a build context.
+.env
+.env.*
+*.pem
+*.key
+*.p12
+*.pfx
+id_rsa*
+id_ed25519*
+secrets*

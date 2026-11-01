@@ -206,3 +206,12 @@ No capture is added. Compression, cache policy and security headers change
 response headers rather than pixels, so the route captures above remain the
 visual record. The measurable evidence is the `curl -i` and byte matrix in
 `docs/evidence/delivery-hardening-browser.md`, not a screenshot.
+
+### Compose packaging (2026-11-01)
+
+| Capture | Route | Viewport | Condition |
+| --- | --- | --- | --- |
+| `compose-inventory-desktop.png` | `/inventory` | 1440×900 | The built image served by the `rigcraft-evidence` Compose project, after the shipped sample was imported into the `/data` volume |
+
+Details: `docs/evidence/compose-packaging.md`. The page is the same build; the
+capture proves the container serves the UI, not a new visual state.

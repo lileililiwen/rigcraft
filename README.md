@@ -61,7 +61,7 @@ cargo fmt --all -- --check
 cargo clippy --all-targets --all-features -- -D warnings
 cargo test
 npm run build                  # also fails when a built JS or CSS asset exceeds its byte ceiling
-npm run check                  # measured contrast + converter/budget tests + bundle budget + TypeScript
+npm run check                  # measured contrast, converter/budget/compose tests, bundle budget, compose topology, TypeScript
 npm test
 npm run test:e2e
 ```
@@ -69,6 +69,20 @@ npm run test:e2e
 Open `http://127.0.0.1:8080/inventory`, `http://127.0.0.1:8080/catalog`,
 `http://127.0.0.1:8080/builds/check`, `http://127.0.0.1:8080/recommend` or
 `http://127.0.0.1:8080/diagnose` after building the Web app.
+
+Container (Docker Engine with the Compose v2 plugin):
+
+```sh
+docker compose up -d --build      # builds the image, serves 127.0.0.1:8080
+docker compose ps                 # one service, health status
+docker compose down               # removes the container, keeps the data volume
+```
+
+The service has no authentication, so the default publish is loopback only. The
+SQLite inventory lives in the `rigcraft-data` volume at `/data`, and that volume
+is the backup unit; `docker compose down -v` deletes it. The image runs as uid
+10001, read-only with all capabilities dropped, and contains no build toolchain.
+See [`docs/deployment.md`](docs/deployment.md).
 
 ## Data and privacy
 
@@ -162,6 +176,8 @@ Referencing a kit package never grants the capability it implements.
 - `docs/evidence/catalog-ingestion-browser.md` — catalog upload and refusal, the registry with a licence, search and a catalog-enriched import with committed provenance.
 - `docs/evidence/verdict-console-browser.md` — the rule matrix, single coverage sentence, grammatical gap sentences, exact-match token noise and the verdict-console Lighthouse numbers.
 - `docs/evidence/delivery-hardening-browser.md` — the real `curl` header and byte matrix with and without compression, the CSP/browser verdict and the measured `/recommend` traces.
+- `docs/evidence/compose-packaging.md` — the container build, the running Compose project, `/api/health` and `/inventory` probes, the import/restart persistence proof, uid 10001, the absent toolchain, the loopback publish and the image size.
+- `docs/deployment.md` — the Compose service, environment, the volume as the backup unit, the loopback default, the container posture, upgrade/rollback and the deployment non-goals.
 - `docs/delivery-headers.md` — the compression, cache and security header contract, with each CSP allowance justified.
 - `docs/evidence/ui-foundation-browser.md` — dark token layer, shell-chrome fixes, focus ring, caption width and icon evidence, with the Lighthouse numbers.
 - `docs/evidence/token-contrast.json` — measured WCAG 2.2 AA contrast for the effective dark theme (40 pairs, both token source hashes).

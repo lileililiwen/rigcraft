@@ -19,7 +19,11 @@ release:
     - kind: doctor
     - kind: test
 deployment:
-  artifact: Dockerfile
+  artifact: compose.yaml
   targets:
     - name: local
-      kind: local
+      kind: docker-compose
+  health:
+    kind: http
+    url: http://127.0.0.1:8080/api/health
+    interval_seconds: 30

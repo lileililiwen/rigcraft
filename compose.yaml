@@ -1,0 +1,52 @@
+# One service, one stateful volume.
+#
+# The named volume `rigcraft-data` mounted at `/data` is the backup unit:
+# `inventory.sqlite3` and the pre-restore copies live there and nowhere else.
+# Back the volume up, not the container.
+services:
+  rigcraft:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: rigcraft:local
+    ports:
+      # Loopback only. This service has no authentication, so publishing on
+      # every interface would hand private inventory to the network. Change
+      # the host side deliberately (for example "8080:8080") only behind your
+      # own authenticated proxy.
+      - "127.0.0.1:${RIGCRAFT_PORT:-8080}:8080"
+    environment:
+      RIGCRAFT_ADDR: 0.0.0.0:8080
+      RIGCRAFT_DATA_DIR: /data
+      RIGCRAFT_WEB_DIR: /app/web
+    volumes:
+      - rigcraft-data:/data
+    restart: unless-stopped
+    init: true
+    stop_grace_period: 10s
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "curl",
+          "--fail",
+          "--silent",
+          "--show-error",
+          "--output",
+          "/dev/null",
+          "http://127.0.0.1:8080/api/health",
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+volumes:
+  rigcraft-data:
