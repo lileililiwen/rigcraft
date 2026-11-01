@@ -9,10 +9,10 @@ This package is the first product slice of `requirement.md` (REQ-D01–D06). It 
 | Target | Command | Notes |
 | --- | --- | --- |
 | Rust API | `cargo run` | Binds `127.0.0.1:8080` by default; override with `RIGCRAFT_ADDR`. |
-| Web build | `npm run build` | Builds `apps/web` to `apps/web/dist`, served by the Rust process. |
+| Web build | `npm run build` | Builds `apps/web` to `apps/web/dist`, served by the Rust process, and enforces the bundle byte budget. |
 | Web dev | `npm run dev --workspace @rigcraft/web` | Vite proxies `/api` to `127.0.0.1:8080`. |
 | Tests | `cargo test`, `npm test` | Rust unit/API tests and Vitest component tests. |
-| Verification | `./verify-local.sh` | Format, clippy, Cargo tests, Web check/typecheck/tests. |
+| Verification | `./verify-local.sh` | Format, clippy, Cargo tests, Web build, check (contrast, converter and budget tests, byte budget, TypeScript), tests. |
 
 Inventory data lives outside the repository:
 

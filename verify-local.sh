@@ -65,10 +65,13 @@ if [ "$has_node" -eq 1 ]; then
   echo "=== Node/TypeScript ==="
   if [ -f package-lock.json ]; then npm ci >/dev/null 2>&1 && pass "npm ci" || fail "npm ci"; else npm install >/dev/null 2>&1 && pass "npm install" || fail "npm install"; fi
   has_script() { node -e "process.exit((require('./package.json').scripts&&require('./package.json').scripts['$1'])?0:1)" 2>/dev/null; }
+  # Build before check: `npm run check` reads the built bundle for its byte
+  # budget, so a fresh checkout must have `apps/web/dist` by then. `npm run
+  # build` also enforces the budget itself; neither stage can pass without it.
+  has_script build    && ( npm run build  >/dev/null 2>&1 && pass "npm run build"  || fail "npm run build" )
   has_script check    && ( npm run check    >/dev/null 2>&1 && pass "npm run check"    || fail "npm run check" )
   has_script typecheck && ( npm run typecheck >/dev/null 2>&1 && pass "npm run typecheck" || fail "npm run typecheck" )
   has_script test     && ( npm test >/dev/null 2>&1 && pass "npm test" || fail "npm test" )
-  has_script build    && ( npm run build  >/dev/null 2>&1 && pass "npm run build"  || fail "npm run build" )
   # The browser suite needs the service binary and the built bundle. Its output is
   # held in memory and printed only on failure, so a red run says what broke.
   if has_script test:e2e; then

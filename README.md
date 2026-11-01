@@ -14,8 +14,8 @@ Rust service (Axum + SQLite) and React/TypeScript Web app (Vite).
 cargo run                      # serves the API and apps/web/dist on 127.0.0.1:8080
 RIGCRAFT_ADDR=127.0.0.1:8787 cargo run   # use another port when 8080 is taken
 npm install
-npm run build                  # builds the Web app
-./verify-local.sh              # format, clippy, Cargo tests, Web checks and tests, browser suite
+npm run build                  # builds the Web app and enforces its byte budget
+./verify-local.sh              # format, clippy, Cargo tests, Web build/checks and tests, browser suite
 ```
 
 `RIGCRAFT_ADDR` overrides the loopback bind address; use it when port 8080 is
@@ -43,9 +43,9 @@ Individual checks:
 cargo fmt --all -- --check
 cargo clippy --all-targets --all-features -- -D warnings
 cargo test
-npm run check                  # measured contrast + converter tests + TypeScript
+npm run build                  # also fails when a built JS or CSS asset exceeds its byte ceiling
+npm run check                  # measured contrast + converter/budget tests + bundle budget + TypeScript
 npm test
-npm run build
 npm run test:e2e
 ```
 

@@ -6,8 +6,8 @@
     "apps/web"
   ],
   "scripts": {
-    "build": "npm --workspace @rigcraft/web run build",
-    "check": "node scripts/check-contrast.mjs && node --test scripts/opendb-to-csv.test.mjs scripts/opendb-to-catalog.test.mjs && npm --workspace @rigcraft/web run typecheck",
+    "build": "npm --workspace @rigcraft/web run build && node scripts/check-bundle-size.mjs",
+    "check": "node scripts/check-contrast.mjs && node --test scripts/opendb-to-csv.test.mjs scripts/opendb-to-catalog.test.mjs scripts/check-bundle-size.test.mjs && node scripts/check-bundle-size.mjs && npm --workspace @rigcraft/web run typecheck",
     "contrast": "node scripts/check-contrast.mjs",
     "test": "npm --workspace @rigcraft/web test",
     "test:e2e": "node e2e/run.mjs",

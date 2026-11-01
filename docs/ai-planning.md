@@ -172,7 +172,7 @@ cargo clippy --all-targets --all-features -- -D warnings
 cargo test                       # includes tests/ai_planning_api.rs,
                                  # tests/ai_provider_transport.rs and
                                  # tests/ai_secret_hygiene.rs
-npm run check && npm test && npm run build
+npm run build && npm run check && npm test
 ./verify-local.sh
 ```
 

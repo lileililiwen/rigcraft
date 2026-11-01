@@ -12,7 +12,7 @@
 
 - Stack: Rust 2021 Axum + SQLite service (`src/`), React/TypeScript Vite UI (`apps/web/`); dependencies in `Cargo.toml` and `apps/web/package.json`.
 - Toolchain: Cargo and Node/npm; `cargo build`, `cargo test`, `npm run build`, `npm test`, `npm run test:e2e`.
-- Verify: `cargo test` (`.project.json`) plus `npm run check`, `npm test`, `npm run build`, `npm run test:e2e`; `./verify-local.sh` rehearses all of them. The browser suite drives real Chrome against `target/debug/rigcraft` and `apps/web/dist`, so both builds come first.
+- Verify: `cargo test` (`.project.json`) plus `npm run build` (which also enforces the bundle byte budget), `npm run check`, `npm test`, `npm run test:e2e`; `./verify-local.sh` rehearses all of them in that order. The browser suite drives real Chrome against `target/debug/rigcraft` and `apps/web/dist`, so both builds come first.
 - Layout: `src/` domain, API and SQLite store; `tests/` API tests and fixtures; `apps/web/` UI and Vitest tests, the app-owned brand tokens in `src/styles/brand.css` and the public icons in `public/`; `e2e/` Playwright journeys (including `shell.spec.ts`) with `playwright.config.ts` at the root; `scripts/` checks, contrast measurement, the OpenDB converters and the loopback provider stub; `.standard/` pinned Forge pack; `docs/` evidence, captures, the data-source assessment and the service contracts (including catalog ingestion).
 
 Any directory, tool, or command change updates this block in the same commit —
