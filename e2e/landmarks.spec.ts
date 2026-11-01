@@ -75,6 +75,11 @@ test("the budget, assistant and parts forms are named once a snapshot loads", as
 
 test("the skip link still lands in the named main region", async ({ page }) => {
   await page.goto("/inventory");
+  // Wait for the SPA to render and make this the frontmost target, so the first
+  // key event cannot be delivered to the page that is still closing. The
+  // assertion itself is unchanged: no retry, no looser condition.
+  await expect(page.getByRole("heading", { name: "Inventory", level: 1 })).toBeVisible();
+  await page.bringToFront();
 
   await page.keyboard.press("Tab");
   const skip = page.getByRole("link", { name: "Skip to inventory" });
