@@ -65,8 +65,10 @@ Compose artifact and an HTTP health probe. Packaging is not a release decision:
 ## Next action
 
 The gap-closure program is complete; `openspec list` reports no active change.
-The only remaining item from `docs/gap-closure.md` is the human screen-reader
-pass, which no package claims: `docs/evidence/assistive-technology-review.md`
+The service is packaged as one Compose container (`compose.yaml` + `Dockerfile`,
+contract in `docs/deployment.md`, Forge artifact kind `docker-compose`), but
+deployment remains disabled by the release decision. The only remaining item from
+`docs/gap-closure.md` is the human screen-reader pass, which no package claims: `docs/evidence/assistive-technology-review.md`
 records the accessibility tree, landmarks, heading order, focus order, live
 regions and role/name gaps for all six routes (with the fixed names attributed to
 `assistive-tech-gaps`), refuses the screen-reader claim, and hands over the exact
@@ -76,6 +78,22 @@ programme is open.
 A future product change starts a new OpenSpec change with its own package boundary, usable Web flow and browser/accessibility evidence; select it in `HANDOFF.md` before work. Deployment stays disabled until a release decision. The data-source position is recorded: code MIT, shipped sample CC BY 4.0, BuildCores OpenDB operator-fetched under CC BY-NC-SA 4.0 and never vendored. An operator-supplied catalog is never redistributed; `docs/catalog-ingestion.md` is its contract. `docs/delivery-headers.md` is the header contract for any future route: a new response inherits the policy from the router layer, and a new inline script or third-party origin needs the CSP re-measured and the Playwright journey re-run.
 
 The AI layer remains an interpreter only. It must stay behind `ProviderAdapter` with the key in request scope, must keep proposing only `budgetMinor`, `currency`, `useCase`, `inventoryOnly`, `lockedSkus` and `excludedSkus`, and must never persist an AI request or reply. `docs/ai-planning.md` is the contract; `tests/ai_secret_hygiene.rs` fails the suite if a credential could reach a log or browser storage.
+
+## Skip-link test stabilisation evidence (2026-11-01, commit `c26e261`)
+
+- `./verify-local.sh` failed once in a 62-test run on `e2e/landmarks.spec.ts`
+  “the first Tab stop is the skip link” (`Received: inactive`), while the same
+  test passed 32 isolated runs and two full runs. The locator resolved to the real
+  skip link and the application does not move focus on `/inventory` load.
+- The test setup now waits for the rendered `h1` and calls `page.bringToFront()`
+  before the first Tab; the assertions are unchanged (no retry, no loosened
+  matcher, no skip, no seed).
+- After: `--repeat-each=50` → **50 passed**; two full suites → **62 passed** each
+  (46.1 s, 47.5 s); `./verify-local.sh` → all local checks passed.
+- Evidence: `docs/evidence/stabilize-skip-link-test.md`. Archived as
+  `openspec/changes/archive/2026-11-01-stabilize-skip-link-test/`; the
+  `browser-regression` spec gained the deterministic-setup requirement. No
+  application file changed.
 
 ## Compose packaging evidence (2026-11-01, commit `d4baab0`)
 
