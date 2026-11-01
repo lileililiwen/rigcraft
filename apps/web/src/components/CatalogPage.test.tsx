@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { CatalogDataset, CatalogPartDetail, CatalogReport } from "../types";
@@ -219,6 +219,55 @@ describe("catalog page", () => {
     );
     const deletion = calls.find((call) => call.method === "DELETE");
     expect(deletion?.url).toContain("confirm=remove");
+  });
+
+  it("shows registry counts and refuses to search an empty query", async () => {
+    const fetchMock = vi.fn((input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url === "/api/catalog/datasets") {
+        return response([dataset]);
+      }
+      return response({ error: { code: "unexpected", message: url } }, 500);
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const user = userEvent.setup();
+    render(<CatalogPage />);
+    expect(await screen.findByText(dataset.name)).toBeInTheDocument();
+
+    const registry = screen
+      .getByRole("heading", { name: "Datasets" })
+      .closest("section");
+    expect(registry as HTMLElement).toHaveTextContent("Datasets1");
+    expect(registry as HTMLElement).toHaveTextContent("Parts3");
+    expect(registry as HTMLElement).toHaveTextContent("Active1");
+    for (const column of [
+      "Licence",
+      "Version",
+      "Parts",
+      "Categories",
+      "Active",
+      "Actions",
+    ]) {
+      expect(
+        within(registry as HTMLElement).getByRole("columnheader", { name: column }),
+      ).toBeInTheDocument();
+    }
+
+    const search = screen.getByRole("button", { name: "Search catalog" });
+    expect(search).toBeDisabled();
+    expect(search).toHaveAttribute("aria-describedby", "catalog-search-hint");
+    expect(
+      screen.getByText("Enter a SKU, MPN, model or word to enable search."),
+    ).toBeInTheDocument();
+
+    await user.type(screen.getByLabelText("SKU, MPN, model or word"), "S");
+    expect(search).toBeEnabled();
+    expect(
+      screen.getByText(
+        "Only active datasets are searched; an exact SKU or MPN ranks first.",
+      ),
+    ).toBeInTheDocument();
   });
 
   it("searches the active catalog and opens a stored part with provenance", async () => {

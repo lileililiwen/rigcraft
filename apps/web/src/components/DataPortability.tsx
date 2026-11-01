@@ -13,6 +13,7 @@ import {
   restoreBackup,
 } from "../api";
 import { formatTimestamp } from "../inventory";
+import { plural } from "../plural";
 
 interface DataPortabilityProps {
   snapshot: Snapshot | null;
@@ -148,7 +149,7 @@ export function DataPortability({
       const result = await inspectBackup(file);
       setInspection(result);
       setNotice(
-        `Inspected ${result.fileName}: integrity ${result.integrity}, schema ${result.counts.schemaVersion}, ${result.counts.recordCount} records. Nothing has been replaced.`,
+        `Inspected ${result.fileName}: integrity ${result.integrity}, schema ${result.counts.schemaVersion}, ${plural(result.counts.recordCount, "record")}. Nothing has been replaced.`,
       );
     } catch (error) {
       setProblem(describeFailure(error, "inspect"));
@@ -182,7 +183,10 @@ export function DataPortability({
         fileInput.current.value = "";
       }
       setNotice(
-        `Restored ${summary.counts.snapshotCount} snapshots and ${summary.counts.recordCount} records. The previous catalog is in the pre-restore copy.`,
+        `Restored ${plural(summary.counts.snapshotCount, "snapshot")} and ${plural(
+          summary.counts.recordCount,
+          "record",
+        )}. The previous catalog is in the pre-restore copy.`,
       );
       onRestored(summary);
     } catch (error) {
@@ -195,9 +199,14 @@ export function DataPortability({
 
   return (
     <section className="panel" aria-labelledby="portability-title">
-      <h2 className="panel__title" id="portability-title">
-        Export and backup
-      </h2>
+      <div className="panel__head">
+        <p className="caps-label" aria-hidden="true">
+          Portability
+        </p>
+        <h2 className="panel__title" id="portability-title">
+          Export and backup
+        </h2>
+      </div>
       <p className="lede">
         Take the catalog with you, or put it back. JSON is the authoritative export;
         CSV uses the import columns and is lossy. A backup is a standard SQLite file
@@ -268,8 +277,11 @@ export function DataPortability({
           </div>
           <p className="small muted">
             {snapshot
-              ? `Ready: revision ${snapshot.revision}, ${snapshot.records.length} records.`
-              : "Open or commit a snapshot first."}
+              ? `Ready: revision ${snapshot.revision}, ${plural(
+                  snapshot.records.length,
+                  "record",
+                )}.`
+              : "No snapshot is open. Choose View on a revision in Snapshot history, or commit an import."}
           </p>
         </div>
 
@@ -384,9 +396,14 @@ export function DataPortability({
               The live catalog at this service
               {history.length === 0
                 ? " currently holds no snapshots"
-                : ` currently holds ${history.length} snapshot${
-                    history.length === 1 ? "" : "s"
-                  }${newest ? `, newest revision ${newest.revision} with ${newest.recordCount} records` : ""}`}
+                : ` currently holds ${plural(history.length, "snapshot")}${
+                    newest
+                      ? `, newest revision ${newest.revision} with ${plural(
+                          newest.recordCount,
+                          "record",
+                        )}`
+                      : ""
+                  }`}
               . Replacing cannot be undone from this page; a pre-restore safety copy is
               written first and is never deleted automatically.
             </p>
@@ -448,12 +465,13 @@ export function DataPortability({
           </h3>
           <p>
             Schema {restored.sourceSchemaVersion} is now at{" "}
-            {restored.counts.schemaVersion}. {restored.counts.snapshotCount} snapshots,{" "}
+            {restored.counts.schemaVersion}.{" "}
+            {plural(restored.counts.snapshotCount, "snapshot")},{" "}
             {restored.counts.latestRevision === null
               ? "no revisions"
               : `latest revision ${restored.counts.latestRevision}`}
-            , {restored.counts.recordCount} records and {restored.counts.lotCount} lots in
-            the newest snapshot.
+            , {plural(restored.counts.recordCount, "record")} and{" "}
+            {plural(restored.counts.lotCount, "lot")} in the newest snapshot.
           </p>
           <p className="small">
             Pre-restore safety copy:{" "}

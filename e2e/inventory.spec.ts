@@ -122,5 +122,15 @@ test("the sample imports, commits revision 1 and keeps catalog facts apart from 
   await expect(entry("quantity:")).not.toContainText("Catalog");
   await expect(entry("price:")).not.toContainText("Catalog");
 
+  // Export is reachable straight after the commit, without opening history.
+  await expect(page.getByRole("button", { name: "Download CSV" })).toBeEnabled();
+  await expect(page.getByRole("button", { name: "Download JSON" })).toBeEnabled();
+  const exportDownload = page.waitForEvent("download");
+  await page.getByRole("button", { name: "Download CSV" }).click();
+  const exported = await exportDownload;
+  expect(exported.suggestedFilename()).toMatch(
+    /^rigcraft-inventory-snapshot-r1-.*\.csv$/,
+  );
+
   await expectNoHorizontalOverflow(page);
 });

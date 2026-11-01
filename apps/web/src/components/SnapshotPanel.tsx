@@ -86,9 +86,14 @@ export function SnapshotPanel({
 
   return (
     <section className="panel" aria-labelledby="snapshot-title">
-      <h2 className="panel__title" id="snapshot-title" tabIndex={-1}>
-        Committed snapshot · revision {snapshot.revision}
-      </h2>
+      <div className="panel__head">
+        <p className="caps-label" aria-hidden="true">
+          Records
+        </p>
+        <h2 className="panel__title" id="snapshot-title" tabIndex={-1}>
+          Committed snapshot · revision {snapshot.revision}
+        </h2>
+      </div>
       <p className="lede">
         The snapshot is immutable. A later correction creates a new revision and
         keeps this one readable.
@@ -144,7 +149,7 @@ export function SnapshotPanel({
           <dd>{snapshot.note ?? "—"}</dd>
         </div>
       </dl>
-      <dl className="summary-grid" style={{ marginTop: "var(--space-4)" }}>
+      <dl className="summary-grid summary-grid--spaced">
         <div>
           <dt>Records</dt>
           <dd>{snapshot.totals.recordCount}</dd>

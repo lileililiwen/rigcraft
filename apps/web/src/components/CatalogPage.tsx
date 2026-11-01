@@ -15,6 +15,7 @@ import {
   uploadCatalog,
 } from "../api";
 import { CATEGORIES, formatTimestamp } from "../inventory";
+import { plural } from "../plural";
 import { ProvenanceList, SpecList } from "./Badges";
 import { SiteHeader } from "./SiteHeader";
 
@@ -162,7 +163,7 @@ export function CatalogPage() {
       setFile(null);
       setAcknowledged(false);
       setLive(
-        `Catalog accepted: ${result.partCount} parts from ${result.dataset.name}.`,
+        `Catalog accepted: ${plural(result.partCount, "part")} from ${result.dataset.name}.`,
       );
       window.setTimeout(() => reportRef.current?.focus(), 0);
       await refreshRegistry();
@@ -224,7 +225,10 @@ export function CatalogPage() {
       setLive(
         result.total === 0
           ? "No active catalog part matched that query."
-          : `${result.total} catalog match${result.total === 1 ? "" : "es"}; showing ${result.hits.length}.`,
+          : `${plural(result.total, "catalog match", "catalog matches")}; showing ${plural(
+              result.hits.length,
+              "hit",
+            )}.`,
       );
     } catch (error) {
       setSearchResult(null);
@@ -251,6 +255,9 @@ export function CatalogPage() {
   }
 
   const removing = datasets.find((dataset) => dataset.id === pendingRemove) ?? null;
+  const registryParts = datasets.reduce((total, dataset) => total + dataset.rowCount, 0);
+  const activeDatasets = datasets.filter((dataset) => dataset.active).length;
+  const queryReady = query.trim() !== "";
 
   return (
     <>
@@ -317,9 +324,14 @@ export function CatalogPage() {
         ) : null}
 
         <section className="panel" aria-labelledby="upload-title">
-          <h2 className="panel__title" id="upload-title">
-            Upload a catalog
-          </h2>
+          <div className="panel__head">
+            <p className="caps-label" aria-hidden="true">
+              Upload
+            </p>
+            <h2 className="panel__title" id="upload-title">
+              Upload a catalog
+            </h2>
+          </div>
           <p className="small muted">
             One JSON document in the <span className="mono">rigcraft-catalog</span>{" "}
             version 1 format. The whole document is validated before anything is
@@ -375,7 +387,8 @@ export function CatalogPage() {
               </h3>
               <p>
                 <strong>{report.dataset.name}</strong> ·{" "}
-                {report.replaced ? "replaced" : "added"} · {report.partCount} parts ·{" "}
+                {report.replaced ? "replaced" : "added"} ·{" "}
+                {plural(report.partCount, "part")} ·{" "}
                 {Object.entries(report.categoryCounts)
                   .map(([key, value]) => `${value} ${key}`)
                   .join(" · ")}
@@ -402,16 +415,37 @@ export function CatalogPage() {
         </section>
 
         <section className="panel" aria-labelledby="registry-title">
-          <h2 className="panel__title" id="registry-title" tabIndex={-1} ref={registryRef}>
-            Datasets
-          </h2>
+          <div className="panel__head">
+            <p className="caps-label" aria-hidden="true">
+              Registry
+            </p>
+            <h2 className="panel__title" id="registry-title" tabIndex={-1} ref={registryRef}>
+              Datasets
+            </h2>
+          </div>
           {datasetsError ? <p className="field__error">{datasetsError}</p> : null}
+          {datasets.length > 0 ? (
+            <dl className="console-stats">
+              <div>
+                <dt>Datasets</dt>
+                <dd>{datasets.length}</dd>
+              </div>
+              <div>
+                <dt>Parts</dt>
+                <dd>{registryParts}</dd>
+              </div>
+              <div>
+                <dt>Active</dt>
+                <dd>{activeDatasets}</dd>
+              </div>
+            </dl>
+          ) : null}
           {datasets.length === 0 ? (
             <p>No dataset is stored in this instance yet.</p>
           ) : (
             <div className="table-wrap">
-              <table className="responsive-table">
-                <caption>Stored catalogs with their licence and counts</caption>
+              <table className="responsive-table catalog-table">
+                <caption>Stored catalogs with their licence, version and counts</caption>
                 <thead>
                   <tr>
                     <th scope="col">Dataset</th>
@@ -419,7 +453,7 @@ export function CatalogPage() {
                     <th scope="col">Version</th>
                     <th scope="col">Parts</th>
                     <th scope="col">Categories</th>
-                    <th scope="col">Used for matching</th>
+                    <th scope="col">Active</th>
                     <th scope="col">Actions</th>
                   </tr>
                 </thead>
@@ -428,6 +462,12 @@ export function CatalogPage() {
                     <tr key={dataset.id}>
                       <td data-label="Dataset">
                         <strong>{dataset.name}</strong>
+                        <span className="badge badge--catalog">
+                          <span className="badge__symbol" aria-hidden="true">
+                            ▣
+                          </span>
+                          Catalog
+                        </span>
                         {dataset.sourceUrl ? (
                           <span className="small muted">
                             {" "}
@@ -443,14 +483,18 @@ export function CatalogPage() {
                         </span>
                       </td>
                       <td data-label="Licence">{dataset.license}</td>
-                      <td data-label="Version">{dataset.version}</td>
-                      <td data-label="Parts">{dataset.rowCount}</td>
+                      <td data-label="Version" className="mono">
+                        {dataset.version}
+                      </td>
+                      <td data-label="Parts" className="mono">
+                        {dataset.rowCount}
+                      </td>
                       <td data-label="Categories">
                         {Object.entries(dataset.categoryCounts)
                           .map(([key, value]) => `${key} ${value}`)
                           .join(", ") || "—"}
                       </td>
-                      <td data-label="Used for matching">
+                      <td data-label="Active">
                         <span className={`badge badge--${dataset.active ? "valid" : "unknown"}`}>
                           <span className="badge__symbol" aria-hidden="true">
                             {dataset.active ? "✓" : "?"}
@@ -494,7 +538,7 @@ export function CatalogPage() {
             >
               <h3 id="remove-title">Remove {removing.name}?</h3>
               <p>
-                This removes {removing.rowCount} parts from this instance only.
+                This removes {plural(removing.rowCount, "part")} from this instance only.
                 Inventory, snapshots, compatibility checks, recommendations and
                 diagnoses are not affected.
               </p>
@@ -520,9 +564,14 @@ export function CatalogPage() {
         </section>
 
         <section className="panel" aria-labelledby="search-title">
-          <h2 className="panel__title" id="search-title">
-            Search
-          </h2>
+          <div className="panel__head">
+            <p className="caps-label" aria-hidden="true">
+              Search
+            </p>
+            <h2 className="panel__title" id="search-title">
+              Search
+            </h2>
+          </div>
           <form onSubmit={(event) => void runSearch(event)}>
             <div className="field-grid">
               <div className="field">
@@ -530,6 +579,7 @@ export function CatalogPage() {
                 <input
                   id="catalog-query"
                   value={query}
+                  aria-describedby="catalog-search-hint"
                   onChange={(event) => setQuery(event.target.value)}
                 />
               </div>
@@ -549,8 +599,17 @@ export function CatalogPage() {
                 </select>
               </div>
             </div>
+            <p className="field__hint" id="catalog-search-hint">
+              {queryReady
+                ? "Only active datasets are searched; an exact SKU or MPN ranks first."
+                : "Enter a SKU, MPN, model or word to enable search."}
+            </p>
             <div className="button-row">
-              <button type="submit" disabled={searching}>
+              <button
+                type="submit"
+                disabled={searching || !queryReady}
+                aria-describedby="catalog-search-hint"
+              >
                 {searching ? "Searching…" : "Search catalog"}
               </button>
             </div>
@@ -562,28 +621,32 @@ export function CatalogPage() {
             ) : (
               <>
                 <p className="small muted">
-                  {searchResult.total} ranked hit
-                  {searchResult.total === 1 ? "" : "s"}; showing{" "}
+                  {plural(searchResult.total, "ranked hit")}; showing{" "}
                   {searchResult.hits.length}. Exact SKU or MPN first, then model
                   prefix, then token overlap.
                 </p>
                 <div className="table-wrap">
-                  <table className="responsive-table">
+                  <table className="responsive-table catalog-table">
                     <caption>Ranked catalog search results</caption>
                     <thead>
                       <tr>
+                        <th scope="col">Rank</th>
                         <th scope="col">SKU</th>
                         <th scope="col">MPN</th>
                         <th scope="col">Category</th>
                         <th scope="col">Model</th>
                         <th scope="col">Dataset</th>
                         <th scope="col">Licence</th>
+                        <th scope="col">Version</th>
                         <th scope="col">Open</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {searchResult.hits.map((hit) => (
+                      {searchResult.hits.map((hit, index) => (
                         <tr key={hit.part.id}>
+                          <td data-label="Rank" className="mono">
+                            {index + 1}
+                          </td>
                           <td data-label="SKU" className="mono">
                             {hit.part.sku}
                           </td>
@@ -592,8 +655,19 @@ export function CatalogPage() {
                           </td>
                           <td data-label="Category">{hit.part.category}</td>
                           <td data-label="Model">{hit.part.model}</td>
-                          <td data-label="Dataset">{hit.dataset.name}</td>
+                          <td data-label="Dataset">
+                            <strong>{hit.dataset.name}</strong>
+                            <span className="badge badge--catalog">
+                              <span className="badge__symbol" aria-hidden="true">
+                                ▣
+                              </span>
+                              Catalog
+                            </span>
+                          </td>
                           <td data-label="Licence">{hit.dataset.license}</td>
+                          <td data-label="Version" className="mono">
+                            {hit.dataset.version}
+                          </td>
                           <td data-label="Open">
                             <button
                               type="button"

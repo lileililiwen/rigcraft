@@ -71,3 +71,43 @@ test("no page overflows horizontally at 390 px", async ({ page, request }) => {
     expect(width.scrollWidth, `${entry.path} must not overflow`).toBe(width.clientWidth);
   }
 });
+
+test("actions that need input are disabled with a readable reason at 390 px", async ({
+  page,
+  request,
+}) => {
+  await seedSample(request);
+
+  await page.goto("/inventory");
+  const preview = page.getByRole("button", { name: "Preview CSV" });
+  await expect(preview).toBeDisabled();
+  await expect(preview).toHaveAttribute("aria-describedby", "preview-hint");
+  await expect(
+    page.getByText("Choose a CSV file to enable Preview CSV."),
+  ).toBeVisible();
+  await expectNoHorizontalOverflow(page);
+
+  await page.goto("/catalog");
+  const search = page.getByRole("button", { name: "Search catalog" });
+  await expect(search).toBeDisabled();
+  await expect(search).toHaveAttribute("aria-describedby", "catalog-search-hint");
+  await expect(
+    page.getByText("Enter a SKU, MPN, model or word to enable search."),
+  ).toBeVisible();
+  await expectNoHorizontalOverflow(page);
+
+  await page.goto("/diagnose");
+  const match = page.getByRole("button", { name: "Match this list" });
+  await expect(match).toBeDisabled();
+  await expect(match).toHaveAttribute("aria-describedby", "diagnose-match-hint");
+  await expect(
+    page.getByText("Paste at least one part above to enable matching."),
+  ).toBeVisible();
+  const diagnose = page.getByRole("button", { name: "Diagnose this build" });
+  await expect(diagnose).toBeDisabled();
+  await expect(diagnose).toHaveAttribute("aria-describedby", "diagnose-run-hint");
+  await expect(
+    page.getByText("Add a matched line or a part by hand to enable the diagnosis."),
+  ).toBeVisible();
+  await expectNoHorizontalOverflow(page);
+});

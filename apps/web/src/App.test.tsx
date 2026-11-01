@@ -137,6 +137,9 @@ describe("inventory page", () => {
           },
         ]);
       }
+      if (url === `/api/inventory/snapshots/${snapshot.id}`) {
+        return response(snapshot);
+      }
       return response({ error: { code: "unexpected", message: url } }, 500);
     });
     vi.stubGlobal("fetch", fetchMock);
@@ -146,11 +149,11 @@ describe("inventory page", () => {
     expect(
       screen.getByRole("heading", { level: 1, name: "Inventory" }),
     ).toBeInTheDocument();
-    const sampleLink = screen.getByRole("link", { name: "Download sample CSV" });
+    const sampleLink = await screen.findByRole("link", { name: "Download sample CSV" });
     expect(sampleLink).toHaveAttribute("href", "/api/imports/sample");
     expect(sampleLink).toHaveAttribute("aria-describedby", "sample-licence");
     expect(screen.getByText(/CC BY 4\.0/)).toBeInTheDocument();
-    expect(screen.getByText(/2026-10-31/)).toBeInTheDocument();
+    expect(screen.getAllByText(/2026-10-31/).length).toBeGreaterThan(0);
 
     const file = new File(["sku,category,model,quantity,price\n"], "stock.csv", {
       type: "text/csv",
@@ -170,7 +173,7 @@ describe("inventory page", () => {
     await waitFor(() => expect(heading).toHaveFocus());
     expect(screen.getByText(/sha256 aaaaaaaaaaaa/)).toBeInTheDocument();
     expect(screen.getAllByText(/User-provided/).length).toBeGreaterThan(0);
-    expect(screen.getByText("US$378.00")).toBeInTheDocument();
+    expect(screen.getAllByText("US$378.00").length).toBeGreaterThan(0);
     expect(screen.getByText(/Snapshot history/)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Adjust stock or price" })).toBeInTheDocument();
   });
@@ -208,7 +211,7 @@ describe("inventory page", () => {
     const user = userEvent.setup();
     render(<App />);
     const file = new File(["sku\n"], "stock.csv", { type: "text/csv" });
-    await user.upload(screen.getByLabelText("Inventory CSV (UTF-8)"), file);
+    await user.upload(await screen.findByLabelText("Inventory CSV (UTF-8)"), file);
     await user.click(screen.getByRole("button", { name: "Preview CSV" }));
 
     const alert = await screen.findByRole("alert");

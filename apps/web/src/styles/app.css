@@ -599,22 +599,78 @@ tbody tr:last-child td {
 }
 
 .history-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+  gap: var(--space-3);
   margin: var(--space-3) 0 0;
   padding: 0;
   list-style: none;
-  display: grid;
-  gap: var(--space-2);
 }
 
-.history-list li {
+/* One card per revision: the number, when it was committed, what it holds and
+   the explicit action that opens it. */
+.history-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-raised);
+}
+
+.history-card--current {
+  border-color: var(--color-primary);
+}
+
+.history-card__head {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: var(--space-2);
-  padding: var(--space-2) var(--space-3);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
+}
+
+.history-card__title {
+  margin: 0;
+  font-size: var(--font-body);
+}
+
+.history-card__rows {
+  display: grid;
+  gap: var(--space-1);
+  margin: 0;
+}
+
+.history-card__rows div {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding-bottom: var(--space-1);
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+
+.history-card__rows div:last-child {
+  border-bottom: 0;
+}
+
+.history-card__rows dt {
+  font-size: var(--font-small);
+  color: var(--color-muted-foreground);
+}
+
+.history-card__rows dd {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: var(--font-small);
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+.history-card .button-row {
+  margin-top: auto;
 }
 
 .history-list [aria-current="true"] {
@@ -1441,4 +1497,104 @@ tbody tr:last-child td {
 .spec-module .responsive-table td[data-label="Line total"],
 .spec-module .responsive-table td[data-label="Stock"] {
   white-space: nowrap;
+}
+
+/* Operator console (/inventory, /catalog): the state of the open snapshot comes
+   first as one bar, each action is a named panel, and dense tables carry the
+   facts that decide reuse. Every value below resolves an existing alias. */
+.console-bar {
+  margin-top: var(--space-4);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--color-border);
+  border-left: 3px solid var(--color-primary);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+}
+
+.console-bar__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.console-bar__head .caps-label {
+  margin: 0;
+}
+
+.console-bar__title {
+  margin: var(--space-2) 0 0;
+  font-size: var(--font-large);
+}
+
+.console-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(7rem, 1fr));
+  gap: var(--space-3);
+  margin: var(--space-3) 0 0;
+}
+
+.console-stats div {
+  padding: var(--space-2) var(--space-3);
+  background: var(--color-muted);
+  border-radius: var(--radius-md);
+}
+
+.console-stats dt {
+  font-size: var(--font-small);
+  color: var(--color-muted-foreground);
+}
+
+.console-stats dd {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: var(--font-large);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+.console-bar__meta {
+  margin: var(--space-3) 0 0;
+  overflow-wrap: anywhere;
+}
+
+/* A console panel puts its decorative caps label beside its heading, so the two
+   read as one header line at desktop width and wrap at phone width. */
+.panel__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-1) var(--space-3);
+  margin-bottom: var(--space-3);
+}
+
+.panel__head .caps-label,
+.panel__head .panel__title {
+  margin: 0;
+}
+
+.summary-grid--spaced {
+  margin-top: var(--space-4);
+}
+
+/* Catalogue rows: the identifier columns never wrap, and a long source URL
+   wraps inside its cell instead of widening the card at phone width. */
+.catalog-table th {
+  white-space: nowrap;
+}
+
+.catalog-table td[data-label="Rank"],
+.catalog-table td[data-label="Version"],
+.catalog-table td[data-label="Parts"] {
+  white-space: nowrap;
+}
+
+.catalog-table td[data-label="Dataset"] .badge {
+  margin-inline-start: var(--space-2);
+}
+
+.catalog-table .tag {
+  overflow-wrap: anywhere;
 }

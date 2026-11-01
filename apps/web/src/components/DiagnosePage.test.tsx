@@ -592,6 +592,42 @@ describe("build diagnosis page", () => {
     expect(screen.queryByRole("heading", { name: "Build diagnosis" })).not.toBeInTheDocument();
   });
 
+  it("uses the shipped sample's parts and guards matching and diagnosis until there is input", async () => {
+    installFetch();
+    const user = userEvent.setup();
+    render(<DiagnosePage />);
+
+    const textarea = await screen.findByLabelText("Parts list");
+    expect(textarea).toHaveAttribute(
+      "placeholder",
+      "cpu: AMD Ryzen 7 7800X3D\ngpu: NVIDIA GeForce RTX 4070 Founders Edition\npsu: Corsair RM750e",
+    );
+    expect(screen.getByLabelText("Specifications you have confirmed")).toHaveAttribute(
+      "placeholder",
+      "socket=AM5;tdp=120W;igpu=yes",
+    );
+
+    const match = screen.getByRole("button", { name: "Match this list" });
+    expect(match).toBeDisabled();
+    expect(match).toHaveAttribute("aria-describedby", "diagnose-match-hint");
+    expect(
+      screen.getByText("Paste at least one part above to enable matching."),
+    ).toBeInTheDocument();
+
+    const diagnose = screen.getByRole("button", { name: "Diagnose this build" });
+    expect(diagnose).toBeDisabled();
+    expect(diagnose).toHaveAttribute("aria-describedby", "diagnose-run-hint");
+    expect(
+      screen.getByText("Add a matched line or a part by hand to enable the diagnosis."),
+    ).toBeInTheDocument();
+
+    await user.type(textarea, "cpu: AMD Ryzen 7 7800X3D");
+    expect(match).toBeEnabled();
+    expect(
+      screen.getByText("Matching never guesses a SKU for an ambiguous line."),
+    ).toBeInTheDocument();
+  });
+
   it("adds an owned part by hand and sends its specifications", async () => {
     const { calls } = installFetch();
     const user = userEvent.setup();

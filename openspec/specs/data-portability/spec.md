@@ -127,8 +127,13 @@ Given a valid RigCraft database with `user_version` below the current schema, wh
 Given a restore request without the confirmation field, then the response is `400 backup_confirm_required` and no pre-restore copy or data change is made.
 
 ### Requirement: The inventory page offers export, backup and guarded restore
-`/inventory` SHALL offer CSV and JSON export of the selected snapshot, a whole-database
-backup download, and a restore flow that inspects an upload before replacing anything.
+`/inventory` SHALL offer CSV and JSON export of the selected snapshot, a
+whole-database backup download, and a restore flow that inspects an upload before
+replacing anything. The export actions SHALL become usable as soon as a snapshot is
+open, and the page SHALL open the newest revision on first load, so a shop with a
+committed snapshot can export without first discovering a separate selection
+control. While no snapshot is open the export actions SHALL be disabled and the
+copy SHALL name the controls that open one — the history `View` action or a commit.
 Inspection SHALL show the integrity result, schema version, created date and record
 and lot counts. Replacement SHALL require an explicit confirmation typed by the
 operator, so it cannot be triggered by one accidental click. Success SHALL show the
@@ -144,6 +149,12 @@ Given a confirmed restore, then the page announces success, shows the pre-restor
 
 #### Scenario: A rejected restore leaves the page usable
 Given a rejected upload, then the page shows the documented code in an alert, keeps the current inventory visible, and allows another file to be chosen.
+
+#### Scenario: Export is usable when a snapshot exists
+Given a committed snapshot, when `/inventory` first loads, then the newest revision is open and both `Download CSV` and `Download JSON` are enabled without any other action.
+
+#### Scenario: The disabled state names the control
+Given no snapshot has ever been committed, when the export panel renders, then both export buttons are disabled and the copy names `View` in Snapshot history and committing an import as the ways to open one.
 
 ### Requirement: Portability documentation states formats, guarantees and privacy
 `docs/data-portability.md` SHALL describe both export formats, the CSV lossiness and

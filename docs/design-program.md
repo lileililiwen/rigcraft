@@ -285,6 +285,24 @@ state first, provenance visible in every row, actions guarded.
 **Oracle:** inventory, catalog and portability e2e unchanged; a11y 100;
 captures at 1440/390.
 
+**Delivered 2026-11-01.** `/inventory` opens the newest revision on first load
+without stealing focus, so CSV and JSON export are enabled on arrival; the open
+snapshot leads with a summary bar (revision, records, units, stock value, latest or
+earlier chip, source file and commit time), and snapshot history is a card grid
+with `Viewing now` and an explicit `View`. Import, history and export/backup are
+distinct panels, and the disabled export copy names the control that opens a
+snapshot. `/catalog` presents the registry as a dense table with licence, version,
+parts, categories, active chip and source URL, a datasets/parts/active count strip,
+and ranked search with rank and dataset version. `Preview CSV`, `Search catalog`,
+`Match this list` and `Diagnose this build` are disabled with an
+`aria-describedby` reason until their input is valid, while the handlers and
+server checks stay in place. The diagnosis placeholders and the manual-entry
+example use the shipped sample's real parts and specs. Page-composed counts use
+`plural`. Captures: `docs/assets/dataops-*.png`; Lighthouse is 100 on
+accessibility, best practices, SEO and agentic browsing for both routes on
+desktop and mobile; no horizontal overflow at 1440 or 390 px. Evidence:
+`docs/evidence/dataops-console-browser.md`.
+
 ---
 
 ## Package 5 — `service-correctness`

@@ -177,6 +177,15 @@ export function canCommit(
   return { ready: true, reason: "" };
 }
 
+/**
+ * One currency predicate for the form and the preview handler, so a button can
+ * be enabled by exactly the rule the request uses. The service still validates
+ * the code it receives; this only decides whether a click can be useful.
+ */
+export function isValidCurrencyCode(value: string): boolean {
+  return /^[A-Z]{3}$/.test(value.trim());
+}
+
 export function priceToMinor(value: string): number | null {
   const trimmed = value.trim();
   if (!/^\d+(\.\d{1,2})?$/.test(trimmed)) {

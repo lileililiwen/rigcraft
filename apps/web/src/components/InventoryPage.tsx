@@ -23,9 +23,11 @@ import {
   defaultDecisions,
   formatTimestamp,
   formatMoney,
+  isValidCurrencyCode,
   shortId,
 } from "../inventory";
 import type { DecisionMap, OverrideMap, ResolutionMap } from "../inventory";
+import { plural } from "../plural";
 import { ImportForm } from "./ImportForm";
 import { PreviewReview } from "./PreviewReview";
 import { SiteHeader } from "./SiteHeader";
@@ -91,8 +93,13 @@ export function InventoryPage() {
   const [catalogOptIn, setCatalogOptIn] = useState<Record<number, string>>({});
   const [catalogNotice, setCatalogNotice] = useState<string | null>(null);
   const [live, setLive] = useState("No CSV selected.");
+  const [initialising, setInitialising] = useState(true);
   const errorRef = useRef<HTMLDivElement>(null);
   const statusRef = useRef<HTMLDivElement>(null);
+  // The newest revision opens once, on first load. `suppressFocus` keeps that
+  // open from stealing focus: the first Tab stop on the page stays the skip link.
+  const openedOnLoad = useRef(false);
+  const suppressFocus = useRef(false);
 
   async function refreshHistory() {
     try {
@@ -109,14 +116,28 @@ export function InventoryPage() {
   }
 
   useEffect(() => {
-    void refreshHistory();
+    void (async () => {
+      const summaries = await refreshHistory();
+      if (!openedOnLoad.current && summaries && summaries.length > 0) {
+        openedOnLoad.current = true;
+        await viewSnapshot(summaries[0].id, true);
+      }
+      // Everything below the status line waits for the first snapshot state, so
+      // the automatic open appends its bar and records instead of pushing the
+      // import panel down after paint (a real layout shift).
+      setInitialising(false);
+    })();
   }, []);
 
   useEffect(() => {
     if (phase === "review") {
       document.getElementById("review-title")?.focus();
     } else if (phase === "committed") {
-      document.getElementById("snapshot-title")?.focus();
+      if (suppressFocus.current) {
+        suppressFocus.current = false;
+      } else {
+        document.getElementById("snapshot-title")?.focus();
+      }
     } else if (phase === "parsing" || phase === "committing") {
       statusRef.current?.focus();
     }
@@ -167,7 +188,7 @@ export function InventoryPage() {
       });
       return;
     }
-    if (!/^[A-Z]{3}$/.test(currency.trim())) {
+    if (!isValidCurrencyCode(currency)) {
       setProblem({
         title: "Check the currency",
         message: "Use a three-letter ISO 4217 code such as USD, EUR, CNY or JPY.",
@@ -245,11 +266,17 @@ export function InventoryPage() {
       setSnapshot(result.snapshot);
       setPhase("committed");
       setLive(
-        `Snapshot committed. Revision ${result.snapshot.revision}, ${result.snapshot.totals.recordCount} records, ${formatMoney(
+        `Snapshot committed. Revision ${result.snapshot.revision}, ${plural(
+          result.snapshot.totals.recordCount,
+          "record",
+        )}, ${formatMoney(
           result.snapshot.totals.valueMinor,
           result.snapshot.currency,
         )} stock value.`,
       );
+      // The committed file belongs to the snapshot; the import panel is ready
+      // for the next batch instead of offering to preview the same file again.
+      setFile(null);
       setProblem(null);
       await refreshHistory();
     } catch (error) {
@@ -273,12 +300,20 @@ export function InventoryPage() {
     }
   }
 
-  async function viewSnapshot(id: string) {
+  async function viewSnapshot(id: string, initial = false) {
     try {
       const next = await getSnapshot(id);
+      suppressFocus.current = initial;
       setSnapshot(next);
       setPhase("committed");
-      setLive(`Viewing snapshot revision ${next.revision}.`);
+      setLive(
+        initial
+          ? `Opened the newest snapshot, revision ${next.revision}: ${plural(
+              next.totals.recordCount,
+              "record",
+            )}, ${formatMoney(next.totals.valueMinor, next.currency)} stock value. Export and backup are ready below.`
+          : `Viewing snapshot revision ${next.revision}.`,
+      );
       setProblem(null);
       setRetry(null);
     } catch (error) {
@@ -318,7 +353,7 @@ export function InventoryPage() {
         setPreview(null);
         setPhase("committed");
         setLive(
-          `Restored ${summary.counts.recordCount} records. Viewing revision ${next.revision}.`,
+          `Restored ${plural(summary.counts.recordCount, "record")}. Viewing revision ${next.revision}.`,
         );
         return;
       } catch (error) {
@@ -335,6 +370,8 @@ export function InventoryPage() {
     history.length > 0 ? Math.max(...history.map((entry) => entry.revision)) : snapshot?.revision ?? 1;
   const busy = phase === "parsing" || phase === "committing";
   const showPreview = preview !== null && phase !== "committed";
+  const openSnapshot = phase === "committed" ? snapshot : null;
+  const snapshotIsLatest = openSnapshot ? openSnapshot.revision === latestRevision : false;
 
   return (
     <>
@@ -362,6 +399,56 @@ export function InventoryPage() {
         >
           <span>{live}</span>
         </div>
+
+        {initialising ? (
+          <p className="small muted">Loading the snapshot state…</p>
+        ) : (
+          <>
+        {openSnapshot ? (
+          <section className="console-bar" aria-labelledby="console-bar-title">
+            <div className="console-bar__head">
+              <p className="caps-label" aria-hidden="true">
+                Open snapshot
+              </p>
+              <span
+                className={`badge badge--${snapshotIsLatest ? "valid" : "unknown"}`}
+              >
+                <span className="badge__symbol" aria-hidden="true">
+                  {snapshotIsLatest ? "✓" : "?"}
+                </span>
+                {snapshotIsLatest ? "Latest revision" : "Earlier revision"}
+              </span>
+            </div>
+            <h2 className="console-bar__title" id="console-bar-title">
+              Snapshot state
+            </h2>
+            <dl className="console-stats">
+              <div>
+                <dt>Revision</dt>
+                <dd>{openSnapshot.revision}</dd>
+              </div>
+              <div>
+                <dt>Records</dt>
+                <dd>{openSnapshot.totals.recordCount}</dd>
+              </div>
+              <div>
+                <dt>Units in stock</dt>
+                <dd>{openSnapshot.totals.unitCount}</dd>
+              </div>
+              <div>
+                <dt>Stock value</dt>
+                <dd>{formatMoney(openSnapshot.totals.valueMinor, openSnapshot.currency)}</dd>
+              </div>
+            </dl>
+            <p className="small muted console-bar__meta">
+              Source <span className="mono">{openSnapshot.source.filename}</span> ·
+              committed{" "}
+              <time dateTime={openSnapshot.createdAt}>
+                {formatTimestamp(openSnapshot.createdAt)}
+              </time>
+            </p>
+          </section>
+        ) : null}
 
         {problem ? (
           <div className="alert" role="alert" tabIndex={-1} ref={errorRef}>
@@ -403,22 +490,6 @@ export function InventoryPage() {
             </div>
           </div>
         ) : null}
-
-        {!preview && phase !== "committed" ? (
-          <ImportForm
-            file={file}
-            currency={currency}
-            busy={busy}
-            onFile={(next) => {
-              setFile(next);
-              setProblem(null);
-            }}
-            onCurrency={setCurrency}
-            onSubmit={() => void runPreview()}
-          />
-        ) : null}
-
-        {catalogNotice ? <p className="small muted">{catalogNotice}</p> : null}
 
         {showPreview && preview ? (
           <PreviewReview
@@ -464,11 +535,11 @@ export function InventoryPage() {
           />
         ) : null}
 
-        {snapshot && phase === "committed" ? (
+        {openSnapshot ? (
           <>
             <SnapshotPanel
-              snapshot={snapshot}
-              isLatest={snapshot.revision === latestRevision}
+              snapshot={openSnapshot}
+              isLatest={snapshotIsLatest}
               onView={(id) => void viewSnapshot(id)}
               onCorrected={(corrected) => {
                 setSnapshot(corrected);
@@ -488,11 +559,32 @@ export function InventoryPage() {
           </>
         ) : null}
 
+        {!preview ? (
+          <ImportForm
+            file={file}
+            currency={currency}
+            busy={busy}
+            onFile={(next) => {
+              setFile(next);
+              setProblem(null);
+            }}
+            onCurrency={setCurrency}
+            onSubmit={() => void runPreview()}
+          />
+        ) : null}
+
+        {catalogNotice ? <p className="small muted">{catalogNotice}</p> : null}
+
         {history.length > 0 || historyError ? (
           <section className="panel" aria-labelledby="history-title">
-            <h2 className="panel__title" id="history-title">
-              Snapshot history
-            </h2>
+            <div className="panel__head">
+              <p className="caps-label" aria-hidden="true">
+                Revisions
+              </p>
+              <h2 className="panel__title" id="history-title">
+                Snapshot history
+              </h2>
+            </div>
             {historyError ? (
               <p className="field__error">{historyError}</p>
             ) : null}
@@ -501,27 +593,60 @@ export function InventoryPage() {
               records and provenance.
             </p>
             <ul className="history-list">
-              {history.map((entry) => (
-                <li key={entry.id}>
-                  <span>
-                    Revision {entry.revision} · {formatTimestamp(entry.createdAt)} ·{" "}
-                    {entry.recordCount} records ·{" "}
-                    {formatMoney(entry.valueMinor, entry.currency)}
-                    {entry.note ? ` · ${entry.note}` : ""}
-                    {snapshot?.id === entry.id ? (
-                      <strong> · viewing now</strong>
-                    ) : null}
-                  </span>
-                  <button
-                    type="button"
-                    className="button--secondary"
-                    aria-current={snapshot?.id === entry.id ? "true" : undefined}
-                    onClick={() => void viewSnapshot(entry.id)}
+              {history.map((entry) => {
+                const current = snapshot?.id === entry.id && phase === "committed";
+                return (
+                  <li
+                    key={entry.id}
+                    className={`history-card${current ? " history-card--current" : ""}`}
                   >
-                    View {shortId(entry.id)}
-                  </button>
-                </li>
-              ))}
+                    <div className="history-card__head">
+                      <h3 className="history-card__title">
+                        Revision {entry.revision}
+                      </h3>
+                      {current ? (
+                        <span className="badge badge--valid">
+                          <span className="badge__symbol" aria-hidden="true">
+                            ✓
+                          </span>
+                          Viewing now
+                        </span>
+                      ) : null}
+                    </div>
+                    <dl className="history-card__rows">
+                      <div>
+                        <dt>Committed</dt>
+                        <dd>
+                          <time dateTime={entry.createdAt}>
+                            {formatTimestamp(entry.createdAt)}
+                          </time>
+                        </dd>
+                      </div>
+                      <div>
+                        <dt>Records</dt>
+                        <dd>{entry.recordCount}</dd>
+                      </div>
+                      <div>
+                        <dt>Stock value</dt>
+                        <dd>{formatMoney(entry.valueMinor, entry.currency)}</dd>
+                      </div>
+                    </dl>
+                    {entry.note ? (
+                      <p className="small muted">{entry.note}</p>
+                    ) : null}
+                    <div className="button-row">
+                      <button
+                        type="button"
+                        className="button--secondary"
+                        aria-current={current ? "true" : undefined}
+                        onClick={() => void viewSnapshot(entry.id)}
+                      >
+                        View {shortId(entry.id)}
+                      </button>
+                    </div>
+                  </li>
+                );
+              })}
             </ul>
           </section>
         ) : null}
@@ -531,6 +656,8 @@ export function InventoryPage() {
           history={history}
           onRestored={(summary) => void handleRestored(summary)}
         />
+          </>
+        )}
       </main>
     </>
   );

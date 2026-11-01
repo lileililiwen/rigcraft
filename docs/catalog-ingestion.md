@@ -213,10 +213,15 @@ source.
 ## The Web surface
 
 `/catalog` uploads the document with the acknowledgement, shows the accepted report
-or the refused rows with their field reasons, lists the registry with licence and
-counts, activates or deactivates a dataset, removes one only after an inline
-confirmation that states inventory is unaffected, and searches. A stored part opens
-with its specifications and provenance.
+or the refused rows with their field reasons, lists the registry as a dense table
+with licence, version, parts, categories, active chip, source URL and actions under
+a datasets/parts/active count strip, activates or deactivates a dataset, removes one
+only after an inline confirmation that states inventory is unaffected, and searches.
+The search button is disabled with an `aria-describedby` reason until the query is
+non-empty; the handler keeps its guard and the API stays the source of truth. Ranked
+results keep their order and add a rank column and the dataset version, with the
+dataset name and a catalog provenance chip beside it. A stored part opens with its
+specifications and provenance.
 
 `/inventory` shows each preview row's catalog status and, for a matched row with
 proposals, a per-row "Apply catalog proposals" checkbox. Conflicts are named next

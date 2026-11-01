@@ -462,10 +462,13 @@ export function DiagnosePage() {
               2. Paste the parts list
             </h2>
             <p className="small muted">
-              One part per line, at most {40} lines and 8 KiB. Start with the category
+              One part per line, at most 40 lines and 8 KiB. Start with the category
               where you know it, add <span className="mono">x2</span> for two units and{" "}
-              <span className="mono">@349.00</span> for a price, for example{" "}
-              <span className="mono">gpu: Fixture RTX 4070 x1 @349.00</span>.
+              <span className="mono">@549.00</span> for a price, for example{" "}
+              <span className="mono">
+                gpu: NVIDIA GeForce RTX 4070 Founders Edition x1 @549.00
+              </span>
+              .
             </p>
             <div className="field-grid">
               <div className="field">
@@ -475,7 +478,10 @@ export function DiagnosePage() {
                   rows={7}
                   value={text}
                   disabled={busy}
-                  placeholder={"cpu: Fixture AM4 CPU 5600\ngpu: Fixture RTX 4070\npsu: Fixture 850W PSU"}
+                  aria-describedby="diagnose-text-hint"
+                  placeholder={
+                    "cpu: AMD Ryzen 7 7800X3D\ngpu: NVIDIA GeForce RTX 4070 Founders Edition\npsu: Corsair RM750e"
+                  }
                   onChange={(event) => {
                     setText(event.target.value);
                     // A match belongs to the text it was made from.
@@ -485,7 +491,7 @@ export function DiagnosePage() {
                     setPhase("idle");
                   }}
                 />
-                <span className="field__hint">
+                <span className="field__hint" id="diagnose-text-hint">
                   Pasted text is matched against this snapshot and never stored on its own.
                 </span>
               </div>
@@ -505,13 +511,20 @@ export function DiagnosePage() {
               </div>
             </div>
             <div className="button-row">
-              <button type="button" onClick={() => void runMatch()} disabled={busy}>
+              <button
+                type="button"
+                onClick={() => void runMatch()}
+                disabled={busy || text.trim() === ""}
+                aria-describedby="diagnose-match-hint"
+              >
                 {matching ? "Matching…" : "Match this list"}
               </button>
-              <span className="small muted">
+              <span className="small muted" id="diagnose-match-hint">
                 {list
                   ? `${plural(list.lineCount, "line")} reviewed`
-                  : "Matching never guesses a SKU for an ambiguous line."}
+                  : text.trim() === ""
+                    ? "Paste at least one part above to enable matching."
+                    : "Matching never guesses a SKU for an ambiguous line."}
               </span>
             </div>
           </section>
@@ -704,7 +717,7 @@ export function DiagnosePage() {
                 rows={3}
                 value={manualSpecs}
                 disabled={busy}
-                placeholder="socket=AM4;tdp=65W;peak_power=88W;igpu=no"
+                placeholder="socket=AM5;tdp=120W;igpu=yes"
                 aria-describedby="manual-specs-hint"
                 onChange={(event) => setManualSpecs(event.target.value)}
               />
@@ -752,14 +765,22 @@ export function DiagnosePage() {
               </ul>
             ) : null}
             <div className="button-row">
-              <button type="button" onClick={() => void runDiagnosis()} disabled={busy}>
+              <button
+                type="button"
+                onClick={() => void runDiagnosis()}
+                disabled={busy || partCount === 0}
+                aria-describedby="diagnose-run-hint"
+              >
                 {phase === "diagnosing" ? "Diagnosing…" : "Diagnose this build"}
               </button>
-              <span className="small muted">
-                {plural(partCount, "part")} will be diagnosed
-                {list
-                  ? ` · ${reviewed.length} from the list, ${manual.length} by hand`
-                  : ` · ${manual.length} by hand`}
+              <span className="small muted" id="diagnose-run-hint">
+                {partCount === 0
+                  ? "Add a matched line or a part by hand to enable the diagnosis."
+                  : `${plural(partCount, "part")} will be diagnosed${
+                      list
+                        ? ` · ${reviewed.length} from the list, ${manual.length} by hand`
+                        : ` · ${manual.length} by hand`
+                    }`}
               </span>
             </div>
           </section>

@@ -166,8 +166,11 @@ open connection avoids that whole failure class.
 
 `/inventory` has an **Export and backup** panel:
 
-1. **Download CSV** and **Download JSON** export the snapshot currently shown. They
-   are disabled until a snapshot is selected or committed.
+1. **Download CSV** and **Download JSON** export the snapshot currently shown. The
+   newest revision opens automatically on first load, so the buttons are enabled
+   without an extra step; with no snapshot they stay disabled and the copy names
+   the control (`No snapshot is open. Choose View on a revision in Snapshot
+   history, or commit an import.`).
 2. **Download backup** downloads the whole SQLite file.
 3. **Restore from a backup** takes a file, then **Inspect backup** shows integrity,
    schema version, created date and counts, and names what will be replaced.

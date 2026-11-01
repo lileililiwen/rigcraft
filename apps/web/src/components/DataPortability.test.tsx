@@ -104,7 +104,11 @@ describe("DataPortability", () => {
     renderPanel({ snapshot: null });
     expect(screen.getByRole("button", { name: "Download CSV" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "Download JSON" })).toBeDisabled();
-    expect(screen.getByText("Open or commit a snapshot first.")).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "No snapshot is open. Choose View on a revision in Snapshot history, or commit an import.",
+      ),
+    ).toBeInTheDocument();
   });
 
   it("exports both formats and reports the filename", async () => {
@@ -197,6 +201,6 @@ describe("DataPortability", () => {
     expect(alert).toHaveTextContent("backup_not_sqlite");
     expect(screen.queryByRole("heading", { name: /Backup inspected/ })).toBeNull();
     expect(onRestored).not.toHaveBeenCalled();
-    expect(screen.getByText("Ready: revision 2, 1 records.")).toBeInTheDocument();
+    expect(screen.getByText("Ready: revision 2, 1 record.")).toBeInTheDocument();
   });
 });

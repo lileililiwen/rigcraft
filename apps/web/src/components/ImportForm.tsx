@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { sampleCsvUrl } from "../api";
+import { isValidCurrencyCode } from "../inventory";
 
 interface ImportFormProps {
   file: File | null;
@@ -23,6 +24,15 @@ export function ImportForm({
 }: ImportFormProps) {
   const [fileError, setFileError] = useState<string | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
+  const currencyValid = isValidCurrencyCode(currency);
+  // The button states the requirement instead of reporting it as a failure after
+  // the click. The handler keeps its own guard; the service stays authoritative.
+  const canPreview = Boolean(file) && currencyValid;
+  const previewHint = !file
+    ? "Choose a CSV file to enable Preview CSV."
+    : !currencyValid
+      ? "Enter a three-letter ISO 4217 currency code to enable Preview CSV."
+      : "Preview validates every row and writes nothing.";
 
   useEffect(() => {
     if (!file && fileInput.current) {
@@ -49,9 +59,14 @@ export function ImportForm({
 
   return (
     <section className="panel" aria-labelledby="import-title">
-      <h2 className="panel__title" id="import-title">
-        Import a CSV
-      </h2>
+      <div className="panel__head">
+        <p className="caps-label" aria-hidden="true">
+          Import
+        </p>
+        <h2 className="panel__title" id="import-title">
+          Import a CSV
+        </h2>
+      </div>
       <p className="lede">
         One batch uses one currency. Prices are stored in minor units (for example
         189.00 becomes 18900). Specifications use <code>key=value</code> pairs
@@ -105,8 +120,16 @@ export function ImportForm({
           </p>
         </div>
       </div>
+      <p className="field__hint" id="preview-hint">
+        {previewHint}
+      </p>
       <div className="button-row">
-        <button type="button" onClick={onSubmit} disabled={busy}>
+        <button
+          type="button"
+          onClick={onSubmit}
+          disabled={busy || !canPreview}
+          aria-describedby="preview-hint"
+        >
           {busy ? "Parsing…" : "Preview CSV"}
         </button>
         <a

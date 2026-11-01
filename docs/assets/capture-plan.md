@@ -154,6 +154,21 @@ Details: `docs/evidence/data-portability-browser.md`. Lighthouse reports: `docs/
 | `catalog-ingestion-provenance-desktop.png` | `/inventory` | 1440×900 | Committed snapshot with catalog-sourced specifications and `catalog:<name>@<version>` provenance |
 | `catalog-ingestion-mobile.png` | `/catalog` | 390×844 | Stacked registry and search with no horizontal overflow |
 
+### DataOps console captures (2026-11-01)
+
+| Capture | Route | Viewport | Condition |
+| --- | --- | --- | --- |
+| `dataops-inventory-desktop.png` | `/inventory` | 1440×900 | Newest revision auto-opened: summary bar, records table and export enabled |
+| `dataops-inventory-desktop-full.png` | `/inventory` | 1440×900 | Full page: summary bar, import panel, history cards and export/backup panel |
+| `dataops-inventory-mobile.png` | `/inventory` | 390×844 | The console stacked at phone width, no overflow |
+| `dataops-catalog-desktop.png` | `/catalog` | 1440×900 | Upload panel and registry count strip on the dense console |
+| `dataops-catalog-registry-desktop.png` | `/catalog` | 1440×900 | Registry row with licence, version, counts, active chip and source URL |
+| `dataops-catalog-search-desktop.png` | `/catalog` | 1440×900 | Ranked search results with rank and dataset version |
+| `dataops-catalog-search-mobile.png` | `/catalog` | 390×844 | Ranked results stacked as cards, no overflow |
+| `dataops-catalog-mobile.png` | `/catalog` | 390×844 | Upload and registry stacked at phone width |
+
+Details: `docs/evidence/dataops-console-browser.md`. Lighthouse reports: `docs/evidence/dataops-lighthouse/<route>-{desktop,mobile}/`.
+
 ### UI foundation captures (2026-11-01)
 
 | Capture | Route | Viewport | Condition |
