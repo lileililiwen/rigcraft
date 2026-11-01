@@ -99,3 +99,13 @@ technology review is recorded.
 
 **Oracle:** the Firefox smoke passes; the review document names every route and
 every skipped browser with its reason.
+
+## Follow-up: the role and name gaps
+
+`assistive-tech-gaps` (2026-11-01) fixes four of the five gaps the review found:
+every form is a named landmark, the export/backup sentence is a note rather than
+a live status, the "Catalog accepted" heading is addressable as
+`#catalog-result-title`, and every route's `main` is named by its `h1`. The
+`aria-live="off"` selection counter stays a human decision. It adds no visible
+copy, layout or colour change, and the twelve pixel baselines pass unchanged.
+The human screen-reader pass remains the only open gap.

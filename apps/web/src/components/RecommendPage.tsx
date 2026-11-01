@@ -325,8 +325,15 @@ export function RecommendPage() {
   return (
     <>
       <SiteHeader current="recommend" wide />
-      <main className="page page--wide workbench-page" id="main" tabIndex={-1}>
-        <h1 className="page-title">Build recommendation</h1>
+      <main
+        className="page page--wide workbench-page"
+        id="main"
+        tabIndex={-1}
+        aria-labelledby="recommend-page-title"
+      >
+        <h1 className="page-title" id="recommend-page-title">
+          Build recommendation
+        </h1>
         <p className="lede">
           Enter a total budget and what the machine is for. RigCraft searches only
           your inventory, keeps every part within available stock, and checks every
@@ -476,6 +483,7 @@ export function RecommendPage() {
                 announce={setLive}
               />
               <form
+                aria-labelledby="request-form-title"
                 onSubmit={(event) => {
                   event.preventDefault();
                   void generate();

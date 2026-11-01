@@ -26,7 +26,7 @@ Browser regression suite:
 ```sh
 cargo build                    # prerequisite: the service binary
 npm run build                  # prerequisite: the bundle the service serves
-npm run test:e2e               # 46 Chrome journeys plus 6 smoke tests each in Firefox and WebKit
+npm run test:e2e               # 50 Chrome journeys plus 6 smoke tests each in Firefox and WebKit
 ```
 
 `npm run test:e2e` picks a free loopback port, starts `target/debug/rigcraft`
@@ -153,10 +153,11 @@ Referencing a kit package never grants the capability it implements.
 - `docs/evidence/diagnosis-browser.md` — existing-build matching (ambiguity, miss, duplicate), reuse advice groups, validated/needs-evidence/rejected plan states, keyboard, responsive, accessibility and privacy evidence.
 - `docs/evidence/correctness-audit-browser.md` — corrected unverified advice group, stable `/diagnose` numbering, ISO 8601 UTC timestamps and static/metadata 404 behaviour.
 - `docs/evidence/catalog-seed-browser.md` — corrected sourced sample download, a catalog-column import and the operator-versus-catalog distinction.
-- `docs/evidence/browser-suite.md` — the checked-in Playwright suite: command, the 46 Chrome tests and what each holds, and its explicit non-coverage.
+- `docs/evidence/browser-suite.md` — the checked-in Playwright suite: command, the 50 Chrome tests and what each holds, and its explicit non-coverage.
 - `docs/evidence/visual-regression.md` — the twelve committed pixel baselines, the masked values, the bounded threshold, the two clean runs, the one-token mutation that fails, and the deliberate update command.
 - `docs/evidence/cross-browser-smoke.md` — the Firefox and WebKit smoke projects, the install and run output, the WebKit host-library workaround with its exact loader error, and the browser matrix.
 - `docs/evidence/assistive-technology-review.md` — per-route accessibility tree, landmarks, heading order, focus order, live regions and role/name gaps, with the human screen-reader script it hands over.
+- `docs/evidence/assistive-tech-gaps.md` — the form, `main`, result-heading and static-hint fixes, proved by `ariaSnapshot()` of `/inventory` and `/recommend`.
 - `docs/evidence/data-portability-browser.md` — snapshot export, backup download, inspected restore, the typed confirmation guard and a rejected restore.
 - `docs/evidence/catalog-ingestion-browser.md` — catalog upload and refusal, the registry with a licence, search and a catalog-enriched import with committed provenance.
 - `docs/evidence/verdict-console-browser.md` — the rule matrix, single coverage sentence, grammatical gap sentences, exact-match token noise and the verdict-console Lighthouse numbers.

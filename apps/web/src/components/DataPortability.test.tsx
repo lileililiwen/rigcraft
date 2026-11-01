@@ -81,7 +81,7 @@ const inspection: BackupInspection = {
 
 function renderPanel(overrides: Partial<Parameters<typeof DataPortability>[0]> = {}) {
   const onRestored = vi.fn();
-  render(
+  const { container } = render(
     <DataPortability
       snapshot={snapshot}
       history={history}
@@ -89,7 +89,7 @@ function renderPanel(overrides: Partial<Parameters<typeof DataPortability>[0]> =
       {...overrides}
     />,
   );
-  return { onRestored };
+  return { onRestored, container };
 }
 
 beforeEach(() => {
@@ -109,6 +109,53 @@ describe("DataPortability", () => {
         "No snapshot is open. Choose View on a revision in Snapshot history, or commit an import.",
       ),
     ).toBeInTheDocument();
+  });
+
+  it("exposes the static hint as a note and keeps real action results live", async () => {
+    vi.mocked(downloadBackup).mockResolvedValue("rigcraft-backup-2026.sqlite3");
+    const { container } = renderPanel();
+
+    const note = screen.getByRole("note");
+    expect(note).toHaveTextContent(
+      "Exports and backups are created by this local service only.",
+    );
+    // Nothing is announced on load: the status region is empty.
+    expect(screen.getByRole("status")).toBeEmptyDOMElement();
+    expect(
+      screen.getByRole("form", { name: "Restore from a backup" }),
+    ).toBeInTheDocument();
+    // The name matcher only matches a form with a non-empty accessible name, so
+    // equal counts prove that none of the rendered forms is unnamed.
+    expect(screen.getAllByRole("form", { name: /./ })).toHaveLength(
+      container.querySelectorAll("form").length,
+    );
+
+    await userEvent.click(screen.getByRole("button", { name: "Download backup" }));
+    await waitFor(() =>
+      expect(screen.getByRole("status")).toHaveTextContent(
+        "rigcraft-backup-2026.sqlite3",
+      ),
+    );
+    expect(note).toHaveTextContent("Downloaded rigcraft-backup-2026.sqlite3.");
+  });
+
+  it("names the restore confirmation form", async () => {
+    vi.mocked(inspectBackup).mockResolvedValue(inspection);
+    const { container } = renderPanel();
+
+    await userEvent.upload(
+      screen.getByLabelText("SQLite backup file"),
+      new File(["sqlite"], "backup.sqlite3", { type: "application/vnd.sqlite3" }),
+    );
+    await userEvent.click(screen.getByRole("button", { name: "Inspect backup" }));
+    await screen.findByRole("heading", { name: /Backup inspected/ });
+
+    expect(
+      screen.getByRole("form", { name: "Confirm replacing the inventory" }),
+    ).toBeInTheDocument();
+    expect(screen.getAllByRole("form", { name: /./ })).toHaveLength(
+      container.querySelectorAll("form").length,
+    );
   });
 
   it("exports both formats and reports the filename", async () => {

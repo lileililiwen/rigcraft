@@ -262,8 +262,10 @@ export function CatalogPage() {
   return (
     <>
       <SiteHeader current="catalog" />
-      <main className="page" id="main" tabIndex={-1}>
-        <h1 className="page-title">Catalog</h1>
+      <main className="page" id="main" tabIndex={-1} aria-labelledby="catalog-page-title">
+        <h1 className="page-title" id="catalog-page-title">
+          Catalog
+        </h1>
         <p className="lede">
           Load a hardware catalog you are licensed to use. It is stored in this
           instance with per-field provenance and can enrich an import where your own
@@ -338,6 +340,7 @@ export function CatalogPage() {
             stored; a single bad row refuses the upload.
           </p>
           <form
+            aria-labelledby="upload-title"
             onSubmit={(event) => {
               event.preventDefault();
               void upload();
@@ -382,7 +385,7 @@ export function CatalogPage() {
 
           {report ? (
             <div className="panel__section">
-              <h3 tabIndex={-1} ref={reportRef}>
+              <h3 id="catalog-result-title" tabIndex={-1} ref={reportRef}>
                 Catalog accepted
               </h3>
               <p>
@@ -572,7 +575,7 @@ export function CatalogPage() {
               Search
             </h2>
           </div>
-          <form onSubmit={(event) => void runSearch(event)}>
+          <form aria-labelledby="search-title" onSubmit={(event) => void runSearch(event)}>
             <div className="field-grid">
               <div className="field">
                 <label htmlFor="catalog-query">SKU, MPN, model or word</label>

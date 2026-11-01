@@ -336,8 +336,10 @@ export function CheckPage() {
   return (
     <>
       <SiteHeader current="compatibility" />
-      <main className="page" id="main" tabIndex={-1}>
-        <h1 className="page-title">Compatibility check</h1>
+      <main className="page" id="main" tabIndex={-1} aria-labelledby="check-page-title">
+        <h1 className="page-title" id="check-page-title">
+          Compatibility check
+        </h1>
         <p className="lede">
           Check a selected build against the facts in one inventory snapshot. Every
           rule reports compatible, incompatible or unknown with the values and
@@ -478,6 +480,7 @@ export function CheckPage() {
 
         {snapshot ? (
           <form
+            aria-labelledby="parts-title"
             onSubmit={(event) => {
               event.preventDefault();
               void runCheck();

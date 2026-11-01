@@ -393,12 +393,13 @@ export function PreviewReview({
                 <form
                   className="correction-panel"
                   id={`correct-${row.row}`}
+                  aria-labelledby={`correct-title-${row.row}`}
                   onSubmit={(event) => {
                     event.preventDefault();
                     applyEditor(row);
                   }}
                 >
-                  <h3>Correct row {row.row}</h3>
+                  <h3 id={`correct-title-${row.row}`}>Correct row {row.row}</h3>
                   <p className="small">
                     Corrections are revalidated. They only change this preview; the
                     committed snapshot is immutable.

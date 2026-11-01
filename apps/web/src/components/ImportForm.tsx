@@ -58,7 +58,19 @@ export function ImportForm({
   }
 
   return (
-    <section className="panel" aria-labelledby="import-title">
+    // A real form element, named by the panel heading: the import controls then
+    // form a named landmark instead of an unnamed group, and Enter in a field
+    // runs the same guarded action as the Preview CSV button.
+    <form
+      className="panel"
+      aria-labelledby="import-title"
+      onSubmit={(event) => {
+        event.preventDefault();
+        if (!busy && canPreview) {
+          onSubmit();
+        }
+      }}
+    >
       <div className="panel__head">
         <p className="caps-label" aria-hidden="true">
           Import
@@ -155,6 +167,6 @@ export function ImportForm({
         Need a row removed from the file? Preview first, then choose Exclude or
         correct the row before committing.
       </p>
-    </section>
+    </form>
   );
 }

@@ -459,6 +459,11 @@ describe("build diagnosis page", () => {
     expect(
       await screen.findByRole("heading", { level: 1, name: "Diagnose an existing build" }),
     ).toBeInTheDocument();
+    expect(
+      screen.getByRole("main", { name: "Diagnose an existing build" }),
+    ).toBeInTheDocument();
+    // This route renders no form; nothing may claim to be one without a name.
+    expect(screen.queryAllByRole("form")).toHaveLength(0);
     await matchList(user);
 
     const ambiguous = screen.getByRole("radio", {

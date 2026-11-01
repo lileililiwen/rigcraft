@@ -310,6 +310,27 @@ describe("compatibility check page", () => {
     expect(screen.getByText(/Quantity for FIX-CPU-AM5/)).toBeInTheDocument();
   });
 
+  it("names its main region and the parts form once a snapshot loads", async () => {
+    installFetch(
+      standardHandler((selection, attempt) =>
+        jsonResponse(reportFor(selection, attempt)),
+      ),
+    );
+    const { container } = render(<CheckPage />);
+
+    expect(
+      screen.getByRole("main", { name: "Compatibility check" }),
+    ).toBeInTheDocument();
+    await screen.findByLabelText("Snapshot");
+
+    expect(screen.getByRole("form", { name: "2. Select parts" })).toBeInTheDocument();
+    // The name matcher only matches a form with a non-empty accessible name, so
+    // equal counts prove that none of the rendered forms is unnamed.
+    expect(screen.getAllByRole("form", { name: /./ })).toHaveLength(
+      container.querySelectorAll("form").length,
+    );
+  });
+
   it("counts selected parts that no rule evaluated", async () => {
     installFetch(
       standardHandler((selection, attempt) =>

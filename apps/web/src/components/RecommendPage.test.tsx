@@ -358,6 +358,28 @@ describe("recommendation page", () => {
     expect(screen.getByRole("button", { name: "Download Markdown plan" })).toBeInTheDocument();
   });
 
+  it("names its main region, the budget form and the assistant transport form", async () => {
+    installFetch(handlerWith(() => jsonResponse(report())));
+    const { container } = render(<RecommendPage />);
+
+    expect(
+      screen.getByRole("main", { name: "Build recommendation" }),
+    ).toBeInTheDocument();
+    await screen.findByLabelText("Total budget (USD)");
+
+    expect(
+      screen.getByRole("form", { name: "3. Budget and constraints" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("form", { name: "Assistant provider settings" }),
+    ).toBeInTheDocument();
+    // The name matcher only matches a form with a non-empty accessible name, so
+    // equal counts prove that none of the rendered forms is unnamed.
+    expect(screen.getAllByRole("form", { name: /./ })).toHaveLength(
+      container.querySelectorAll("form").length,
+    );
+  });
+
   it("states the real option count when only one material build exists", async () => {
     installFetch(
       handlerWith(() =>

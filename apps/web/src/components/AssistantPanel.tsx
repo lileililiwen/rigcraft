@@ -286,6 +286,7 @@ export function AssistantPanel({ snapshot, disabled, onApply, onSkip, announce }
             outside a form. It never submits: the interpret action is a button. */}
         <form
           className="assistant-transport"
+          aria-label="Assistant provider settings"
           onSubmit={(event) => event.preventDefault()}
         >
           <div className="field-grid">

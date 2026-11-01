@@ -125,6 +125,9 @@ describe("assistant panel", () => {
     expect(screen.getByText("No key configured")).toBeInTheDocument();
     const key = screen.getByLabelText("Provider key") as HTMLInputElement;
     expect(key.form).toBe(details.querySelector("form.assistant-transport"));
+    expect(
+      screen.getByRole("form", { name: "Assistant provider settings" }),
+    ).toBe(key.form);
   });
 
   it("states the no-key state and offers the deterministic flow", async () => {

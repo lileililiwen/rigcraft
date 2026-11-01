@@ -4,7 +4,7 @@
   "runtime": "forge",
   "profile": "full",
   "runtime_version": "forge 0.1.1",
-  "revision": "8e54dffc666b21d14eabe7898856f18c26cdb1f7",
+  "revision": "adf7e88763eee46439367021096f9321aa85ed5c",
   "manifest_digest": "sha256:88b43c9d70487a99",
   "rule_pack_version": "workspace-governance@1",
   "aggregate": "passed",
@@ -46,7 +46,7 @@
     {
       "id": "tests",
       "state": "pass",
-      "note": "diagnostic: running 66 tests\ntest ai::tests::an_oversized_or_empty_sentence_is_refused ... ok\ntest ai::tests::a_missing_key_names_the_deterministic_flow ... ok\ntest ai::tests::a_secret_key_never_prints_its_value ... ok\ntest ai::tests::provider_urls_are_https_or_loopback_http ... ok\ntest catalog::val…[truncated]"
+      "note": "diagnostic: running 66 tests\ntest ai::tests::a_missing_key_names_the_deterministic_flow ... ok\ntest catalog::validate::tests::an_invalid_row_names_its_index_and_field ... ok\ntest ai::tests::the_prompt_omits_the_inventory_unless_the_operator_opts_in ... ok\ntest ai::tests::a_secret_key_never_prints_it…[truncated]"
     },
     {
       "id": "ui-conformance",
@@ -54,6 +54,6 @@
       "note": "diagnostic: note rigcraft: content rules read 28 of 72 UI file(s): only files inside the declared ui.scope.roots are opened\n  note rigcraft: token source declares 17 colour literal(s); the comparison runs through dotnet-platform-libs/ui/scripts/lib/token-model.mjs, not a Python copy\nPASS: rigcraft u…[truncated]"
     }
   ],
-  "observed_at": "2026-11-01T08:15:28Z",
+  "observed_at": "2026-11-01T08:41:16Z",
   "dry_run": false
 }

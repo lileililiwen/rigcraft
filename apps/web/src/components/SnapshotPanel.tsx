@@ -259,12 +259,15 @@ export function SnapshotPanel({
               <form
                 className="correction-panel"
                 id={`edit-${record.id}`}
+                aria-labelledby={`edit-title-${record.id}`}
                 onSubmit={(event) => {
                   event.preventDefault();
                   void save(record);
                 }}
               >
-                <h3>Create a new revision from {record.sku}</h3>
+                <h3 id={`edit-title-${record.id}`}>
+                  Create a new revision from {record.sku}
+                </h3>
                 <p className="small">
                   This never edits revision {snapshot.revision}. It creates revision{" "}
                   {snapshot.revision + 1} with new provenance for the changed fields.

@@ -188,6 +188,9 @@ describe("PreviewReview", () => {
     render(<PreviewReview {...baseProps} onOverride={onOverride} />);
     const correctButtons = screen.getAllByRole("button", { name: "Correct" });
     await user.click(correctButtons[2]);
+    expect(
+      screen.getByRole("form", { name: "Correct row 4" }),
+    ).toBeInTheDocument();
     const quantity = screen.getByLabelText("Quantity");
     expect(quantity).toHaveFocus();
     await user.clear(quantity);

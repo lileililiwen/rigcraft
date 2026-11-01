@@ -376,8 +376,10 @@ export function InventoryPage() {
   return (
     <>
       <SiteHeader current="inventory" />
-      <main className="page" id="main" tabIndex={-1}>
-        <h1 className="page-title">Inventory</h1>
+      <main className="page" id="main" tabIndex={-1} aria-labelledby="inventory-page-title">
+        <h1 className="page-title" id="inventory-page-title">
+          Inventory
+        </h1>
         <p className="lede">
           Import owned hardware from a UTF-8 CSV, correct every bad row, and commit
           a versioned snapshot. Each value keeps its original input, normalized

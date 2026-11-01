@@ -11,7 +11,7 @@ document is the authoritative statement those documents link to.
 cargo build          # the service binary the suite starts
 npm run build        # the bundle the service serves
 npx playwright install firefox webkit   # the two non-Chrome engines (once)
-npm run test:e2e     # 46 Chrome journeys + 6 smoke tests each in Firefox and WebKit
+npm run test:e2e     # 50 Chrome journeys + 6 smoke tests each in Firefox and WebKit
 ```
 
 `npm run test:e2e` selects a free loopback port, starts `target/debug/rigcraft` with a
@@ -44,6 +44,7 @@ WebKit host-library workaround and the exact errors are in
 | `e2e/portability.spec.ts` | CSV and JSON export filenames and bodies (10 lots, revision, authoritative JSON with per-field provenance), re-import of the exported CSV with catalog facts intact, a backup whose first bytes are the SQLite header, a non-SQLite upload rejected as `backup_not_sqlite` with the committed snapshot still visible, an inspected backup showing integrity/schema/counts, the replace button disabled until `RESTORE` is typed exactly, and success naming `inventory.sqlite3.pre-restore-`. |
 | `e2e/delivery.spec.ts` | All six client routes render under the CSP with an empty CSP-violation and page-error log, `/recomend` is still a real 404 with no `#root`, and the assistant reaches a Node loopback provider through `/api/ai/parse`, shows the proposal and applies `2000.00` to the budget. |
 | `e2e/visual.spec.ts` | Twelve committed pixel baselines: `/inventory`, `/catalog`, `/builds/check`, `/recommend`, `/diagnose` and the `/nope` 404 at 1440×900 and 390×844. Each test re-seeds the sample or resets and re-uploads the synthetic catalog immediately before the capture, masks the dynamic ids, timestamps, sha256 fragment and snapshot `<select>`, and fails on a change beyond the bounded tolerance with a diff artifact. See `visual-regression.md`. |
+| `e2e/landmarks.spec.ts` | Each of the six routes exposes exactly one `main` with its heading as the accessible name, and no rendered form is left unnamed (a `<form>` is a `form` landmark only when it has a name); the import, restore, upload, search, parts, budget and assistant-transport forms resolve by `getByRole("form", { name })` on the real pages; and the skip link still focuses the named `main`. See `assistive-tech-gaps.md`. |
 | `e2e/smoke.spec.ts` | The six-route shell and titles, the skip link as the first Tab stop and its focus move to `main`, `scrollWidth === clientWidth` at 390 px on every route, `/recomend` as the real 404, a seeded 1,800.00 recommendation with the gaming rule, and the inventory CSV download filename. Runs in the Chromium project and as the only spec in the Firefox and WebKit projects; it asserts no pixels. |
 
 Each test seeds its own snapshot (the inventory journey through the page, the rest

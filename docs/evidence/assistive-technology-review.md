@@ -34,17 +34,21 @@ exists.
 Every route shares one shell: the skip link is the first focusable node and is
 outside the `banner`, the banner holds the `RigCraft` link and a
 `navigation "Primary"` with five links, and the page body is `main#main`
-(`tabindex="-1"`). `/recommend` adds `complementary "Verdict and score"` for the
-verdict rail.
+(`tabindex="-1"`) named by that route's `h1`. `/recommend` adds
+`complementary "Verdict and score"` for the verdict rail.
 
 | Route | `document.title` | Landmarks | Live regions |
 | --- | --- | --- | --- |
-| `/` | RigCraft inventory | banner, navigation "Primary", main | 2 × status |
-| `/inventory` | RigCraft inventory | banner, navigation "Primary", main, form | 2 × status |
-| `/catalog` | RigCraft catalog | banner, navigation "Primary", main, 2 × form | 1 × status |
-| `/builds/check` | RigCraft compatibility check | banner, navigation "Primary", main, form | 1 × status + 1 × `aria-live="off"` |
-| `/recommend` | RigCraft build recommendation | banner, navigation "Primary", main, 2 × form, complementary | 1 × status + 1 × polite hint |
-| `/diagnose` | RigCraft build diagnosis | banner, navigation "Primary", main | 1 × status |
+| `/` | RigCraft inventory | banner, navigation "Primary", main "Inventory", 2 × form, 1 × note | 2 × status (the export one is empty on load) + 1 × note |
+| `/inventory` | RigCraft inventory | banner, navigation "Primary", main "Inventory", 2 × form, 1 × note | 2 × status (the export one is empty on load) + 1 × note |
+| `/catalog` | RigCraft catalog | banner, navigation "Primary", main "Catalog", 2 × form | 1 × status |
+| `/builds/check` | RigCraft compatibility check | banner, navigation "Primary", main "Compatibility check", form "2. Select parts" | 1 × status + 1 × `aria-live="off"` |
+| `/recommend` | RigCraft build recommendation | banner, navigation "Primary", main "Build recommendation", 2 × form, complementary "Verdict and score" | 1 × status + 1 × polite hint |
+| `/diagnose` | RigCraft build diagnosis | banner, navigation "Primary", main "Diagnose an existing build" | 1 × status |
+
+The landmark column is the state after `assistive-tech-gaps` (2026-11-01): the
+`main` names, the form names and the export/backup note are new, and every one of
+them is proved in [`assistive-tech-gaps.md`](assistive-tech-gaps.md).
 
 Heading order per route, as exposed:
 
@@ -71,7 +75,10 @@ No heading level is skipped and each route has exactly one `h1`.
 
 One extract per route, from the `main` subtree of `locator("body").ariaSnapshot()`
 after the page settled. The banner above it is identical on every route, so it is
-shown once.
+shown once. These extracts are the **before** record: they were captured before
+`assistive-tech-gaps` named the forms, the `main` regions and the export note, so
+`main` appears without a name here. The after-fix trees are in
+[`assistive-tech-gaps.md`](assistive-tech-gaps.md).
 
 Shared shell, every route:
 
@@ -198,7 +205,7 @@ without the operator hunting for it.
 The same programmatic focus move exists on the other result routes:
 `h2#result-title` on `/builds/check`, `h2#diagnosis-result-title` on `/diagnose`,
 the review heading after matching a list (`#review-title`), the snapshot heading
-after a commit (`#snapshot-title`), and the "Catalog accepted" heading after an
+after a commit (`#snapshot-title`), and `h3#catalog-result-title` after an
 upload. The export and restore panels focus their own headings at the same
 points.
 
@@ -209,7 +216,7 @@ Measured after the primary action on each route:
 | `/builds/check` | Check compatibility | `h2#result-title` |
 | `/recommend` | Generate recommendations | `h2#recommend-result-title` |
 | `/diagnose` | Match this list → Diagnose this build | `h2#diagnosis-result-title` |
-| `/catalog` | Import catalog | the `h3` heading "Catalog accepted" |
+| `/catalog` | Import catalog | `h3#catalog-result-title` ("Catalog accepted") |
 | `/inventory` | Download CSV | focus stays on the button; status region announces |
 
 ## Live regions and what they announce
@@ -217,7 +224,8 @@ Measured after the primary action on each route:
 | Route | Region | Politeness | Announcement |
 | --- | --- | --- | --- |
 | `/`, `/inventory` | `div.snapshot-status` | polite (`role=status`) | On load: "Opened the newest snapshot, revision 1: 10 records, US$2,120.90 stock value. Export and backup are ready below." After a download: "Downloaded rigcraft-inventory-snapshot-r1-87f3e411.csv. CSV export is lossy: it omits lot identity, snapshot metadata and per-field provenance references. Use format=json for the authoritative artifact." |
-| `/`, `/inventory` | `div.export-hint` | polite (`role=status`) | On load: "Exports and backups are created by this local service only." Static text, not a change. |
+| `/`, `/inventory` | `div.status-line` (export panel) | `role="note"`, not a live region | On load: "Exports and backups are created by this local service only." Static text; not announced. |
+| `/`, `/inventory` | `div.visually-hidden` (export panel) | polite (`role=status`) | Empty on load. After an export, a backup, an inspection or a restore: the same sentence the visible note shows, for example "Downloaded rigcraft-backup-2026-11-01.sqlite3. …". |
 | `/catalog` | `div.catalog-status` | polite (`role=status`) | On load: "No catalog uploaded in this session." After an upload: "Catalog accepted: 1 part from synthetic-fixture." |
 | `/builds/check` | `div.check-status` | polite (`role=status`) | On load: "Snapshot revision 1 loaded: 10 records." After a check: "Check complete: Unknown. 0 compatible · 0 conflicts · 0 unknown · build incomplete." |
 | `/builds/check` | `span.small.muted` | `aria-live="off"` | Inner text only, "1 unit selected"; deliberately not announced. |
@@ -232,30 +240,45 @@ note (`role=status`) when the snapshot changes underneath a rendered result.
 
 ## Role and name gaps found
 
-Recorded here, not fixed: this change adds tests and documentation only.
+Recorded here first, then fixed by `assistive-tech-gaps` (2026-11-01) except
+item 4, which is a human decision. The names each fix added are proved in
+[`assistive-tech-gaps.md`](assistive-tech-gaps.md) from the running build.
 
-1. **Unnamed forms.** `/inventory`, `/catalog` (two) and `/recommend` (two)
-   render `<form>` elements with no accessible name. They are not named
-   landmarks, so landmark navigation cannot distinguish "the import form" from
-   "the search form". A `aria-labelledby` to the section heading (or a visually
-   hidden `aria-label`) would fix it without changing layout.
-2. **A static hint marked as a live status.** On `/` and `/inventory`,
-   "Exports and backups are created by this local service only." is
-   `role="status"`. It may be announced on page load even though nothing
-   changed, adding noise before the operator acts. `role="note"` or no role
-   would describe it better.
-3. **The focused "Catalog accepted" heading has no id.** The other result
-   headings are addressable (`#result-title`, `#recommend-result-title`,
-   `#diagnosis-result-title`, `#review-title`, `#snapshot-title`); this one is
-   focused by ref only, so it cannot be linked to or re-focused from a test or a
-   skip target.
-4. **The `aria-live="off"` selection counter.** `1 unit selected` is deliberately
-   silent, so a keyboard operator who changes selection with the checkbox gets no
-   spoken count. That is a reasonable choice against chattiness, but it should be
-   confirmed by a human with a screen reader rather than assumed.
-5. **No accessible name on `main`.** There is exactly one `main` per route, so
-   this is not a landmark collision today; it would matter if a route ever added
-   a second.
+1. **Unnamed forms — fixed.** `/inventory`, `/catalog` (two), `/recommend`
+   (two), `/builds/check` (one) and the four forms that appear after an
+   interaction had no accessible name, so landmark navigation could not tell
+   "the import form" from "the search form". Each now points at the heading that
+   introduces it: `Import a CSV`, `Upload a catalog`, `Search`,
+   `3. Budget and constraints`, `2. Select parts`, `Restore from a backup`,
+   `Correct row N` and `Create a new revision from <SKU>`. The two forms with no
+   heading of their own carry a label that is not displayed: the assistant
+   transport form is `Assistant provider settings` and the restore confirmation
+   form is `Confirm replacing the inventory`. The inventory import panel is now a
+   real `<form>` element, so the control group is a named form landmark rather
+   than an unnamed section.
+2. **A static hint marked as a live status — fixed.** On `/` and `/inventory`,
+   "Exports and backups are created by this local service only." is now
+   `role="note"` with its text, styling and position unchanged, so it is not
+   announced on load. Real results — a download, a backup, an inspection, a
+   restore — are announced by a polite live region beside it, and errors stay
+   `role="alert"`.
+3. **The focused "Catalog accepted" heading has no id — fixed.** It now carries
+   `id="catalog-result-title"` beside the existing focus ref, matching
+   `#result-title`, `#recommend-result-title`, `#diagnosis-result-title`,
+   `#review-title` and `#snapshot-title`, so a test or a skip target can address
+   it. The heading text and the focus move are unchanged.
+4. **The `aria-live="off"` selection counter — open, deliberately.** `1 unit
+   selected` is still silent, so a keyboard operator who changes selection with
+   the checkbox still gets no spoken count. Announcing every change would queue
+   messages on top of the check result, and whether the silence costs context is
+   exactly what a screen-reader pass decides. Nothing in `assistive-tech-gaps`
+   changes the element; step 5 of the script below is where a human settles it.
+5. **No accessible name on `main` — fixed.** Each route's single `main#main` now
+   points at its `h1` with `aria-labelledby`, so it is announced as `main
+   "Inventory"`, `main "Catalog"`, `main "Compatibility check"`, `main "Build
+   recommendation"` or `main "Diagnose an existing build"`. `id="main"` stays, so
+   the skip link still focuses the same element, and no second landmark was
+   added.
 
 The plain-text 404 document has no landmarks, headings or controls by design; a
 screen reader reads the sentence `404 Not found.` and nothing else.
@@ -272,8 +295,9 @@ others.
 
 1. **Load `/inventory`.** Expect the document title "RigCraft inventory", then
    the page heading "Inventory". Expect the status message beginning "Opened the
-   newest snapshot". Note whether the second status ("Exports and backups are
-   created by this local service only.") is also spoken on load.
+   newest snapshot". The export sentence "Exports and backups are created by this
+   local service only." must **not** be announced on load — it is a note, not a
+   live status; record it as a defect if it is spoken.
 2. **Press `Tab` once.** Expect "Skip to inventory, link". Press `Enter`. Expect
    focus on the main region and the next `Tab` to reach the `RigCraft` link, then
    the five primary navigation links with the current one reported as "current
@@ -288,7 +312,10 @@ others.
 5. **On `/builds/check`,** select the snapshot, select a CPU and check the build.
    Expect the result heading announced when focus moves, and the status
    "Check complete: …" read as one sentence. Confirm the unknown rule is read as
-   "unknown", not "compatible".
+   "unknown", not "compatible". Then change the selection and record whether the
+   count `1 unit selected` is spoken: it is deliberately outside every live
+   region (`aria-live="off"`), and this is the step that decides whether that
+   silence costs you context.
 6. **On `/recommend`,** follow the focus order table above to the budget field,
    type `1800`, and press `Enter`. Expect "Recommendation complete: 1 materially
    different option within US$1,800.00." and the result heading announced. Read

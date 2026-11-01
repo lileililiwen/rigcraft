@@ -135,6 +135,46 @@ describe("catalog page", () => {
     expect(body.catalog.format).toBe("rigcraft-catalog");
   });
 
+  it("names its main region and both forms and addresses the accepted heading", async () => {
+    let datasets: CatalogDataset[] = [];
+    const fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      if (url === "/api/catalog/datasets" && init?.method === "POST") {
+        datasets = [dataset];
+        return response(report);
+      }
+      if (url === "/api/catalog/datasets") {
+        return response(datasets);
+      }
+      return response({ error: { code: "unexpected", message: url } }, 500);
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const user = userEvent.setup();
+    const { container } = render(<CatalogPage />);
+    expect(
+      await screen.findByText("No dataset is stored in this instance yet."),
+    ).toBeInTheDocument();
+
+    expect(screen.getByRole("main", { name: "Catalog" })).toBeInTheDocument();
+    expect(screen.getByRole("form", { name: "Upload a catalog" })).toBeInTheDocument();
+    expect(screen.getByRole("form", { name: "Search" })).toBeInTheDocument();
+    // The name matcher only matches a form with a non-empty accessible name, so
+    // equal counts prove that none of the rendered forms is unnamed.
+    expect(screen.getAllByRole("form", { name: /./ })).toHaveLength(
+      container.querySelectorAll("form").length,
+    );
+
+    await user.upload(screen.getByLabelText("Catalog JSON document"), catalogFile());
+    await user.click(screen.getByLabelText(/I have the right to use this data/));
+    await user.click(screen.getByRole("button", { name: "Import catalog" }));
+
+    const accepted = await screen.findByRole("heading", { name: "Catalog accepted" });
+    expect(accepted).toHaveAttribute("id", "catalog-result-title");
+    await waitFor(() => expect(accepted).toHaveFocus());
+    expect(document.getElementById("catalog-result-title")).toBe(accepted);
+  });
+
   it("shows a refused document with its row and field and adds nothing", async () => {
     const fetchMock = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input);

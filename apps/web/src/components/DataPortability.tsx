@@ -30,6 +30,8 @@ interface Problem {
 
 type Busy = "export" | "backup" | "inspect" | "restore" | null;
 
+const STATIC_HINT = "Exports and backups are created by this local service only.";
+
 function describeFailure(error: unknown, action: string): Problem {
   if (error instanceof ApiFailure) {
     return {
@@ -65,9 +67,11 @@ export function DataPortability({
   onRestored,
 }: DataPortabilityProps) {
   const [busy, setBusy] = useState<Busy>(null);
-  const [notice, setNotice] = useState(
-    "Exports and backups are created by this local service only.",
-  );
+  const [notice, setNotice] = useState(STATIC_HINT);
+  // The visible line starts with a sentence that describes the product, not a
+  // change, so it is a note and is never announced. Results of real actions are
+  // announced through the live region beside it.
+  const [announcement, setAnnouncement] = useState("");
   const [problem, setProblem] = useState<Problem | null>(null);
   const [file, setFile] = useState<File | null>(null);
   const [inspection, setInspection] = useState<BackupInspection | null>(null);
@@ -96,6 +100,11 @@ export function DataPortability({
   const confirmed = confirmation.trim().toUpperCase() === "RESTORE";
   const newest = history[0] ?? null;
 
+  function report(text: string) {
+    setNotice(text);
+    setAnnouncement(text);
+  }
+
   async function exportSnapshot(format: "csv" | "json") {
     if (!snapshot) {
       return;
@@ -104,7 +113,7 @@ export function DataPortability({
     setProblem(null);
     try {
       const { filename, note } = await downloadSnapshotExport(snapshot.id, format);
-      setNotice(
+      report(
         note
           ? `Downloaded ${filename}. ${note}`
           : `Downloaded ${filename}. This file contains the complete snapshot.`,
@@ -121,7 +130,7 @@ export function DataPortability({
     setProblem(null);
     try {
       const filename = await downloadBackup();
-      setNotice(
+      report(
         `Downloaded ${filename}. It is a standard SQLite file containing the entire private inventory.`,
       );
     } catch (error) {
@@ -148,7 +157,7 @@ export function DataPortability({
     try {
       const result = await inspectBackup(file);
       setInspection(result);
-      setNotice(
+      report(
         `Inspected ${result.fileName}: integrity ${result.integrity}, schema ${result.counts.schemaVersion}, ${plural(result.counts.recordCount, "record")}. Nothing has been replaced.`,
       );
     } catch (error) {
@@ -172,7 +181,7 @@ export function DataPortability({
     }
     setBusy("restore");
     setProblem(null);
-    setNotice("Restoring from the inspected backup. A safety copy is written first.");
+    report("Restoring from the inspected backup. A safety copy is written first.");
     try {
       const summary = await restoreBackup(file);
       setRestored(summary);
@@ -182,7 +191,7 @@ export function DataPortability({
       if (fileInput.current) {
         fileInput.current.value = "";
       }
-      setNotice(
+      report(
         `Restored ${plural(summary.counts.snapshotCount, "snapshot")} and ${plural(
           summary.counts.recordCount,
           "record",
@@ -191,7 +200,7 @@ export function DataPortability({
       onRestored(summary);
     } catch (error) {
       setProblem(describeFailure(error, "restore"));
-      setNotice("The restore did not complete. Review the error before trying again.");
+      report("The restore did not complete. Review the error before trying again.");
     } finally {
       setBusy(null);
     }
@@ -212,14 +221,11 @@ export function DataPortability({
         CSV uses the import columns and is lossy. A backup is a standard SQLite file
         and contains the shop&apos;s entire private inventory.
       </p>
-      <div
-        className="status-line"
-        role="status"
-        aria-live="polite"
-        aria-busy={disabled}
-        data-busy={disabled}
-      >
+      <div className="status-line" role="note" data-busy={disabled}>
         <span>{notice}</span>
+      </div>
+      <div className="visually-hidden" role="status" aria-live="polite">
+        {announcement}
       </div>
 
       {problem ? (
@@ -305,8 +311,12 @@ export function DataPortability({
         </div>
       </div>
 
-      <form className="restore-panel" onSubmit={(event) => void inspect(event)}>
-        <h3>Restore from a backup</h3>
+      <form
+        className="restore-panel"
+        aria-labelledby="restore-form-title"
+        onSubmit={(event) => void inspect(event)}
+      >
+        <h3 id="restore-form-title">Restore from a backup</h3>
         <p className="small muted">
           Inspecting reads the file without changing anything. Replacing is a separate,
           explicitly confirmed step.
@@ -409,7 +419,10 @@ export function DataPortability({
             </p>
           </div>
 
-          <form onSubmit={(event) => void restore(event)}>
+          <form
+            aria-label="Confirm replacing the inventory"
+            onSubmit={(event) => void restore(event)}
+          >
             <div className="field">
               <label htmlFor="restore-confirmation">
                 Type <span className="mono">RESTORE</span> to confirm
@@ -447,7 +460,7 @@ export function DataPortability({
                   if (fileInput.current) {
                     fileInput.current.value = "";
                   }
-                  setNotice("Restore cancelled. Nothing was replaced.");
+                  report("Restore cancelled. Nothing was replaced.");
                   fileInput.current?.focus();
                 }}
               >

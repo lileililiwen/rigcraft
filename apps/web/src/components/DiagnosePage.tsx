@@ -333,8 +333,10 @@ export function DiagnosePage() {
   return (
     <>
       <SiteHeader current="diagnose" />
-      <main className="page" id="main" tabIndex={-1}>
-        <h1 className="page-title">Diagnose an existing build</h1>
+      <main className="page" id="main" tabIndex={-1} aria-labelledby="diagnose-page-title">
+        <h1 className="page-title" id="diagnose-page-title">
+          Diagnose an existing build
+        </h1>
         <p className="lede">
           Describe the PC you already have — paste a parts list, or add parts by hand with
           whatever specifications you can confirm. The diagnosis reuses the compatibility

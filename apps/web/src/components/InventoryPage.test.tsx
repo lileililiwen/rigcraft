@@ -202,4 +202,26 @@ describe("inventory console", () => {
     expect(screen.getByRole("heading", { name: "Snapshot history" })).toBeInTheDocument();
     expect(listSnapshots).toHaveBeenCalledTimes(1);
   });
+
+  it("names its main region and every form, including the editors", async () => {
+    const user = userEvent.setup();
+    const { container } = render(<InventoryPage />);
+    await screen.findByRole("heading", { name: "Snapshot state" });
+
+    expect(screen.getByRole("main", { name: "Inventory" })).toBeInTheDocument();
+    expect(screen.getByRole("form", { name: "Import a CSV" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("form", { name: "Restore from a backup" }),
+    ).toBeInTheDocument();
+    // The name matcher only matches a form with a non-empty accessible name, so
+    // equal counts prove that none of the rendered forms is unnamed.
+    expect(screen.getAllByRole("form", { name: /./ })).toHaveLength(
+      container.querySelectorAll("form").length,
+    );
+
+    await user.click(screen.getAllByRole("button", { name: /^Adjust stock or price$/ })[0]);
+    expect(
+      screen.getByRole("form", { name: /^Create a new revision from / }),
+    ).toBeInTheDocument();
+  });
 });
