@@ -4,7 +4,7 @@
   "runtime": "forge",
   "profile": "full",
   "runtime_version": "forge 0.1.1",
-  "revision": "f5b651c916587ca8f36c223958e7ee64ed76a7fa",
+  "revision": "931e8a9e1b7215c2bc7977ad0c21c3aab57a295f",
   "manifest_digest": "sha256:88b43c9d70487a99",
   "rule_pack_version": "workspace-governance@1",
   "aggregate": "passed",
@@ -12,12 +12,12 @@
     {
       "id": "build",
       "state": "pass",
-      "note": "diagnostic: Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.07s"
+      "note": "diagnostic: Compiling cfg-if v1.0.5\n   Compiling libc v0.2.191\n   Compiling proc-macro2 v1.0.107\n   Compiling quote v1.0.47\n   Compiling unicode-ident v1.0.27\n   Compiling version_check v0.9.5\n   Compiling bytes v1.12.1\n   Compiling itoa v1.0.18\n   Compiling pin-project-lite v0.2.17\n   Compiling onc…[truncated]"
     },
     {
       "id": "governance-quality",
       "state": "pass",
-      "note": "diagnostic: 0 of 13 governance findings matched this concern's scope (0 error, 0 warning, 13 reported by other codes and left to the governance audit); checker exit 1 is expected for this run and does not set the status, which maps to exit 0; remediation: No finding in this concern's scope. Codes ou…[truncated]"
+      "note": "diagnostic: 0 of 16 governance findings matched this concern's scope (0 error, 0 warning, 16 reported by other codes and left to the governance audit); checker exit 1 is expected for this run and does not set the status, which maps to exit 0; remediation: No finding in this concern's scope. Codes ou…[truncated]"
     },
     {
       "id": "placeholder-threshold",
@@ -46,7 +46,7 @@
     {
       "id": "tests",
       "state": "pass",
-      "note": "diagnostic: running 66 tests\ntest ai::tests::a_secret_key_never_prints_its_value ... ok\ntest ai::tests::a_missing_key_names_the_deterministic_flow ... ok\ntest ai::tests::an_oversized_or_empty_sentence_is_refused ... ok\ntest ai::tests::an_unknown_snapshot_does_not_claim_a_currency ... ok\ntest ai::tes…[truncated]"
+      "note": "diagnostic: running 66 tests\ntest ai::tests::a_secret_key_never_prints_its_value ... ok\ntest ai::tests::a_missing_key_names_the_deterministic_flow ... ok\ntest ai::tests::an_oversized_or_empty_sentence_is_refused ... ok\ntest ai::tests::provider_urls_are_https_or_loopback_http ... ok\ntest ai::tests::a…[truncated]"
     },
     {
       "id": "ui-conformance",
@@ -54,6 +54,6 @@
       "note": "diagnostic: note rigcraft: content rules read 28 of 72 UI file(s): only files inside the declared ui.scope.roots are opened\n  note rigcraft: token source declares 17 colour literal(s); the comparison runs through dotnet-platform-libs/ui/scripts/lib/token-model.mjs, not a Python copy\nPASS: rigcraft u…[truncated]"
     }
   ],
-  "observed_at": "2026-11-01T09:35:49Z",
+  "observed_at": "2026-11-01T14:41:01Z",
   "dry_run": false
 }

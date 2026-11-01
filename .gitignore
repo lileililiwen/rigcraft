@@ -6,3 +6,4 @@ forge-registry.db
 /coverage/
 /test-results/
 /playwright-report/
+/.forge/release/
